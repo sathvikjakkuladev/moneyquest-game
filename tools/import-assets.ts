@@ -141,7 +141,7 @@ async function importMonsters() {
 }
 
 // ── Characters (PixelLab layout) ──────────────────────────────────────────
-interface CharEntry { atlas: string; image: string; json: string; size: number; foot: number; height: number; source: 'pack' | 'pixellab-extra'; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }
+interface CharEntry { atlas: string; image: string; json: string; size: number; foot: number; height: number; source: 'pack' | 'pixellab-extra' | 'v1-pixelized'; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }
 const characters: Record<string, CharEntry> = {};
 
 async function importCharacter(id: string, base: string, source: CharEntry['source']) {
@@ -232,6 +232,33 @@ async function importV1Gaps() {
     const icon = await pixelize(gear.hat_laurel_wreath, 32, 32);
     v1px.laurel_icon = { atlas: 'v1px:laurel_icon', image: await writeWebp(icon, join(OUT, 'v1px', 'laurel_icon.webp')), json: '', frames: [] };
   } else defects.push('v1 avatar_gear has no hat_laurel_wreath frame');
+
+  // Mentors not made with PixelLab yet: pixelize the v1 mentor (front from the static portrait, sides
+  // and back from its walk sheet) into the same character layout, at the PixelLab mentors' height.
+  const npcs = await v1Frames('npcs');
+  for (const zone of ['borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory']) {
+    const id = `mentor_${zone}`;
+    if (characters[id]) continue;
+    const walk = await v1Frames(`walk_npc_mentor_${zone}`);
+    const front = npcs[`npc_mentor_${zone}`] ?? walk.down_0;
+    const side = walk.left_0 ?? front;
+    // Stormwatch's v1 "up" row is a side view (archive ASSET_REPORT), so use the side frame for north there.
+    const back = zone === 'stormwatch_coast' ? side : (walk.up_0 ?? side);
+    if (!front) continue;
+    const H = 64, CANVAS = 72;
+    const px = async (img: Img) => padBottomCenter(await pixelize(img, 56, H), CANVAS, CANVAS);
+    const south = await px(front), west = await px(side), north = await px(back!);
+    const east = flipX(west);
+    const frames = [{ name: 'rot_south', img: south }, { name: 'rot_west', img: west }, { name: 'rot_east', img: east }, { name: 'rot_north', img: north }];
+    const packed = pack(frames);
+    const box = alphaBox(south)!;
+    characters[id] = {
+      atlas: `chr:${id}`, image: await writeWebp(packed.sheet, join(OUT, 'characters', `${id}.webp`)), json: writeJson(atlasJson(`${id}.webp`, packed), join(OUT, 'characters', `${id}.json`)),
+      size: CANVAS, foot: box.y + box.h, height: box.h, source: 'v1-pixelized', anims: {},
+      rotations: { south: 'rot_south', west: 'rot_west', east: 'rot_east', north: 'rot_north', 'south-west': 'rot_west', 'south-east': 'rot_east', 'north-west': 'rot_west', 'north-east': 'rot_east' },
+    };
+    defects.push(`${id}: no PixelLab art yet, so the v1 mentor was pixelized as a stand-in (front, sides, back only)`);
+  }
 
   // World map: the v1 painting of all 11 islands, reduced to 640×360 pixel art.
   const map = join(V1, 'bg', 'world_map.webp');

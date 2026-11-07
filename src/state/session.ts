@@ -8,11 +8,12 @@ import type { MonsterDef } from '../core/monsters.ts';
 import { monster } from '../core/monsters.ts';
 import { levelFor } from '../core/progression.ts';
 import type { Pool, Shown } from '../core/questions.ts';
-import { battlePool, draw, poolOf, record, show } from '../core/questions.ts';
+import { battlePool, draw, pickTopic, poolOf, record, show } from '../core/questions.ts';
 import { freshSeed, seeded } from '../core/rng.ts';
 import type { SpellId } from '../core/spells.ts';
 import { ZONE_SPELL } from '../core/spells.ts';
 import type { Question, QuestionFile, Topic } from '../core/types.ts';
+import { TOPICS } from '../core/types.ts';
 import type { Speaker } from '../data/dialogue.ts';
 import { HELD_OUT } from '../data/moneyCheckForms.ts';
 import questionFile from '../data/questions.json';
@@ -57,6 +58,8 @@ export interface Float { id: number; x: number; y: number; text: string; tone: '
 
 interface Session {
   screen: 'boot' | 'title' | 'onboarding' | 'play';
+  editing: boolean; // the ?dev=1 map editor is open (the player can't move)
+  setEditing: (on: boolean) => void;
   floats: Float[];
   float: (x: number, y: number, text: string, tone: Float['tone']) => void;
   scene: SceneReq | null;
@@ -79,21 +82,24 @@ interface Session {
   leave: () => void;
 }
 
-function nextQuestion(pool: Pool, topic: Topic): Shown {
+/** Next question for a zone: its topic, or for bonus zones a mix weighted toward the weakest topic. */
+function nextQuestion(zone: string): { q: Shown; pool: Pool } {
   const s = slot();
-  const ids = battlePool(BANK, topic, s.band, HELD_OUT);
-  const r = draw(s.questions, pool, ids, rng);
+  const zt = zoneById(zone).topic;
+  const topic: Topic = zt === 'mixed' ? pickTopic(s.questions.accuracy, TOPICS, rng) : zt;
+  const pool = poolOf(topic, s.band);
+  const r = draw(s.questions, pool, battlePool(BANK, topic, s.band, HELD_OUT), rng);
   useSave.getState().edit((x) => ({ ...x, questions: r.state }));
-  return show(BY_ID.get(r.id)!, rng);
+  return { q: show(BY_ID.get(r.id)!, rng), pool };
 }
 
 export const useSession = create<Session>()((set, get) => {
   /** Next turn: fresh question, effect timers, card ready. */
   const ask = (b: Battle): Battle => {
     const pending = Boolean(b.state.pending.timer || b.state.pending.extraDamage);
-    const q = nextQuestion(b.pool, zoneById(b.monster.zone).topic as Topic);
+    const { q, pool } = nextQuestion(b.monster.zone);
     const t = engine.beginTurn(b.state, b.monster);
-    return { ...b, q, state: t.state, phase: 'ask', picked: null, last: null, warning: pending ? b.warning : null, timer: t.timer ? { ...t.timer, since: performance.now() } : null };
+    return { ...b, q, pool, state: t.state, phase: 'ask', picked: null, last: null, warning: pending ? b.warning : null, timer: t.timer ? { ...t.timer, since: performance.now() } : null };
   };
   const play = (b: Battle, state: BattleState, events: BattleEvent[], last: Battle['last'], picked: number | null) => {
     const warning = events.find((e): e is Extract<BattleEvent, { type: 'warning' }> => e.type === 'warning')?.text ?? b.warning;
@@ -101,7 +107,8 @@ export const useSession = create<Session>()((set, get) => {
   };
 
   return {
-    screen: 'boot', scene: null, dialogue: null, prompt: null, battle: null, floats: [],
+    screen: 'boot', scene: null, dialogue: null, prompt: null, battle: null, floats: [], editing: false,
+    setEditing: (editing) => set({ editing }),
     float: (x, y, text, tone) => {
       const f: Float = { id: Math.random(), x, y, text, tone };
       set({ floats: [...get().floats, f] });
@@ -124,12 +131,12 @@ export const useSession = create<Session>()((set, get) => {
     fight: (monsterId, back) => {
       const s = slot();
       const m = monster(monsterId);
-      const pool = poolOf(zoneById(m.zone).topic as Topic, s.band);
+      const first = nextQuestion(m.zone);
       const state = engine.startBattle({ monster: m, band: s.band, level: s.progress.level, wallet: s.progress.coins, rematch: s.progress.defeated.includes(m.id) });
       const spell = s.progress.spells.includes(s.progress.spell) ? s.progress.spell : 'budget_beam';
       sfx('battle-start');
       set({
-        battle: { monster: m, pool, state, q: nextQuestion(pool, zoneById(m.zone).topic as Topic), phase: 'intro', picked: null, last: null, spell, timer: null, events: [], seq: 0, warning: null, result: null, back },
+        battle: { monster: m, pool: first.pool, state, q: first.q, phase: 'intro', picked: null, last: null, spell, timer: null, events: [], seq: 0, warning: null, result: null, back },
         scene: { kind: 'battle', monsterId, back }, prompt: null, dialogue: null,
       });
     },

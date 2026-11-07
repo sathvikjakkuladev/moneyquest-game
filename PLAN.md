@@ -263,3 +263,36 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   the merchant) → library (Headmaster) → world map → gate → plaza → market → walks into Spendling →
   one wrong and five right answers → win → reload, with no console errors.
 - Build: 3.6 MB (`dist/`), of which art is 1.7 MB.
+
+### Phase 3 — the whole overworld and every monster (done 2026-11-07)
+- **All 11 locations connected** (33 screens): room files for the nine other locations, seeded from
+  their `rooms.json` with first-pass collision drawn from the art. A checker found two top exits
+  that couldn't be reached on foot (Astral Ruins island portal, Sunfire canyon portal); both fixed.
+  Tests now prove every entry is standable, every exit reachable, and every exit leads to a real
+  screen.
+- **All 40 monsters placed** on their zones' spots (you asked to add them now). Moved by hand where
+  rooms.json put a spot on lava, water or a prop: Sunfire lava crossing, Stormwatch cliff and beach,
+  Nebula pond, and the Lunar Hydra (moved off the moon-pool arrival point). Crossroads had only two
+  monster spots, so Doubt Wraith stands with Chaos Sphinx at the observatory. Monsters outside
+  Piggybank fight with plain hits until their effects arrive in Phase 4. Facing: all 40 checked;
+  none needs flipping.
+- **Mentors:** PixelLab made the Borrowers' Bridges, Guildworks and Compound Orchard mentors (3
+  generations, with your OK). The trial then ran out (the free daily bonus counts down with paid
+  generations), so Stormwatch and Crossroads use the approved fallback: their archived v1 mentors,
+  pixelized, until PixelLab can make them. Prompts are saved in `assets-src/pixellab/README.md`.
+  Each new mentor has a hello and three tips: **drafts for your review** (`src/data/dialogue.ts`).
+- **Portals:** the four portals on the Crossroads portal ring lead to the bonus zones. They open
+  after all six bosses (Money Check 2 joins that rule in Phase 5); until then the mentor explains.
+  Walking out of a bonus zone puts you back in front of its portal.
+- **Bonus-zone questions** mix all six topics, weighted 1 + 2 × (1 − accuracy) toward the weakest
+  (tested: a 0% topic comes up about 3× as often as a 100% one).
+- **Pet following:** the equipped pet trails a few steps behind. The Bull Calf walks with its own
+  4-direction cycle; other pets hop and turn. Pets become obtainable in Phase 4 (shop, reward cards).
+- **World map:** each island button now shows its topic and state (★ open, ✓ cleared, 🔒 locked,
+  🌀 bonus via the portals).
+- **Dev tools (`?dev=1`, dev server only):** every zone open; a **map editor** (draw walk and
+  blocked polygons, drag points, entry, NPC, monster, portal and exit markers, then Save, which
+  writes `src/data/rooms/<zone>.json` through a dev-only endpoint and reloads back into the same
+  room); and a test panel (jump to any screen, equip any pet, +500 coins).
+- Tests: 63 unit tests; the smoke test still passes (its walks were lengthened after one flaky run
+  on a slow frame rate).

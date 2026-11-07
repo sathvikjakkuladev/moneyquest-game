@@ -52,3 +52,9 @@ export function characterAnims(scene: Phaser.Scene, id: string): void {
       if (!scene.anims.exists(key)) scene.anims.create({ key, frames: frames.map((frame) => ({ key: c.atlas, frame })), frameRate: anim === 'walk' ? 10 : 8, repeat: anim === 'walk' || anim === 'idle' ? -1 : 0 });
     }
 }
+
+/** v1 art pixelized by the importer (pets, Bull Calf walk cycle). */
+export function queueV1px(scene: Phaser.Scene, key: string): void {
+  const a = manifest.v1px[key];
+  if (a && a.json && !scene.textures.exists(a.atlas)) scene.load.atlas(a.atlas, url(a.image), url(a.json));
+}

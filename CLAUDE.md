@@ -45,6 +45,12 @@ no enums, namespaces or constructor parameter properties.
 - **Ask on real decisions** (gameplay rules, cutting features, missing assets). Small ones: pick
   something sensible and note it in `PLAN.md`.
 
+## Dev tools (`?dev=1`, dev server only)
+
+All zones open, a map editor (Save writes `src/data/rooms/<zone>.json` through a dev-only Vite
+endpoint and reloads into the same room) and a test panel (jump to any screen, equip a pet, coins).
+None of it is in the production build.
+
 ## Rendering (pixel art throughout)
 
 - Internal resolution 640×360, Phaser `pixelArt: true`, nearest-neighbour everywhere. Whole-number

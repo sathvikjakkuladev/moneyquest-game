@@ -15,6 +15,12 @@ import { Onboarding } from './ui/Onboarding.tsx';
 import { Title } from './ui/Title.tsx';
 import { H, useStage, W } from './ui/useStage.ts';
 import { WorldButtons } from './ui/WorldButtons.tsx';
+import { devMode } from './core/unlocks.ts';
+import { DevPanel } from './dev/DevPanel.tsx';
+import { MapEditor } from './dev/MapEditor.tsx';
+
+// import.meta.env.DEV is false in the production build, so the dev tools are dropped from it entirely.
+const DEV = import.meta.env.DEV && devMode();
 
 /** Phaser draws the 640×360 pixel world; React draws all text and buttons on top in real CSS pixels. */
 export function App() {
@@ -70,6 +76,8 @@ export function App() {
               <Hud />
               <Prompt />
               <DPad />
+              {DEV && <DevPanel />}
+              {DEV && <MapEditor stage={stage} />}
             </>
           )}
           {screen === 'play' && kind === 'world' && <WorldButtons />}

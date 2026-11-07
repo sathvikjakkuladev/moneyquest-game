@@ -4005,6 +4005,66 @@
     "south-west": "rot_south-west"
    }
   },
+  "mentor_borrowers_bridges": {
+   "atlas": "chr:mentor_borrowers_bridges",
+   "image": "characters/mentor_borrowers_bridges.webp",
+   "json": "characters/mentor_borrowers_bridges.json",
+   "size": 92,
+   "foot": 79,
+   "height": 70,
+   "source": "pixellab-extra",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "south-east": "rot_south-east",
+    "east": "rot_east",
+    "north-east": "rot_north-east",
+    "north": "rot_north",
+    "north-west": "rot_north-west",
+    "west": "rot_west",
+    "south-west": "rot_south-west"
+   }
+  },
+  "mentor_compound_orchard": {
+   "atlas": "chr:mentor_compound_orchard",
+   "image": "characters/mentor_compound_orchard.webp",
+   "json": "characters/mentor_compound_orchard.json",
+   "size": 92,
+   "foot": 79,
+   "height": 69,
+   "source": "pixellab-extra",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "south-east": "rot_south-east",
+    "east": "rot_east",
+    "north-east": "rot_north-east",
+    "north": "rot_north",
+    "north-west": "rot_north-west",
+    "west": "rot_west",
+    "south-west": "rot_south-west"
+   }
+  },
+  "mentor_guildworks": {
+   "atlas": "chr:mentor_guildworks",
+   "image": "characters/mentor_guildworks.webp",
+   "json": "characters/mentor_guildworks.json",
+   "size": 92,
+   "foot": 79,
+   "height": 69,
+   "source": "pixellab-extra",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "south-east": "rot_south-east",
+    "east": "rot_east",
+    "north-east": "rot_north-east",
+    "north": "rot_north",
+    "north-west": "rot_north-west",
+    "west": "rot_west",
+    "south-west": "rot_south-west"
+   }
+  },
   "merchant": {
    "atlas": "chr:merchant",
    "image": "characters/merchant.webp",
@@ -4023,6 +4083,46 @@
     "north-west": "rot_north-west",
     "west": "rot_west",
     "south-west": "rot_south-west"
+   }
+  },
+  "mentor_stormwatch_coast": {
+   "atlas": "chr:mentor_stormwatch_coast",
+   "image": "characters/mentor_stormwatch_coast.webp",
+   "json": "characters/mentor_stormwatch_coast.json",
+   "size": 72,
+   "foot": 72,
+   "height": 64,
+   "source": "v1-pixelized",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "west": "rot_west",
+    "east": "rot_east",
+    "north": "rot_north",
+    "south-west": "rot_west",
+    "south-east": "rot_east",
+    "north-west": "rot_west",
+    "north-east": "rot_east"
+   }
+  },
+  "mentor_crossroads_observatory": {
+   "atlas": "chr:mentor_crossroads_observatory",
+   "image": "characters/mentor_crossroads_observatory.webp",
+   "json": "characters/mentor_crossroads_observatory.json",
+   "size": 72,
+   "foot": 72,
+   "height": 64,
+   "source": "v1-pixelized",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "west": "rot_west",
+    "east": "rot_east",
+    "north": "rot_north",
+    "south-west": "rot_west",
+    "south-east": "rot_east",
+    "north-west": "rot_west",
+    "north-east": "rot_east"
    }
   }
  },
@@ -4111,5 +4211,5 @@
   }
  },
  "worldMap": "v1px/world_map.webp",
- "totalBytes": 1502253
+ "totalBytes": 1537800
 }

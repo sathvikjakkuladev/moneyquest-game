@@ -24,7 +24,7 @@ async function teleport(page: Page, x: number, y: number) {
   await page.evaluate(([x, y]) => (window as unknown as { __mq: Hooks }).__mq.teleport(x!, y!), [x, y]);
 }
 /** Walk from (x, y) by holding a key for a moment. */
-async function walk(page: Page, x: number, y: number, key: string, ms = 400) {
+async function walk(page: Page, x: number, y: number, key: string, ms = 800) {
   await teleport(page, x, y);
   await page.keyboard.down(key);
   await page.waitForTimeout(ms);
@@ -71,7 +71,7 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   await expect.poll(() => screen(page)).toBe('great_hall');
   await walk(page, 320, 330, 'ArrowDown');
   await expect(page.getByRole('button', { name: 'Piggybank Village' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Borrowers' Bridges, coming soon/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Borrowers' Bridges, locked/ })).toBeDisabled();
   await shot(page, '05-world');
   await page.getByRole('button', { name: 'Piggybank Village' }).click();
 

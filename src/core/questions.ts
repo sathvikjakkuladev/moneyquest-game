@@ -61,3 +61,19 @@ export function show(q: Question, rng: Rng): Shown {
   const order = shuffle([0, 1, 2, 3], rng);
   return { id: q.id, topic: q.topic, question: q.question, options: order.map((i) => q.options[i]!), correct: order.indexOf(q.correct), explanation: q.explanation };
 }
+
+/**
+ * Bonus zones mix all six topics, weighted toward the player's weakest: weight = 1 + 2 × (1 − accuracy),
+ * so a topic answered 0% right is 3× as likely as one answered 100% right. Topics not yet tried
+ * count as 50%.
+ */
+export function pickTopic(accuracy: QuestionState['accuracy'], topics: readonly Topic[], rng: Rng): Topic {
+  const w = topics.map((t) => {
+    const a = accuracy[t];
+    const acc = a && a.answered ? a.correct / a.answered : 0.5;
+    return 1 + 2 * (1 - acc);
+  });
+  let r = rng() * w.reduce((x, y) => x + y, 0);
+  for (let i = 0; i < topics.length; i++) if ((r -= w[i]!) < 0) return topics[i]!;
+  return topics[topics.length - 1]!;
+}

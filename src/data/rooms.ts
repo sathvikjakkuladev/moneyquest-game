@@ -2,20 +2,21 @@
 // (src/data/rooms/<zone>.json, 640×360), seeded from the pack's rooms.json plus collision.
 
 import type { Poly, Pt } from '../core/geometry.ts';
-import coinAcademy from './rooms/coin_academy.json';
-import piggybank from './rooms/piggybank_village.json';
 
 export type Facing = 'south' | 'north' | 'east' | 'west';
 export interface RoomExit { edge: 'left' | 'right' | 'top' | 'bottom'; range: [number, number]; to: string; enterAt: Pt | null }
 export interface RoomNpc { id: string; sprite: string; x: number; y: number; face: Facing }
 export interface RoomMonster { id: string; x: number; y: number }
-export interface Screen { exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[] }
+export interface Portal { at: Pt; color: string; to: string }
+export interface Screen { exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[]; portals?: Portal[] }
 export interface Rooms { zone: string; start: string; screens: Record<string, Screen> }
 
-export const ROOMS: Record<string, Rooms> = {
-  coin_academy: coinAcademy as unknown as Rooms,
-  piggybank_village: piggybank as unknown as Rooms,
-};
+const files = import.meta.glob<Rooms>('./rooms/*.json', { eager: true, import: 'default' });
+export const ROOMS: Record<string, Rooms> = Object.fromEntries(Object.values(files).map((r) => [r.zone, r]));
+
+/** The bonus-zone portals on the Crossroads portal ring: stand in front of one to step through. */
+export const PORTAL_REACH = 34;
+export const portalSpot = (p: Portal): Pt => [p.at[0], 150];
 
 export const EXIT_STRIP = 14; // px along the screen edge that triggers an exit
 

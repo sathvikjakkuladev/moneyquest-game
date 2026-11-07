@@ -1,0 +1,36 @@
+{
+  "group_id": "28c10ee0-8a5c-48ec-92d0-d17043470635",
+  "states": [
+    {
+      "character": {
+        "id": "4ea69b4c-7fb0-4b74-b2b0-52fcad9c96cd",
+        "name": "Idle",
+        "prompt": "cheerful chibi workshop mentor, big round head, big friendly eyes, red bandana, rolled-up sleeves, brown leather apron, holding a small hammer, bright saturated cozy cartoon fantasy colors",
+        "size": {
+          "width": 92,
+          "height": 92
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-11-07T05:56:29.156198+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-11-07T05:58:36.487127"
+}

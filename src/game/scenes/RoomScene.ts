@@ -4,10 +4,13 @@ import type { Pt } from '../../core/geometry.ts';
 import { canStand, step } from '../../core/geometry.ts';
 import { monster, zoneRegulars } from '../../core/monsters.ts';
 import { bossReady } from '../../core/progression.ts';
-import { HEADMASTER, headmasterTalk, MERCHANT, MERCHANT_TALK, PENNY, PENNY_HELLO, PENNY_TIPS, SHOPKEEPER_TALK } from '../../data/dialogue.ts';
+import { HEADMASTER, headmasterTalk, MENTORS, MERCHANT, MERCHANT_TALK, SHOPKEEPER_TALK } from '../../data/dialogue.ts';
+import { canEnter } from '../../core/unlocks.ts';
+import { zoneById } from '../../data/zones.ts';
+import { Follower, queuePet } from '../pet.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
 import type { Facing, Screen } from '../../data/rooms.ts';
-import { exitAt, exitTarget, ROOMS } from '../../data/rooms.ts';
+import { exitAt, exitTarget, PORTAL_REACH, portalSpot, ROOMS } from '../../data/rooms.ts';
 import { slot } from '../../state/save.ts';
 import type { SceneReq } from '../../state/session.ts';
 import { useSession } from '../../state/session.ts';
@@ -15,6 +18,7 @@ import { addChar, pose } from '../chars.ts';
 import { pad, roomActions } from '../input.ts';
 import { manifest, monsterAnims, queueCharacter, queueMonster, queueScreens, screenKey } from '../manifest.ts';
 import { reducedMotion } from '../motion.ts';
+import { currentRoom } from '../current.ts';
 
 export const PLAYER = 'player_coin_wizard';
 const SPEED = 120; // px per second on the 640×360 canvas
@@ -22,8 +26,8 @@ const DARK_SCREENS = new Set(['piggybank_village/cottages', 'borrowers_bridges/t
 
 interface Thing { kind: 'npc' | 'monster'; id: string; name: string; x: number; y: number; range: number; sprite: Phaser.GameObjects.Sprite; charId?: string; beaten?: boolean }
 
-const greeted = new Set<string>(); // the mentor says hello once per session
-let tip = 0;
+const greeted = new Set<string>(); // each mentor says hello once per session
+const tips: Record<string, number> = {};
 
 /** One screen of a location: background, NPCs, monsters, exits and the walking player. */
 export class RoomScene extends Phaser.Scene {
@@ -43,6 +47,8 @@ export class RoomScene extends Phaser.Scene {
   private wasBlocked = true;
   private pressed = false;
   private leaving = false;
+  private pet: Follower | null = null;
+  private atPortal: string | null = null;
 
   constructor() {
     super('room');
@@ -54,29 +60,35 @@ export class RoomScene extends Phaser.Scene {
     const rooms = ROOMS[req.zone]!;
     this.screenName = req.screen && rooms.screens[req.screen] ? req.screen : rooms.start;
     this.screen = rooms.screens[this.screenName]!;
-    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set() });
+    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, atPortal: null });
   }
 
   preload(): void {
     queueScreens(this, this.zone);
-    for (const n of this.screen.npcs) queueCharacter(this, n.sprite);
+    for (const n of this.screen.npcs) if (manifest.characters[n.sprite]) queueCharacter(this, n.sprite);
     for (const m of this.screen.monsters) queueMonster(this, m.id);
     queueCharacter(this, PLAYER);
+    if (!this.req.attract) queuePet(this, slot().inventory.pet);
   }
 
   create(): void {
+    Object.assign(currentRoom, { zone: this.zone, screen: this.screenName });
     this.add.image(0, 0, screenKey(this.zone, this.screenName)).setOrigin(0).setScale(2);
     if (DARK_SCREENS.has(`${this.zone}/${this.screenName}`)) this.add.rectangle(0, 0, 640, 360, 0xffffff, 0.08).setOrigin(0).setBlendMode(Phaser.BlendModes.ADD);
-    for (const n of this.screen.npcs) this.addNpc(n.id, n.sprite, n.x, n.y, n.face);
+    // NPCs whose art isn't made yet are skipped (noted in ASSET_REPORT.md).
+    for (const n of this.screen.npcs) if (manifest.characters[n.sprite]) this.addNpc(n.id, n.sprite, n.x, n.y, n.face);
     this.addMonsters();
 
     if (!this.req.attract) {
-      const at = this.req.at ?? this.screen.entries[this.req.entry ?? ''] ?? Object.values(this.screen.entries)[0] ?? [320, 300];
+      const at = this.req.at ?? this.screen.entries[this.req.entry ?? ''] ?? this.portalArrival() ?? Object.values(this.screen.entries)[0] ?? [320, 300];
       this.player = addChar(this, PLAYER, at[0], at[1]);
       this.face = at[1] > 180 ? 'north' : 'south';
       pose(this.player, PLAYER, 'idle', this.face);
       this.inExit = exitAt(this.screen, at) !== null;
       for (const t of this.things) if (t.kind === 'monster' && this.dist(at, t) < t.range) this.touching.add(t.id);
+      this.atPortal = this.portalNear(at);
+      const petId = slot().inventory.pet;
+      if (petId && manifest.v1px.pets) this.pet = new Follower(this, petId, at);
     }
 
     const kb = this.input.keyboard!;
@@ -112,7 +124,7 @@ export class RoomScene extends Phaser.Scene {
     const s = addChar(this, charId, x, y);
     pose(s, charId, 'idle', face);
     if (!manifest.characters[charId]!.anims.idle) this.tweens.add({ targets: s, y: y - 1, duration: 700, yoyo: true, repeat: -1, ease: 'Stepped', easeParams: [1] }); // gentle bob
-    const name = id === 'headmaster' ? HEADMASTER.name : id === 'merchant' ? MERCHANT.name : id === 'shopkeeper' ? 'Shopkeeper' : PENNY.name;
+    const name = id === 'headmaster' ? HEADMASTER.name : id === 'merchant' ? MERCHANT.name : id === 'shopkeeper' ? 'Shopkeeper' : (MENTORS[this.zone]?.speaker.name ?? 'Mentor');
     this.things.push({ kind: 'npc', id, name, x, y, range: 56, sprite: s, charId });
   }
 
@@ -133,15 +145,28 @@ export class RoomScene extends Phaser.Scene {
     }
   }
 
+  /** The zone's mentor says hello on your first visit this session, until you've beaten something there. */
   private greet(): void {
-    if (this.zone !== 'piggybank_village' || greeted.has(this.zone)) return;
+    const m = MENTORS[this.zone];
+    if (!m || greeted.has(this.zone) || !manifest.characters[m.speaker.sprite]) return;
     greeted.add(this.zone);
-    if (!slot().progress.defeated.some((id) => monster(id).zone === this.zone)) this.time.delayedCall(400, () => useSession.getState().say(PENNY, [...PENNY_HELLO, PENNY_TIPS[0]!]));
+    if (!slot().progress.defeated.some((id) => monster(id).zone === this.zone)) this.time.delayedCall(400, () => useSession.getState().say(m.speaker, [...m.hello, m.tips[0]!]));
+  }
+
+  /** Coming back out of a bonus zone: stand in front of its portal. */
+  private portalArrival(): Pt | null {
+    const from = this.req.entry?.replace(/^from_/, '');
+    const p = this.screen.portals?.find((x) => x.to === from);
+    return p ? [portalSpot(p)[0], portalSpot(p)[1] + 30] : null;
+  }
+
+  private portalNear(at: Pt): string | null {
+    return this.screen.portals?.find((p) => Math.hypot(at[0] - portalSpot(p)[0], at[1] - portalSpot(p)[1]) < PORTAL_REACH)?.to ?? null;
   }
 
   private blocked(): boolean {
     const s = useSession.getState();
-    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null;
+    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null || s.editing;
   }
 
   private tap(x: number, y: number): void {
@@ -163,16 +188,29 @@ export class RoomScene extends Phaser.Scene {
       if (t.id === 'headmaster') s.say(HEADMASTER, headmasterTalk(slot().progress.zonesCleared));
       else if (t.id === 'merchant') s.say(MERCHANT, MERCHANT_TALK);
       else if (t.id === 'shopkeeper') s.say({ name: 'Shopkeeper', sprite: 'merchant' }, SHOPKEEPER_TALK);
-      else s.say(PENNY, [PENNY_TIPS[tip++ % PENNY_TIPS.length]!]);
+      else {
+        const m = MENTORS[this.zone]!;
+        const i = (tips[this.zone] = ((tips[this.zone] ?? 0) + 1) % m.tips.length);
+        s.say(m.speaker, [m.tips[i]!]);
+      }
       return;
     }
     const def = monster(t.id);
     if (def.boss) {
       const regs = zoneRegulars(def.zone);
       const done = regs.filter((id) => slot().progress.defeated.includes(id)).length;
-      if (done < regs.length) return s.say(PENNY, [`${def.name} won't fight yet. Beat the other monsters first (${done} of ${regs.length} done).`]);
+      const guide = MENTORS[this.zone]?.speaker ?? HEADMASTER;
+      if (done < regs.length) return s.say(guide, [`${def.name} won't fight yet. Beat the other monsters first (${done} of ${regs.length} done).`]);
     }
     s.fight(t.id, { kind: 'room', zone: this.zone, screen: this.screenName, at: [p.x, p.y] });
+  }
+
+  private travel(to: SceneReq): void {
+    this.leaving = true;
+    useSession.getState().setPrompt(null);
+    sfx('door');
+    this.cameras.main.fadeOut(this.fast() ? 60 : 180, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => useSession.getState().go(to));
   }
 
   /** Test hooks. */
@@ -215,17 +253,24 @@ export class RoomScene extends Phaser.Scene {
       pose(p, PLAYER, 'walk', this.face);
     } else pose(p, PLAYER, 'idle', this.face);
     p.setDepth(p.y);
+    currentRoom.player = [p.x, p.y];
+    this.pet?.update([p.x, p.y], Boolean(vx || vy), dtMs);
+
+    // Bonus-zone portals on the Crossroads portal ring.
+    const portal = this.portalNear([p.x, p.y]);
+    if (portal && portal !== this.atPortal) {
+      this.atPortal = portal;
+      if (canEnter(portal, slot().progress.zonesCleared, true)) return this.travel({ kind: 'room', zone: portal, entry: 'from_crossroads_observatory/portal_ring' });
+      useSession.getState().say(MENTORS.crossroads_observatory!.speaker, [`The ${zoneById(portal).name} portal is still sealed. It opens after you beat all six zone bosses.`]);
+      return;
+    }
+    if (!portal) this.atPortal = null;
 
     const exit = exitAt(this.screen, [p.x, p.y]);
     if (exit && !this.inExit) {
-      this.leaving = true;
       const t = exitTarget(this.zone, exit);
-      sfx('door');
-      this.cameras.main.fadeOut(this.fast() ? 60 : 180, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () =>
-        useSession.getState().go(t.kind === 'world' ? { kind: 'world' } : { kind: 'room', zone: t.zone, screen: t.screen, at: exit.enterAt ?? undefined, entry: exit.enterAt ? undefined : 'from_world_map' }),
-      );
-      return;
+      // Arrival: the exit's enter_at, else (crossing into another zone) that screen's "from_<zone>" spot.
+      return this.travel(t.kind === 'world' ? { kind: 'world' } : { kind: 'room', zone: t.zone, screen: t.screen, at: exit.enterAt ?? undefined, entry: exit.enterAt ? undefined : `from_${this.zone}` });
     }
     this.inExit = exit !== null;
 

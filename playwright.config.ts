@@ -6,7 +6,7 @@ const url = process.env.E2E_URL;
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 90_000,
-  use: { baseURL: url ?? 'http://localhost:4173', viewport: { width: 1280, height: 720 } },
+  use: { baseURL: url ?? 'http://localhost:4173', viewport: { width: 1280, height: 720 }, screenshot: 'only-on-failure' },
   webServer: url ? undefined : { command: 'npm run build && npm run preview -- --port 4173 --strictPort', port: 4173, reuseExistingServer: true, timeout: 180_000 },
   projects: [{ name: 'chrome', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
 });

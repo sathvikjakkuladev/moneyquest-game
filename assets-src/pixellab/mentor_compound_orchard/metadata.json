@@ -1,0 +1,36 @@
+{
+  "group_id": "f820f289-eccb-4768-a447-539a9964e9f4",
+  "states": [
+    {
+      "character": {
+        "id": "8e4f447a-9d35-4f56-b586-170805fd5cf8",
+        "name": "Idle",
+        "prompt": "gentle chibi orchard keeper mentor, big round head, big kind eyes, freckles, green overalls, straw hat with a red apple, holding a small watering can, bright saturated cozy cartoon fantasy colors",
+        "size": {
+          "width": 92,
+          "height": 92
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-11-07T05:58:35.556137+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-11-07T06:01:25.604474"
+}

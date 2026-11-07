@@ -1,0 +1,329 @@
+{
+ "note": "Game-side room layout (640×360). Edit here or with the ?dev=1 map editor; never in the asset pack.",
+ "zone": "nebula_grove",
+ "start": "forest_portal",
+ "screens": {
+  "forest_portal": {
+   "exits": [
+    {
+     "edge": "bottom",
+     "range": [
+      280,
+      360
+     ],
+     "to": "crossroads_observatory/portal_ring",
+     "enterAt": null
+    },
+    {
+     "edge": "top",
+     "range": [
+      270,
+      350
+     ],
+     "to": "pond_path",
+     "enterAt": [
+      290,
+      310
+     ]
+    }
+   ],
+   "entries": {
+    "from_crossroads_observatory/portal_ring": [
+     320,
+     310
+    ],
+    "from_pond_path": [
+     310,
+     50
+    ]
+   },
+   "walk": [
+    [
+     [
+      65,
+      0
+     ],
+     [
+      575,
+      0
+     ],
+     [
+      575,
+      360
+     ],
+     [
+      65,
+      360
+     ]
+    ]
+   ],
+   "block": [
+    [
+     [
+      205,
+      235
+     ],
+     [
+      255,
+      235
+     ],
+     [
+      255,
+      360
+     ],
+     [
+      205,
+      360
+     ]
+    ],
+    [
+     [
+      325,
+      235
+     ],
+     [
+      370,
+      235
+     ],
+     [
+      370,
+      360
+     ],
+     [
+      325,
+      360
+     ]
+    ]
+   ],
+   "npcs": [],
+   "monsters": [
+    {
+     "id": "mon_starmoth",
+     "x": 170,
+     "y": 190
+    },
+    {
+     "id": "mon_nebula_lynx",
+     "x": 470,
+     "y": 210
+    }
+   ]
+  },
+  "pond_path": {
+   "exits": [
+    {
+     "edge": "bottom",
+     "range": [
+      250,
+      330
+     ],
+     "to": "forest_portal",
+     "enterAt": [
+      310,
+      50
+     ]
+    },
+    {
+     "edge": "top",
+     "range": [
+      250,
+      330
+     ],
+     "to": "star_tree",
+     "enterAt": [
+      290,
+      310
+     ]
+    }
+   ],
+   "entries": {
+    "from_forest_portal": [
+     290,
+     310
+    ],
+    "from_star_tree": [
+     290,
+     50
+    ]
+   },
+   "walk": [
+    [
+     [
+      110,
+      0
+     ],
+     [
+      640,
+      0
+     ],
+     [
+      640,
+      360
+     ],
+     [
+      110,
+      360
+     ]
+    ]
+   ],
+   "block": [
+    [
+     [
+      390,
+      160
+     ],
+     [
+      605,
+      160
+     ],
+     [
+      605,
+      310
+     ],
+     [
+      390,
+      310
+     ]
+    ],
+    [
+     [
+      195,
+      160
+     ],
+     [
+      285,
+      160
+     ],
+     [
+      285,
+      215
+     ],
+     [
+      195,
+      215
+     ]
+    ],
+    [
+     [
+      590,
+      150
+     ],
+     [
+      640,
+      150
+     ],
+     [
+      640,
+      340
+     ],
+     [
+      590,
+      340
+     ]
+    ]
+   ],
+   "npcs": [],
+   "monsters": [
+    {
+     "id": "mon_void_sprout",
+     "x": 440,
+     "y": 110
+    }
+   ]
+  },
+  "star_tree": {
+   "exits": [
+    {
+     "edge": "bottom",
+     "range": [
+      250,
+      330
+     ],
+     "to": "pond_path",
+     "enterAt": [
+      290,
+      50
+     ]
+    }
+   ],
+   "entries": {
+    "from_pond_path": [
+     290,
+     310
+    ]
+   },
+   "walk": [
+    [
+     [
+      110,
+      180
+     ],
+     [
+      180,
+      120
+     ],
+     [
+      420,
+      120
+     ],
+     [
+      490,
+      180
+     ],
+     [
+      460,
+      265
+     ],
+     [
+      330,
+      285
+     ],
+     [
+      330,
+      360
+     ],
+     [
+      250,
+      360
+     ],
+     [
+      250,
+      285
+     ],
+     [
+      140,
+      265
+     ]
+    ]
+   ],
+   "block": [
+    [
+     [
+      235,
+      60
+     ],
+     [
+      360,
+      60
+     ],
+     [
+      360,
+      155
+     ],
+     [
+      235,
+      155
+     ]
+    ]
+   ],
+   "npcs": [],
+   "monsters": [
+    {
+     "id": "boss_galaxy_stag",
+     "x": 300,
+     "y": 225
+    }
+   ]
+  }
+ }
+}

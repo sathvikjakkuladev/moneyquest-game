@@ -296,3 +296,37 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   room); and a test panel (jump to any screen, equip any pet, +500 coins).
 - Tests: 63 unit tests; the smoke test still passes (its walks were lengthened after one flaky run
   on a slow frame rate).
+
+### Phase 4 — all six topic zones, spells, shop and reward cards (done 2026-11-07)
+- **Every topic-zone monster effect** is a data rule (`src/data/effectRules.ts`, from the approved
+  archive table) run by a rewritten battle engine, with a unit test for each of the 24 monsters:
+  coin steals, timers (never for Explorer), splitting, ramping damage, late fees, a chained answer
+  (3 taps to free), pot tax, napping, random damage, burn ramp, attacking first, the bubble, a
+  weakened spell, pet knock-out, slow, shield breaking, washing away buffs, the catastrophe hit, a
+  Whirlpool that swaps the answer buttons, a fake "free tip", inflation, fog, the riddle (double
+  damage) and balancing health bars. Burnout Blaze's Anvil Drop is the only plain hit (its effect
+  text is "Big single hit"). Bonus-zone effects come with Phase 5.
+- **All 7 spells:** Save Shield, Credit Cleanse (clears every debuff and pending trick), Paycheck
+  Strike (+3 coins to the pot), Compound Burst (+3 per right answer in a row), Insurance Barrier
+  (blocks the next hit over 12), Wise Choice (removes a wrong answer next question). The card shows
+  the current spell and its damage; ◂ ▸ or Q/E switch.
+- **Insurance Scroll:** Keeper Gale (Stormwatch) offers it for 15 coins, a premium. It cuts Perfect
+  Storm to the 6-point deductible (then it's used up) and stops Mishap Crab breaking your shield.
+- **Pets in battle:** the equipped pet stands beside you and adds +2 damage (+4 legendary: Bull Calf,
+  Professor Owl); Crash Treant can knock it out for the rest of the battle.
+- **Hats:** drawn in code as pixel maps (`src/data/hats.ts`): Laurel Wreath (reward), Banker Top Hat,
+  Star Wizard Hat, Coin Crown. Each animation frame is measured once to find the top of the head, so
+  hats follow the head when walking, turning, casting and in battle.
+- **Shop** (Banker Bix in the Great Hall, and the Piggybank shopkeeper): 3 hats and 7 pets for coins
+  (prices are drafts). The Laurel Wreath and Bull Calf are never for sale: `buy()` refuses them even
+  if called directly (tested). **Bag** (🎒) to wear or swap hats and pets.
+- **Reward cards** (🎁): type the code, scan the QR code with the camera (BarcodeDetector on
+  Chromebooks, the bundled jsQR on iPads, loaded only when the scanner opens; the camera never
+  sends anything), or open a `#/redeem/<code>` link (handled once a save is open). Each code works
+  once per save; a celebration shows the prize with "Wear it now" / "Bring it along".
+- XP, levels and zone unlock order were already in place (Phases 2–3).
+- **Housekeeping:** two unit tests had hardcoded one real printed card code. They now generate codes
+  for serial numbers that were never printed, and docs use a placeholder (`MB-W1234-ABCDE`). The
+  Phase 1 commit in git history still contains that one printed code (see the note to you).
+- Tests: 92 unit tests; two Playwright tests (the smoke test now also checks the shop, and a new
+  reward-card test covers the link, a typed dashed code, the celebration and once-per-save).

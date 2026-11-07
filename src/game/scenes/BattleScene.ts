@@ -11,6 +11,9 @@ import { beam, burst, coinsFly, shieldRing, tween, wait } from '../fx.ts';
 import { battleKey, manifest, monsterAnims, queueBattleBg, queueCharacter, queueMonster } from '../manifest.ts';
 import { reducedMotion } from '../motion.ts';
 import { PLAYER } from './RoomScene.ts';
+import { item } from '../../data/items.ts';
+import { queuePet } from '../pet.ts';
+import { Hat } from '../hats.ts';
 
 // Layout on the 640×360 canvas. The question card covers the bottom, so everyone stands above it.
 const FEET = 210;
@@ -24,6 +27,10 @@ export class BattleScene extends Phaser.Scene {
   private foeId = '';
   private foeTop = 0;
   private shield: Phaser.GameObjects.Graphics | null = null;
+  private barrier: Phaser.GameObjects.Graphics | null = null;
+  private bubble: Phaser.GameObjects.Graphics | null = null;
+  private pet: Phaser.GameObjects.Sprite | null = null;
+  private hat: Hat | null = null;
   private fast = false;
   private zone = '';
 
@@ -36,12 +43,17 @@ export class BattleScene extends Phaser.Scene {
     this.foeId = b.monster.id;
     this.zone = b.monster.zone;
     this.shield = null;
+    this.barrier = null;
+    this.bubble = null;
+    this.pet = null;
+    this.hat = null;
   }
 
   preload(): void {
     queueBattleBg(this, this.zone);
     queueMonster(this, this.foeId);
     queueCharacter(this, PLAYER);
+    queuePet(this, slot().inventory.pet);
   }
 
   create(): void {
@@ -51,6 +63,16 @@ export class BattleScene extends Phaser.Scene {
 
     this.player = addChar(this, PLAYER, PLAYER_X, FEET);
     pose(this.player, PLAYER, 'idle', 'east');
+    const hatId = slot().inventory.hat;
+    if (hatId) this.hat = new Hat(this, this.player, hatId);
+    // The equipped pet stands beside you (half your height) and helps each spell.
+    const petId = slot().inventory.pet;
+    const it = petId ? item(petId) : undefined;
+    if (it && manifest.v1px.pets) {
+      const walk = it.art === 'pet_bull_calf';
+      this.pet = this.add.sprite(PLAYER_X - 46, FEET, walk ? manifest.v1px.pet_bull_calf_walk!.atlas : manifest.v1px.pets.atlas, walk ? 'right_0' : it.art).setOrigin(0.5, 1).setFlipX(!walk);
+      this.tweens.add({ targets: this.pet, y: FEET - 2, duration: 500, yoyo: true, repeat: -1, ease: 'Stepped', easeParams: [2] });
+    }
 
     // Bosses are drawn at 2× in battle (192 px, 3× the player); regular monsters at 1×.
     const info = manifest.monsters[this.foeId]!;
@@ -65,6 +87,10 @@ export class BattleScene extends Phaser.Scene {
     });
     this.events.once('shutdown', off);
     void this.intro();
+  }
+
+  override update(): void {
+    this.hat?.update();
   }
 
   private async intro(): Promise<void> {
@@ -87,12 +113,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private async play(b: Battle): Promise<void> {
-    for (const e of b.events) await this.show(e);
+    for (const e of b.events) await this.show(e, b);
     await wait(this, this.fast ? 80 : 200);
     useSession.getState().animated();
   }
 
-  private async show(e: BattleEvent): Promise<void> {
+  private async show(e: BattleEvent, b: Battle): Promise<void> {
     const f = this.fast;
     const s = useSession.getState();
     const foeMid = (FEET + this.foeTop) / 2;
@@ -123,6 +149,14 @@ export class BattleScene extends Phaser.Scene {
         await this.once(this.foe, `${this.foeId}_attack`, idleF, 350);
         return;
       case 'playerHurt':
+        if (this.bubble) {
+          this.bubble.destroy();
+          this.bubble = null;
+        }
+        if (this.barrier && !b.state.barrier) {
+          this.barrier.destroy();
+          this.barrier = null;
+        }
         if (this.shield) {
           const g = this.shield;
           this.shield = null;
@@ -146,6 +180,40 @@ export class BattleScene extends Phaser.Scene {
         return;
       case 'warning':
         return; // shown on the question card
+      case 'buff':
+        burst(this, PLAYER_X, playerMid, 0x91a7ff, 10, 28, f);
+        if (b.state.barrier && !this.barrier) this.barrier = shieldRing(this, PLAYER_X, playerMid, 40, SPELLS.insurance_barrier.color);
+        s.float(PLAYER_X, FEET - 100, '✨', 'info');
+        return;
+      case 'potTaken':
+        sfx('coins');
+        s.float(FOE_X, this.foeTop - 10, `-${e.amount} coins from the pot`, 'coin');
+        return;
+      case 'monsterGrows':
+        s.float(FOE_X, this.foeTop - 10, e.text.includes('split') ? 'Split!' : 'Burning hotter!', 'info');
+        await tween(this, { targets: this.foe, scale: this.foe.scale * 1.12, duration: f ? 60 : 160, yoyo: true });
+        return;
+      case 'hpBalanced':
+        s.float(320, 60, 'Scales balanced!', 'info');
+        await wait(this, f ? 100 : 300);
+        return;
+      case 'petOut':
+        if (this.pet) await tween(this, { targets: this.pet, alpha: 0.25, angle: -90, duration: f ? 80 : 300 });
+        s.float(PLAYER_X - 46, FEET - 50, 'Pet knocked out!', 'info');
+        return;
+      case 'woke':
+        s.float(PLAYER_X, FEET - 90, 'Zzz… awake!', 'info');
+        await wait(this, f ? 100 : 400);
+        return;
+      case 'bubble': {
+        this.bubble?.destroy();
+        const g = this.add.graphics().setDepth(850);
+        const r = 30 + e.size * 10;
+        g.lineStyle(2, 0xffffff, 0.9).strokeCircle(FOE_X, foeMid, r).fillStyle(0xa5d8ff, 0.2).fillCircle(FOE_X, foeMid, r);
+        this.bubble = g;
+        await wait(this, f ? 100 : 300);
+        return;
+      }
       case 'won':
         await this.once(this.foe, `${this.foeId}_defeat`, null, 400);
         this.foe.setVisible(false);

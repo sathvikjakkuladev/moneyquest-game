@@ -56,3 +56,13 @@ canvas { display: block; image-rendering: pixelated; }
 .card-in { animation: card-in 0.22s ease-out; }
 @keyframes float-up { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -36px); opacity: 0; } }
 .float-up { animation: float-up 1s ease-out forwards; }
+
+.opt-removed { opacity: 0.6; }
+.opt-locked { background: repeating-linear-gradient(45deg, #e9ecef 0 10px, #ced4da 10px 20px) !important; }
+.opt-fog { background: #dee2e6 !important; color: #343a40; }
+.scam-tip { background: linear-gradient(90deg, #ffe066, #ff8787, #ffe066); color: #3b0a0a; }
+
+/* Reward celebration confetti (off with reduced motion, via the global rule above). */
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti span { position: absolute; top: -12px; width: 8px; height: 12px; animation: confetti-fall 2.4s linear infinite; }
+@keyframes confetti-fall { to { transform: translateY(110vh) rotate(540deg); } }

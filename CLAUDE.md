@@ -32,7 +32,9 @@ no enums, namespaces or constructor parameter properties.
   with them. Never edit them or make a new secret; game rules go in `src/rewards/redeem.ts`. The
   printed code lists (`tests/fixtures/reward-cards/`) are gitignored and never committed.
 - **The Laurel Wreath (`hat-laurel`) and Bull Calf (`pet-bull`) are reward-only:** they must exist
-  and be visible in the game, and can never be bought (tested).
+  and be visible in the game, and can never be bought (`buy()` refuses them; tested).
+- **Never put a printed card code in the repo** (tests, docs, examples). Tests generate codes with
+  `makeCode()` for serials that were never printed; docs use `MB-W1234-ABCDE`.
 - **Generated files are never hand-edited:** `src/data/questions.json`, `src/data/monster_attacks.json`,
   `src/assets/manifest.json`, `public/assets/**`, `ASSET_REPORT.md`. Re-run the importer. Room
   layouts in `src/data/rooms/<zone>.json` are game-side and edited by hand or the `?dev=1` editor.

@@ -57,6 +57,14 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   await page.keyboard.press('Space');
   await expect(page.getByRole('dialog', { name: /Banker Bix/ })).toBeVisible();
   await closeDialogue(page);
+  // Then his shop opens: reward-card prizes are never for sale.
+  const shop = page.getByRole('dialog', { name: /Shop/ });
+  await expect(shop).toBeVisible();
+  await expect(shop.getByText('Coin Crown')).toBeVisible();
+  await expect(shop.getByText(/^Laurel Wreath$/)).toHaveCount(0);
+  await expect(shop.getByText(/^Bull Calf$/)).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(shop).toBeHidden();
 
   // Library and the Headmaster, then back down and out to the world map.
   await walk(page, 325, 40, 'ArrowUp');

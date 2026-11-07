@@ -12,6 +12,8 @@ updated at the end of every build phase.
 | Question bank: 180 questions with answers and explanations (`make-bank-question-bank.csv`) | **Claude** (Anthropic) | Chose the topics and grade bands, reviewed the questions |
 | Question fixes (`src/data/question-overrides.json`, 98 entries) | **Claude Code**, drafted for student review | Reviews and approves every change |
 | Mentor tips and NPC lines (`src/data/dialogue.ts`) | **Claude Code**, drafted for student review | Reviews for accuracy |
+| Hat pixel art (`src/data/hats.ts`) and spell effects | Drawn in code by **Claude Code** | Chose the hats and approved the look |
+| Monster effect rules (`src/data/effectRules.ts`) | **Claude Code**, from the effect table the student approved | Approved the rules |
 | Game code, build tools, tests, documentation (`game/`) | **Claude Code** (Anthropic) | Wrote the design brief, made the gameplay decisions, playtests each phase |
 | Reward-card codes (`src/rewards/rewardCodes.ts`, `rewardSecret.ts`) | Copied unchanged from the student's earlier MakeBank project (also built with Claude Code) | Printed and handed out the 110 cards |
 

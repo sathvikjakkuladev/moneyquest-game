@@ -18,10 +18,16 @@ import type { Speaker } from '../data/dialogue.ts';
 import { HELD_OUT } from '../data/moneyCheckForms.ts';
 import questionFile from '../data/questions.json';
 import { zoneById } from '../data/zones.ts';
+import { item } from '../data/items.ts';
+import { SCROLL } from '../core/shop.ts';
 import { sfx } from '../audio.ts';
 import { slot, useSave } from './save.ts';
 
 const BANK = (questionFile as unknown as QuestionFile).questions;
+const dropOne = (list: string[], id: string) => {
+  const i = list.indexOf(id);
+  return i < 0 ? list : [...list.slice(0, i), ...list.slice(i + 1)];
+};
 const BY_ID = new Map<string, Question>(BANK.map((q) => [q.id, q]));
 const rng = seeded(freshSeed());
 
@@ -31,19 +37,27 @@ export type SceneReq =
   | { kind: 'world' }
   | { kind: 'battle'; monsterId: string; back: SceneReq };
 
-export interface Dialogue { speaker: Speaker; lines: string[]; i: number; then?: () => void }
+export interface Choice { label: string; run: () => void }
+export interface Dialogue { speaker: Speaker; lines: string[]; i: number; then?: () => void; choices?: Choice[] }
 
 export type Phase = 'intro' | 'ask' | 'resolving' | 'right' | 'explain' | 'won' | 'lost';
-export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number }
+export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number; scrollUsed: boolean }
+
+/** This question's tricks, made concrete: which answer is chained, fogged, hinted or removed. */
+export interface Mods { lock: number | null; lockTaps: number; fog: number | null; fakeHint: number | null; removed: number | null; shuffle: boolean; riddle: boolean; nap: boolean }
+const NO_MODS: Mods = { lock: null, lockTaps: 0, fog: null, fakeHint: null, removed: null, shuffle: false, riddle: false, nap: false };
 
 export interface Battle {
   monster: MonsterDef;
+  mods: Mods;
+  order: number[]; // option index shown at each button position (the Whirlpool swaps two)
+  askedAt: number;
   pool: Pool;
   state: BattleState;
   q: Shown;
   phase: Phase;
   picked: number | null; // -1 = time ran out
-  last: 'right' | 'wrong' | 'slow' | null;
+  last: 'right' | 'wrong' | 'slow' | 'opening' | null;
   spell: SpellId;
   timer: (Timer & { since: number }) | null;
   events: BattleEvent[];
@@ -64,11 +78,17 @@ interface Session {
   float: (x: number, y: number, text: string, tone: Float['tone']) => void;
   scene: SceneReq | null;
   dialogue: Dialogue | null;
+  panel: 'shop' | 'bag' | 'redeem' | null;
+  setPanel: (p: Session['panel']) => void;
+  celebrate: string[] | null; // prizes just unlocked by a reward card
+  setCelebrate: (items: string[] | null) => void;
+  redeemCode: string | null; // a code from a #/redeem/ link, waiting for the redeem panel
+  setRedeemCode: (c: string | null) => void;
   prompt: string | null;
   battle: Battle | null;
   setScreen: (s: Session['screen']) => void;
   go: (s: SceneReq) => void;
-  say: (speaker: Speaker, lines: string[], then?: () => void) => void;
+  say: (speaker: Speaker, lines: string[], then?: () => void, choices?: Choice[]) => void;
   next: () => void;
   setPrompt: (p: string | null) => void;
 
@@ -76,6 +96,7 @@ interface Session {
   introDone: () => void;
   pickSpell: (s: SpellId) => void;
   answer: (i: number) => void;
+  shuffleNow: () => void;
   timeUp: () => void;
   animated: () => void;
   gotIt: () => void;
@@ -93,13 +114,42 @@ function nextQuestion(zone: string): { q: Shown; pool: Pool } {
   return { q: show(BY_ID.get(r.id)!, rng), pool };
 }
 
+
+/** Pick concrete answers for this turn's tricks. Fake hints and Wise Choice only ever point at wrong answers. */
+function makeMods(fx: engine.TurnFx, q: Shown): Mods {
+  const any = () => Math.floor(rng() * 4);
+  const wrongs = [0, 1, 2, 3].filter((i) => i !== q.correct);
+  const wrong = () => wrongs[Math.floor(rng() * wrongs.length)]!;
+  const removed = fx.removeOption ? wrong() : null;
+  const pick = (avoid: (number | null)[]) => {
+    for (let k = 0; k < 20; k++) {
+      const i = any();
+      if (!avoid.includes(i)) return i;
+    }
+    return any();
+  };
+  const lock = fx.lock ? pick([removed]) : null;
+  const fog = fx.fog ? pick([removed, lock]) : null;
+  return { lock, lockTaps: lock === null ? 0 : 3, fog, fakeHint: fx.fakeHint ? wrong() : null, removed, shuffle: !!fx.shuffle, riddle: !!fx.riddle, nap: !!fx.nap };
+}
+
 export const useSession = create<Session>()((set, get) => {
-  /** Next turn: fresh question, effect timers, card ready. */
-  const ask = (b: Battle): Battle => {
-    const pending = Boolean(b.state.pending.timer || b.state.pending.extraDamage);
-    const { q, pool } = nextQuestion(b.monster.zone);
+  /** Start a turn on the current question: tricks, timer, per-turn monster effects. */
+  const begin = (b: Battle): Battle => {
     const t = engine.beginTurn(b.state, b.monster);
-    return { ...b, q, pool, state: t.state, phase: 'ask', picked: null, last: null, warning: pending ? b.warning : null, timer: t.timer ? { ...t.timer, since: performance.now() } : null };
+    const grows = t.events.find((e): e is Extract<BattleEvent, { type: 'monsterGrows' }> => e.type === 'monsterGrows');
+    const now = performance.now();
+    return {
+      ...b, state: t.state, phase: 'ask', picked: null, last: null, mods: makeMods(t.state.now, b.q), order: [0, 1, 2, 3], askedAt: now,
+      timer: t.timer ? { ...t.timer, since: now } : null,
+      warning: grows?.text ?? null,
+      ...(t.events.length ? { events: t.events, seq: b.seq + 1 } : {}),
+    };
+  };
+  /** Next turn: fresh question, then begin. */
+  const ask = (b: Battle): Battle => {
+    const { q, pool } = nextQuestion(b.monster.zone);
+    return begin({ ...b, q, pool });
   };
   const play = (b: Battle, state: BattleState, events: BattleEvent[], last: Battle['last'], picked: number | null) => {
     const warning = events.find((e): e is Extract<BattleEvent, { type: 'warning' }> => e.type === 'warning')?.text ?? b.warning;
@@ -107,7 +157,10 @@ export const useSession = create<Session>()((set, get) => {
   };
 
   return {
-    screen: 'boot', scene: null, dialogue: null, prompt: null, battle: null, floats: [], editing: false,
+    screen: 'boot', scene: null, dialogue: null, prompt: null, battle: null, floats: [], editing: false, panel: null, celebrate: null, redeemCode: null,
+    setPanel: (panel) => set({ panel }),
+    setCelebrate: (celebrate) => set({ celebrate }),
+    setRedeemCode: (redeemCode) => set({ redeemCode }),
     setEditing: (editing) => set({ editing }),
     float: (x, y, text, tone) => {
       const f: Float = { id: Math.random(), x, y, text, tone };
@@ -116,11 +169,12 @@ export const useSession = create<Session>()((set, get) => {
     },
     setScreen: (screen) => set({ screen }),
     go: (scene) => set({ scene, prompt: null, dialogue: null }),
-    say: (speaker, lines, then) => set({ dialogue: { speaker, lines, i: 0, then }, prompt: null }),
+    say: (speaker, lines, then, choices) => set({ dialogue: { speaker, lines, i: 0, then, choices }, prompt: null }),
     next: () => {
       const d = get().dialogue;
       if (!d) return;
       if (d.i + 1 < d.lines.length) set({ dialogue: { ...d, i: d.i + 1 } });
+      else if (d.choices) return; // the player picks a choice button
       else {
         set({ dialogue: null });
         d.then?.();
@@ -132,19 +186,24 @@ export const useSession = create<Session>()((set, get) => {
       const s = slot();
       const m = monster(monsterId);
       const first = nextQuestion(m.zone);
-      const state = engine.startBattle({ monster: m, band: s.band, level: s.progress.level, wallet: s.progress.coins, rematch: s.progress.defeated.includes(m.id) });
+      const pet = s.inventory.pet ? item(s.inventory.pet) : undefined;
+      const state = engine.startBattle({
+        monster: m, band: s.band, level: s.progress.level, wallet: s.progress.coins, rematch: s.progress.defeated.includes(m.id),
+        petBonus: pet ? (pet.legendary ? 4 : 2) : 0, insured: s.inventory.owned.includes(SCROLL),
+      });
       const spell = s.progress.spells.includes(s.progress.spell) ? s.progress.spell : 'budget_beam';
       sfx('battle-start');
       set({
-        battle: { monster: m, pool: first.pool, state, q: first.q, phase: 'intro', picked: null, last: null, spell, timer: null, events: [], seq: 0, warning: null, result: null, back },
+        battle: { monster: m, mods: NO_MODS, order: [0, 1, 2, 3], askedAt: 0, pool: first.pool, state, q: first.q, phase: 'intro', picked: null, last: null, spell, timer: null, events: [], seq: 0, warning: null, result: null, back },
         scene: { kind: 'battle', monsterId, back }, prompt: null, dialogue: null,
       });
     },
     introDone: () => {
       const b = get().battle;
       if (!b || b.phase !== 'intro') return;
-      const t = engine.beginTurn(b.state, b.monster);
-      set({ battle: { ...b, state: t.state, phase: 'ask', timer: t.timer ? { ...t.timer, since: performance.now() } : null } });
+      const o = engine.opening(b.state, b.monster);
+      if (o.events.length) return play(b, o.state, o.events, 'opening', null); // e.g. Hype Hornet strikes first
+      set({ battle: begin(b) });
     },
     pickSpell: (spell) => {
       const b = get().battle;
@@ -155,11 +214,25 @@ export const useSession = create<Session>()((set, get) => {
     answer: (i) => {
       const b = get().battle;
       if (!b || b.phase !== 'ask') return;
+      const m = b.mods;
+      if (i >= 0) {
+        if (m.removed === i) return;
+        if (m.lock === i && m.lockTaps > 0) return set({ battle: { ...b, mods: { ...m, lockTaps: m.lockTaps - 1 } } }); // breaking the chain
+        if (m.fog === i) return set({ battle: { ...b, mods: { ...m, fog: null } } }); // clearing the fog
+      }
       const right = i === b.q.correct;
       useSave.getState().edit((x) => ({ ...x, questions: record(x.questions, b.pool, BY_ID.get(b.q.id)!, right, rng) }));
       sfx(right ? 'right' : 'wrong');
-      const r = engine.answer(b.state, b.monster, right, b.spell);
+      const r = engine.answer(b.state, b.monster, right, b.spell, { rng, seconds: (performance.now() - b.askedAt) / 1000 });
       play(b, r.state, r.events, right ? 'right' : 'wrong', i);
+    },
+    shuffleNow: () => {
+      const b = get().battle;
+      if (!b || b.phase !== 'ask' || !b.mods.shuffle) return;
+      const order = [...b.order];
+      const a = Math.floor(rng() * 4), c = (a + 1 + Math.floor(rng() * 3)) % 4;
+      [order[a], order[c]] = [order[c]!, order[a]!];
+      set({ battle: { ...b, order, mods: { ...b.mods, shuffle: false } } });
     },
     timeUp: () => {
       const b = get().battle;
@@ -174,7 +247,7 @@ export const useSession = create<Session>()((set, get) => {
       const st = b.state;
       if (st.outcome === 'won') {
         const won = b.events.find((e): e is Extract<BattleEvent, { type: 'won' }> => e.type === 'won')!;
-        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken };
+        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken, scrollUsed: st.scrollUsed };
         useSave.getState().edit((x) => {
           const p = x.progress;
           const first = !p.defeated.includes(b.monster.id);
@@ -186,6 +259,7 @@ export const useSession = create<Session>()((set, get) => {
           result = { ...result, levelUp: level > p.level ? level : null, newSpell };
           return {
             ...x,
+            inventory: st.scrollUsed ? { ...x.inventory, owned: dropOne(x.inventory.owned, SCROLL) } : x.inventory,
             progress: {
               ...p, xp, level, coins: st.wallet + won.coins,
               defeated: first ? [...p.defeated, b.monster.id] : p.defeated,
@@ -198,9 +272,10 @@ export const useSession = create<Session>()((set, get) => {
         set({ battle: { ...b, phase: 'won', result } });
       } else if (st.outcome === 'lost') {
         // Fainting is gentle: nothing is lost (coins a monster took during the fight stay taken).
-        useSave.getState().edit((x) => ({ ...x, progress: { ...x.progress, coins: st.wallet } }));
+        useSave.getState().edit((x) => ({ ...x, progress: { ...x.progress, coins: st.wallet }, inventory: st.scrollUsed ? { ...x.inventory, owned: dropOne(x.inventory.owned, SCROLL) } : x.inventory }));
         set({ battle: { ...b, phase: 'lost' } });
-      } else if (b.last === 'slow') set({ battle: { ...b, phase: 'ask', timer: null } });
+      } else if (b.last === 'opening') set({ battle: begin(b) });
+      else if (b.last === 'slow') set({ battle: { ...b, phase: 'ask', timer: null } });
       else if (b.last === 'wrong') set({ battle: { ...b, phase: 'explain' } });
       else set({ battle: { ...b, phase: 'right' } });
     },

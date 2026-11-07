@@ -33,7 +33,13 @@ export function Dialogue() {
           <p className="text-[1.35rem] leading-snug" aria-live="polite">{line}</p>
           <div className="flex justify-end gap-2">
             {canSpeak() && <button className="btn btn-quiet" onClick={() => speak(line)} aria-label="Read aloud">🔊</button>}
-            <button className="btn" onClick={next}>{d.i === d.lines.length - 1 ? 'OK' : 'Next ▸'}</button>
+            {d.choices && d.i === d.lines.length - 1 ? (
+              d.choices.map((c, k) => (
+                <button key={c.label} className={`btn ${k ? 'btn-quiet' : ''}`} autoFocus={k === 0} onClick={() => (useSession.setState({ dialogue: null }), c.run())}>{c.label}</button>
+              ))
+            ) : (
+              <button className="btn" onClick={next}>{d.i === d.lines.length - 1 ? 'OK' : 'Next ▸'}</button>
+            )}
           </div>
         </div>
       </div>

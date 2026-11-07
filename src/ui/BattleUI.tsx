@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { SpellId } from '../core/spells.ts';
 import { SPELLS } from '../core/spells.ts';
+import { spellDamage } from '../core/battle.ts';
 import { useSlot } from '../state/save.ts';
 import type { Battle } from '../state/session.ts';
 import { useSession } from '../state/session.ts';
@@ -75,13 +75,16 @@ function FoeBar({ b }: { b: Battle }) {
 
 function Card({ b, compact }: { b: Battle; compact: boolean }) {
   const slot = useSlot();
-  const { answer, pickSpell, gotIt, timeUp } = useSession.getState();
+  const { answer, pickSpell, gotIt, timeUp, shuffleNow } = useSession.getState();
   const spells = slot?.progress.spells ?? ['budget_beam'];
   const q = b.q;
+  const m = b.mods;
   const asking = b.phase === 'ask';
   const showWhy = b.phase === 'explain' || b.phase === 'right';
-  const reading = `${q.question} ${q.options.map((o, i) => `${L[i]}: ${o}.`).join(' ')}`;
+  // Read-aloud follows the buttons as shown (after a Whirlpool swap), and always reads the real text.
+  const reading = `${q.question} ${b.order.map((oi, pos) => `${L[pos]}: ${q.options[oi]}.`).join(' ')}`;
   const nextRef = useRef<HTMLButtonElement>(null);
+  const cycle = (dir: 1 | -1) => pickSpell(spells[(spells.indexOf(b.spell) + spells.length + dir) % spells.length]!);
 
   useEffect(() => {
     if (asking && slot?.settings.readAloud) speak(reading);
@@ -93,19 +96,23 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
     const t = setTimeout(() => useSession.getState().gotIt(), RIGHT_PAUSE_MS);
     return () => clearTimeout(t);
   }, [b.phase, showWhy]);
+  // Whirlpool: the buttons swap places once, 2 seconds into the question.
+  useEffect(() => {
+    if (!asking || !m.shuffle) return;
+    const t = setTimeout(shuffleNow, 2000);
+    return () => clearTimeout(t);
+  }, [asking, m.shuffle, q.id, shuffleNow]);
 
-  // Keys: 1–4 or A–D answer, ←/→ or Q/E switch spells, R reads aloud, Enter/Space continues.
+  // Keys: 1–4 or A–D press the button in that position, ←/→ or Q/E switch spells, R reads aloud, Enter/Space continues.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat) return;
+      if (e.repeat || e.target instanceof HTMLInputElement) return;
       const k = e.key.toLowerCase();
       if (asking) {
-        const i = '1234'.indexOf(k) >= 0 && k.length === 1 ? '1234'.indexOf(k) : k.length === 1 ? 'abcd'.indexOf(k) : -1;
-        if (i >= 0) return (e.preventDefault(), answer(i));
-        if (['arrowleft', 'arrowright', 'q', 'e'].includes(k) && spells.length > 1) {
-          const back = k === 'arrowleft' || k === 'q';
-          pickSpell(spells[(spells.indexOf(b.spell) + (back ? spells.length - 1 : 1)) % spells.length]!);
-        }
+        const pos = k.length === 1 ? ('1234'.includes(k) ? '1234'.indexOf(k) : 'abcd'.indexOf(k)) : -1;
+        if (pos >= 0) return (e.preventDefault(), answer(b.order[pos]!));
+        if ((k === 'arrowleft' || k === 'q') && spells.length > 1) cycle(-1);
+        if ((k === 'arrowright' || k === 'e') && spells.length > 1) cycle(1);
         if (k === 'r') speak(reading);
       } else if (showWhy && (k === 'enter' || k === ' ') && !(e.target instanceof HTMLButtonElement)) {
         e.preventDefault();
@@ -114,56 +121,72 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [asking, showWhy, b.spell, spells, reading, answer, pickSpell, gotIt]);
+  });
 
   if (b.phase === 'intro') return <div className="panel w-[min(60rem,100%)] p-3 text-center text-2xl font-bold" aria-live="polite">{b.monster.name} appears!</div>;
 
+  const dmg = spellDamage(b.state, b.spell);
   return (
-    <div className={`panel card-in flex w-[min(62rem,100%)] gap-3 ${compact ? 'p-2' : 'p-3'}`}>
+    <div className={`panel card-in flex w-[min(62rem,100%)] flex-col gap-2 ${compact ? 'p-2' : 'p-3'}`}>
       {spells.length > 1 && (
-        <div className="flex w-32 shrink-0 flex-col gap-2" role="radiogroup" aria-label="Spell">
-          {spells.map((id: SpellId) => (
-            <button key={id} role="radio" aria-checked={b.spell === id} disabled={!asking} title={SPELLS[id].blurb} className={`btn px-2 text-base leading-tight ${b.spell === id ? '' : 'btn-quiet'}`} onClick={() => pickSpell(id)}>
-              {b.spell === id ? '✓ ' : ''}{SPELLS[id].name}
-            </button>
-          ))}
-          <p className="text-center text-base">◂ ▸ switch</p>
+        <div className="flex items-center gap-2" role="group" aria-label="Spell">
+          <button className="btn btn-quiet px-3" onClick={() => cycle(-1)} disabled={!asking} aria-label="Previous spell (Q)">◂</button>
+          <p className="flex-1 text-center text-lg leading-tight" aria-live="polite">
+            <strong>{SPELLS[b.spell].name}</strong> · {dmg} damage <span className="hidden sm:inline">· {SPELLS[b.spell].blurb}</span>
+          </p>
+          <button className="btn btn-quiet px-3" onClick={() => cycle(1)} disabled={!asking} aria-label="Next spell (E)">▸</button>
         </div>
       )}
-      <div className="flex flex-1 flex-col gap-2">
-        {b.timer && asking && <TimerBar key={b.timer.since} seconds={b.timer.seconds} since={b.timer.since} kind={b.timer.kind} onDone={timeUp} />}
-        {b.warning && asking && <p className="rounded-sm bg-[#fff1c2] px-2 py-0.5 text-lg font-semibold">⚠ {b.warning}</p>}
-        <div className="flex items-start gap-2">
-          <p className={`flex-1 font-semibold leading-snug ${compact ? 'text-xl' : 'text-2xl'}`} aria-live="polite">{q.question}</p>
-          {canSpeak() && <button className="btn btn-quiet shrink-0" onClick={() => speak(reading)} aria-label="Read the question aloud (R)">🔊</button>}
+      {b.timer && asking && <TimerBar key={b.timer.since} seconds={b.timer.seconds} since={b.timer.since} kind={b.timer.kind} onDone={timeUp} />}
+      {asking && (b.warning || m.riddle || m.nap) && (
+        <div className="flex flex-col gap-1">
+          {m.riddle && <p className="rounded-sm bg-[#e5dbff] px-2 py-0.5 text-lg font-bold text-[#3b1d8f]">❓ RIDDLE: a wrong answer does double damage!</p>}
+          {m.nap && <p className="rounded-sm bg-[#e7f5ff] px-2 py-0.5 text-lg font-semibold">💤 You're sleepy: a right answer only wakes you up.</p>}
+          {b.warning && !m.riddle && <p className="rounded-sm bg-[#fff1c2] px-2 py-0.5 text-lg font-semibold">⚠ {b.warning}</p>}
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {q.options.map((o, i) => {
-            const picked = b.picked === i, isRight = i === q.correct;
-            let cls = '', mark = '';
-            if (b.phase === 'resolving' && picked) [cls, mark] = b.last === 'right' ? ['opt-right', '✓'] : ['opt-wrong', '✗'];
-            if (showWhy && isRight) [cls, mark] = ['opt-right', '✓'];
-            if (showWhy && picked && !isRight) [cls, mark] = ['opt-wrong', '✗'];
-            return (
-              <button key={i} className={`opt ${cls}`} disabled={!asking} onClick={() => answer(i)} aria-label={`${L[i]}: ${o}${mark === '✓' ? ', correct' : mark === '✗' ? ', wrong' : ''}`}>
-                <span className="opt-letter">{L[i]}</span>
-                <span className="flex-1 text-left">{o}</span>
-                {mark && <span className="text-2xl font-bold" aria-hidden>{mark}</span>}
-              </button>
-            );
-          })}
-        </div>
-        {b.phase === 'resolving' && b.last === 'right' && <p className="text-xl font-bold text-[#1f7a3a]" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
-        {b.phase === 'resolving' && b.last === 'wrong' && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">{b.picked === -1 ? '⏱ Time is up!' : '✗ Not quite.'} {b.monster.name} attacks!</p>}
-        {b.phase === 'resolving' && b.last === 'slow' && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">⏱ Too slow! {b.monster.name} struck first. Keep going!</p>}
-        {showWhy && (
-          <div className="flex flex-wrap items-center gap-2 rounded-sm bg-white/70 p-2" aria-live="polite">
-            <p className="flex-1 text-xl"><strong>{b.phase === 'right' ? '✓ ' : 'Why: '}</strong>{q.explanation}</p>
-            {canSpeak() && <button className="btn btn-quiet" onClick={() => speak(`The answer is ${q.options[q.correct]}. ${q.explanation}`)} aria-label="Read the explanation aloud">🔊</button>}
-            <button ref={nextRef} className="btn" onClick={gotIt}>{b.phase === 'right' ? 'Next' : 'Got it'}</button>
-          </div>
-        )}
+      )}
+      {asking && m.fakeHint !== null && (
+        <p className="scam-tip rounded-sm px-2 py-1 text-lg font-bold">
+          ✨ FREE TIP: pick {L[b.order.indexOf(m.fakeHint)]}! ✨ <span className="font-normal">(Too good to be true? Scam Serpent wrote this.)</span>
+        </p>
+      )}
+      <div className="flex items-start gap-2">
+        <p className={`flex-1 font-semibold leading-snug ${compact ? 'text-xl' : 'text-2xl'}`} aria-live="polite">{q.question}</p>
+        {canSpeak() && <button className="btn btn-quiet shrink-0" onClick={() => speak(reading)} aria-label="Read the question aloud (R)">🔊</button>}
       </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {b.order.map((oi, pos) => {
+          const o = q.options[oi]!;
+          const picked = b.picked === oi, isRight = oi === q.correct;
+          let cls = '', mark = '';
+          if (b.phase === 'resolving' && picked) [cls, mark] = b.last === 'right' ? ['opt-right', '✓'] : ['opt-wrong', '✗'];
+          if (showWhy && isRight) [cls, mark] = ['opt-right', '✓'];
+          if (showWhy && picked && !isRight) [cls, mark] = ['opt-wrong', '✗'];
+          const removed = asking && m.removed === oi;
+          const locked = asking && m.lock === oi && m.lockTaps > 0;
+          const fogged = asking && m.fog === oi;
+          const label = removed ? `${L[pos]}: removed by Wise Choice` : locked ? `${L[pos]}: chained, tap ${m.lockTaps} more times to free it` : fogged ? `${L[pos]}: hidden in fog, tap to clear` : `${L[pos]}: ${o}${mark === '✓' ? ', correct' : mark === '✗' ? ', wrong' : ''}`;
+          return (
+            <button key={oi} className={`opt ${cls} ${removed ? 'opt-removed' : ''} ${locked ? 'opt-locked' : ''} ${fogged ? 'opt-fog' : ''}`} disabled={!asking || removed} onClick={() => answer(oi)} aria-label={label}>
+              <span className="opt-letter">{L[pos]}</span>
+              <span className="flex-1 text-left">
+                {removed ? <s>{o}</s> : locked ? `⛓ Chained! Tap ${m.lockTaps}× to free` : fogged ? '☁ Foggy… tap to clear' : o}
+              </span>
+              {mark && <span className="text-2xl font-bold" aria-hidden>{mark}</span>}
+            </button>
+          );
+        })}
+      </div>
+      {b.phase === 'resolving' && b.last === 'right' && <p className="text-xl font-bold text-[#1f7a3a]" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
+      {b.phase === 'resolving' && b.last === 'wrong' && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">{b.picked === -1 ? '⏱ Time is up!' : '✗ Not quite.'} {b.monster.name} attacks!</p>}
+      {b.phase === 'resolving' && (b.last === 'slow' || b.last === 'opening') && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">⏱ {b.monster.name} struck first! Keep going.</p>}
+      {showWhy && (
+        <div className="flex flex-wrap items-center gap-2 rounded-sm bg-white/70 p-2" aria-live="polite">
+          <p className="flex-1 text-xl"><strong>{b.phase === 'right' ? '✓ ' : 'Why: '}</strong>{q.explanation}</p>
+          {canSpeak() && <button className="btn btn-quiet" onClick={() => speak(`The answer is ${q.options[q.correct]}. ${q.explanation}`)} aria-label="Read the explanation aloud">🔊</button>}
+          <button ref={nextRef} className="btn" onClick={gotIt}>{b.phase === 'right' ? 'Next' : 'Got it'}</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -210,6 +233,7 @@ function Result({ b }: { b: Battle }) {
       {r?.coinsTaken ? <p className="text-lg">({b.monster.name} grabbed {r.coinsTaken} of your coins during the fight.)</p> : null}
       {r?.rematch && <p className="text-lg">Rematches pay half.</p>}
       {r?.levelUp && <p className="text-2xl font-bold text-[#1f7a3a]">Level up! You're now level {r.levelUp}.</p>}
+      {r?.scrollUsed && <p className="text-lg">Your Insurance Scroll paid out and is used up.</p>}
       {r?.newSpell && <p className="text-2xl font-bold text-[#1d5fd1]">New spell: {SPELLS[r.newSpell].name}! <span className="font-normal">{SPELLS[r.newSpell].blurb}</span></p>}
       {b.monster.lesson && <p className="text-xl"><strong>Lesson:</strong> {b.monster.lesson}</p>}
       <button ref={ref} className="btn mt-1" onClick={leave}>Back to the village</button>

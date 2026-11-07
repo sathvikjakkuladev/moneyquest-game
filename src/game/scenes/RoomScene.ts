@@ -8,10 +8,12 @@ import { HEADMASTER, headmasterTalk, MENTORS, MERCHANT, MERCHANT_TALK, SHOPKEEPE
 import { canEnter } from '../../core/unlocks.ts';
 import { zoneById } from '../../data/zones.ts';
 import { Follower, queuePet } from '../pet.ts';
+import { Hat } from '../hats.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
 import type { Facing, Screen } from '../../data/rooms.ts';
 import { exitAt, exitTarget, PORTAL_REACH, portalSpot, ROOMS } from '../../data/rooms.ts';
-import { slot } from '../../state/save.ts';
+import { slot, useSave } from '../../state/save.ts';
+import { buyScroll, SCROLL, SCROLL_PRICE } from '../../core/shop.ts';
 import type { SceneReq } from '../../state/session.ts';
 import { useSession } from '../../state/session.ts';
 import { addChar, pose } from '../chars.ts';
@@ -48,6 +50,7 @@ export class RoomScene extends Phaser.Scene {
   private pressed = false;
   private leaving = false;
   private pet: Follower | null = null;
+  private hat: Hat | null = null;
   private atPortal: string | null = null;
 
   constructor() {
@@ -60,7 +63,7 @@ export class RoomScene extends Phaser.Scene {
     const rooms = ROOMS[req.zone]!;
     this.screenName = req.screen && rooms.screens[req.screen] ? req.screen : rooms.start;
     this.screen = rooms.screens[this.screenName]!;
-    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, atPortal: null });
+    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, hat: null, atPortal: null });
   }
 
   preload(): void {
@@ -89,6 +92,8 @@ export class RoomScene extends Phaser.Scene {
       this.atPortal = this.portalNear(at);
       const petId = slot().inventory.pet;
       if (petId && manifest.v1px.pets) this.pet = new Follower(this, petId, at);
+      const hatId = slot().inventory.hat;
+      if (hatId) this.hat = new Hat(this, this.player, hatId);
     }
 
     const kb = this.input.keyboard!;
@@ -153,6 +158,19 @@ export class RoomScene extends Phaser.Scene {
     if (!slot().progress.defeated.some((id) => monster(id).zone === this.zone)) this.time.delayedCall(400, () => useSession.getState().say(m.speaker, [...m.hello, m.tips[0]!]));
   }
 
+  /** Keeper Gale sells an Insurance Scroll: a premium now, so a disaster later only costs the deductible. */
+  private offerScroll(speaker: { name: string; sprite: string }, tipLine: string): void {
+    const s = useSession.getState();
+    const sl = slot();
+    if (sl.inventory.owned.includes(SCROLL)) return s.say(speaker, [tipLine, 'You already carry an Insurance Scroll. It pays out once, when disaster strikes.']);
+    const pitch = [tipLine, `Want an Insurance Scroll? It costs ${SCROLL_PRICE} coins: that's your premium. If Catastrophe Leviathan's Perfect Storm hits you, you only pay a 6-point deductible, and Mishap Crab can't break your shield.`];
+    if (sl.progress.coins < SCROLL_PRICE) return s.say(speaker, [...pitch, `Come back when you've saved ${SCROLL_PRICE} coins.`]);
+    s.say(speaker, pitch, undefined, [
+      { label: `Buy it (${SCROLL_PRICE} coins)`, run: () => { const r = buyScroll(slot()); if (r.ok) { useSave.getState().edit(() => r.slot); s.say(speaker, ['Smart choice. Insurance is a small cost now that protects you from a big loss later.']); } } },
+      { label: 'No, thanks', run: () => s.say(speaker, ["Fair enough. Remember: without insurance, you pay for the whole disaster yourself."]) },
+    ]);
+  }
+
   /** Coming back out of a bonus zone: stand in front of its portal. */
   private portalArrival(): Pt | null {
     const from = this.req.entry?.replace(/^from_/, '');
@@ -166,7 +184,7 @@ export class RoomScene extends Phaser.Scene {
 
   private blocked(): boolean {
     const s = useSession.getState();
-    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null || s.editing;
+    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null || s.editing || s.panel !== null || s.celebrate !== null;
   }
 
   private tap(x: number, y: number): void {
@@ -186,12 +204,13 @@ export class RoomScene extends Phaser.Scene {
       pose(t.sprite, t.charId!, 'idle', Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'west' : 'east') : dy < 0 ? 'north' : 'south');
       sfx('talk');
       if (t.id === 'headmaster') s.say(HEADMASTER, headmasterTalk(slot().progress.zonesCleared));
-      else if (t.id === 'merchant') s.say(MERCHANT, MERCHANT_TALK);
-      else if (t.id === 'shopkeeper') s.say({ name: 'Shopkeeper', sprite: 'merchant' }, SHOPKEEPER_TALK);
+      else if (t.id === 'merchant') s.say(MERCHANT, MERCHANT_TALK, () => s.setPanel('shop'));
+      else if (t.id === 'shopkeeper') s.say({ name: 'Shopkeeper', sprite: 'merchant' }, SHOPKEEPER_TALK, () => s.setPanel('shop'));
       else {
         const m = MENTORS[this.zone]!;
         const i = (tips[this.zone] = ((tips[this.zone] ?? 0) + 1) % m.tips.length);
-        s.say(m.speaker, [m.tips[i]!]);
+        if (this.zone === 'stormwatch_coast') this.offerScroll(m.speaker, m.tips[i]!);
+        else s.say(m.speaker, [m.tips[i]!]);
       }
       return;
     }
@@ -225,6 +244,7 @@ export class RoomScene extends Phaser.Scene {
   override update(_t: number, dtMs: number): void {
     const pressed = this.pressed;
     this.pressed = false;
+    this.hat?.update();
     if (this.blocked()) {
       if (this.player && !this.leaving) pose(this.player, PLAYER, 'idle', this.face);
       this.wasBlocked = true;

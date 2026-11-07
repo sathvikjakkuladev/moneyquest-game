@@ -6,6 +6,9 @@ export interface Item { id: string; kind: 'hat' | 'pet'; name: string; price: nu
 
 export const ITEMS: Item[] = [
   { id: 'hat-laurel', kind: 'hat', name: 'Laurel Wreath', price: null, art: 'laurel' },
+  { id: 'hat-top', kind: 'hat', name: 'Banker Top Hat', price: 70, art: 'top' },
+  { id: 'hat-wizard', kind: 'hat', name: 'Star Wizard Hat', price: 90, art: 'wizard' },
+  { id: 'hat-crown', kind: 'hat', name: 'Coin Crown', price: 140, art: 'crown' },
   { id: 'pet-bull', kind: 'pet', name: 'Bull Calf', price: null, art: 'pet_bull_calf', legendary: true },
   { id: 'pet-coin-sprite', kind: 'pet', name: 'Coin Sprite', price: 60, art: 'pet_coin_sprite' },
   { id: 'pet-sapling-fox', kind: 'pet', name: 'Sapling Fox', price: 80, art: 'pet_sapling_fox' },
@@ -16,3 +19,6 @@ export const ITEMS: Item[] = [
   { id: 'pet-professor-owl', kind: 'pet', name: 'Professor Owl', price: 150, art: 'pet_professor_owl', legendary: true },
 ];
 export const item = (id: string) => ITEMS.find((i) => i.id === id);
+
+/** What the shop sells: everything with a price, never a reward-card prize. */
+export const shopItems = (rewardOnly: ReadonlySet<string>) => ITEMS.filter((i) => i.price !== null && !rewardOnly.has(i.id));

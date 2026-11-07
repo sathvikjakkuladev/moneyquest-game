@@ -12,6 +12,8 @@ import { Dialogue } from './ui/Dialogue.tsx';
 import { Floats } from './ui/Floats.tsx';
 import { DPad, Hud, Prompt } from './ui/Hud.tsx';
 import { Onboarding } from './ui/Onboarding.tsx';
+import { Panels } from './ui/Panels.tsx';
+import { codeFromHash } from './rewards/redeem.ts';
 import { Title } from './ui/Title.tsx';
 import { H, useStage, W } from './ui/useStage.ts';
 import { WorldButtons } from './ui/WorldButtons.tsx';
@@ -33,6 +35,23 @@ export function App() {
   useEffect(() => {
     if (screen === 'play') setNewSlot(null);
   }, [screen]);
+
+  // A #/redeem/<code> link: remember the code, and open the redeem panel once a save is being played.
+  useEffect(() => {
+    const read = () => {
+      const c = codeFromHash(location.hash);
+      if (!c) return;
+      useSession.getState().setRedeemCode(c);
+      history.replaceState(null, '', location.pathname + location.search);
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+  const redeemCode = useSession((s) => s.redeemCode);
+  useEffect(() => {
+    if (redeemCode && screen === 'play' && kind === 'room') useSession.getState().setPanel('redeem');
+  }, [redeemCode, screen, kind]);
 
   useEffect(() => {
     if (!host.current) return;
@@ -82,6 +101,7 @@ export function App() {
           )}
           {screen === 'play' && kind === 'world' && <WorldButtons />}
           <Dialogue />
+          {screen === 'play' && <Panels />}
         </div>
         <Floats stage={stage} />
         {screen === 'play' && kind === 'battle' && <BattleUI stage={stage} />}

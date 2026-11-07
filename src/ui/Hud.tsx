@@ -24,7 +24,11 @@ export function Hud() {
         </span>
         <span className="text-lg font-semibold" aria-label={`${p.coins} coins`}>🪙 {p.coins}</span>
       </div>
-      <button className="btn pointer-events-auto absolute right-2 top-2" onClick={() => setOpen(true)} aria-label="Settings">⚙</button>
+      <div className="pointer-events-auto absolute right-2 top-2 flex gap-2">
+        <button className="btn" onClick={() => useSession.getState().setPanel('bag')} aria-label="Your bag: hats and pets">🎒</button>
+        <button className="btn" onClick={() => useSession.getState().setPanel('redeem')} aria-label="Redeem a card">🎁</button>
+        <button className="btn" onClick={() => setOpen(true)} aria-label="Settings">⚙</button>
+      </div>
       {open && <Settings onClose={() => setOpen(false)} />}
     </>
   );

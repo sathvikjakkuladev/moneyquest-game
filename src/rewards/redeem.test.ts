@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { codeFromHash, normalize, redeem, REWARD_ONLY_ITEMS } from './redeem.ts';
+import { makeCode, MAX_SERIAL } from './rewardCodes.ts';
 
 const fixture = (name: string) => new URL(`../../tests/fixtures/reward-cards/${name}`, import.meta.url);
 const W = fixture('W-2026-10-07-14-36.csv');
@@ -35,7 +36,7 @@ describe.skipIf(!existsSync(W) || !existsSync(C))('all 110 printed reward cards'
     }
   });
   it('also accepts the dashed spelling, spaces, lower case and a link', () => {
-    const code = all[0]!.code; // MB-W1234-ABCDE
+    const code = all[0]!.code;
     const dashed = `MB-${code[3]}-${code.slice(4)}`;
     for (const t of [dashed, code.toLowerCase(), ` mb ${code.slice(3, 8)} ${code.slice(9)} `, `https://example.org/#/redeem/${code}`]) expect(redeem(t, []).ok, t).toBe(true);
     expect(normalize(dashed)).toBe(code);
@@ -43,12 +44,14 @@ describe.skipIf(!existsSync(W) || !existsSync(C))('all 110 printed reward cards'
 });
 
 describe('redeem rules', () => {
-  const good = 'MB-W1234-ABCDE';
+  // A valid code for a serial that was never printed, so no printed card's code is in the repo.
+  const good = makeCode('W', MAX_SERIAL);
+  const typo = good.slice(0, -1) + (good.endsWith('0') ? '1' : '0');
   it('works once per save', () => {
     expect(redeem(good, [good])).toEqual({ ok: false, reason: 'already-used' });
   });
   it('catches a typo and nonsense', () => {
-    expect(redeem('MB-W1234-ABCDF', []).ok).toBe(false);
+    expect(redeem(typo, []).ok).toBe(false);
     expect(redeem('hello', [])).toEqual({ ok: false, reason: 'not-found' });
   });
   it('reads #/redeem/ links', () => {

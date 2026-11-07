@@ -64,11 +64,11 @@ function FoeBar({ b }: { b: Battle }) {
   return (
     <div className="panel flex-1 px-2.5 py-1.5">
       <div className="flex justify-between gap-2 text-lg font-bold">
-        <span>{b.monster.name}{b.monster.boss && <span className="ml-2 rounded-sm bg-[#a3271f] px-1.5 text-base text-white">BOSS</span>}</span>
+        <span>{b.monster.name}{b.monster.boss && <span className="ml-2 rounded-sm bg-[#a3271f] px-1.5 text-lg text-white">BOSS</span>}</span>
         <span>{s.hp}/{s.maxHp}</span>
       </div>
       <Bar value={s.hp} max={s.maxHp} color="#d9480f" label={`${b.monster.name} health`} />
-      <p className="mt-0.5 text-base leading-tight">Next attack: <strong>{a.name}</strong>. {a.effectText}</p>
+      <p className="mt-0.5 text-lg leading-tight">Next attack: <strong>{a.name}</strong>. {a.effectText}</p>
     </div>
   );
 }
@@ -96,6 +96,17 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
     const t = setTimeout(() => useSession.getState().gotIt(), RIGHT_PAUSE_MS);
     return () => clearTimeout(t);
   }, [b.phase, showWhy]);
+  // Solar Glare: the answers appear 2 seconds late. Moonbat: one answer is scrambled for 3 seconds.
+  const [glaring, setGlaring] = useState(false);
+  const [scrambling, setScrambling] = useState(false);
+  useEffect(() => {
+    if (!asking) return;
+    setGlaring(m.glare);
+    setScrambling(m.scramble !== null);
+    const t1 = m.glare ? setTimeout(() => setGlaring(false), 2000) : undefined;
+    const t2 = m.scramble !== null ? setTimeout(() => setScrambling(false), 3000) : undefined;
+    return () => (clearTimeout(t1), clearTimeout(t2));
+  }, [asking, q.id, m.glare, m.scramble]);
   // Whirlpool: the buttons swap places once, 2 seconds into the question.
   useEffect(() => {
     if (!asking || !m.shuffle) return;
@@ -110,7 +121,7 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
       const k = e.key.toLowerCase();
       if (asking) {
         const pos = k.length === 1 ? ('1234'.includes(k) ? '1234'.indexOf(k) : 'abcd'.indexOf(k)) : -1;
-        if (pos >= 0) return (e.preventDefault(), answer(b.order[pos]!));
+        if (pos >= 0) return (e.preventDefault(), !glaring && answer(b.order[pos]!));
         if ((k === 'arrowleft' || k === 'q') && spells.length > 1) cycle(-1);
         if ((k === 'arrowright' || k === 'e') && spells.length > 1) cycle(1);
         if (k === 'r') speak(reading);
@@ -125,7 +136,7 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
 
   if (b.phase === 'intro') return <div className="panel w-[min(60rem,100%)] p-3 text-center text-2xl font-bold" aria-live="polite">{b.monster.name} appears!</div>;
 
-  const dmg = spellDamage(b.state, b.spell);
+  const dmg = spellDamage(b.state, b.spell, b.monster);
   return (
     <div className={`panel card-in flex w-[min(62rem,100%)] flex-col gap-2 ${compact ? 'p-2' : 'p-3'}`}>
       {spells.length > 1 && (
@@ -154,7 +165,8 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
         <p className={`flex-1 font-semibold leading-snug ${compact ? 'text-xl' : 'text-2xl'}`} aria-live="polite">{q.question}</p>
         {canSpeak() && <button className="btn btn-quiet shrink-0" onClick={() => speak(reading)} aria-label="Read the question aloud (R)">🔊</button>}
       </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {glaring && <p className="rounded-sm bg-[#fff3bf] px-2 py-1 text-xl font-bold" aria-live="assertive">☀ Solar Glare! The answers will appear in a moment…</p>}
+      <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${glaring ? 'invisible' : ''}`}>
         {b.order.map((oi, pos) => {
           const o = q.options[oi]!;
           const picked = b.picked === oi, isRight = oi === q.correct;
@@ -170,7 +182,7 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
             <button key={oi} className={`opt ${cls} ${removed ? 'opt-removed' : ''} ${locked ? 'opt-locked' : ''} ${fogged ? 'opt-fog' : ''}`} disabled={!asking || removed} onClick={() => answer(oi)} aria-label={label}>
               <span className="opt-letter">{L[pos]}</span>
               <span className="flex-1 text-left">
-                {removed ? <s>{o}</s> : locked ? `⛓ Chained! Tap ${m.lockTaps}× to free` : fogged ? '☁ Foggy… tap to clear' : o}
+                {removed ? <s>{o}</s> : locked ? `⛓ Chained! Tap ${m.lockTaps}× to free` : fogged ? '☁ Foggy… tap to clear' : scrambling && m.scramble === oi ? <span aria-hidden>{scrambleText(o)}</span> : o}
               </span>
               {mark && <span className="text-2xl font-bold" aria-hidden>{mark}</span>}
             </button>
@@ -191,6 +203,11 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
   );
 }
 
+/** Letters of each word shuffled (a fixed pattern, so it doesn't flicker), for Moonbat's screech. */
+function scrambleText(s: string): string {
+  return s.split(' ').map((w) => (w.length < 4 ? w : w[0] + [...w.slice(1, -1)].reverse().join('') + w.slice(-1))).join(' ');
+}
+
 function TimerBar({ seconds, since, kind, onDone }: { seconds: number; since: number; kind: 'slowStrike' | 'rush'; onDone: () => void }) {
   const [left, setLeft] = useState(seconds);
   useEffect(() => {
@@ -208,7 +225,7 @@ function TimerBar({ seconds, since, kind, onDone }: { seconds: number; since: nu
     <div className="flex items-center gap-2" role="timer" aria-label={`${Math.ceil(left)} seconds left`}>
       <span className="text-lg font-bold">⏱ {Math.ceil(left)}s</span>
       <div className="h-3 flex-1 overflow-hidden rounded-sm border-2 border-[#1b1410] bg-white"><div className="h-full bg-[#e8590c]" style={{ width: `${(left / seconds) * 100}%` }} /></div>
-      <span className="text-base">{kind === 'slowStrike' ? 'Answer before it swoops!' : 'Answer before time runs out!'}</span>
+      <span className="text-lg">{kind === 'slowStrike' ? 'Answer before it swoops!' : 'Answer before time runs out!'}</span>
     </div>
   );
 }
@@ -233,6 +250,8 @@ function Result({ b }: { b: Battle }) {
       {r?.coinsTaken ? <p className="text-lg">({b.monster.name} grabbed {r.coinsTaken} of your coins during the fight.)</p> : null}
       {r?.rematch && <p className="text-lg">Rematches pay half.</p>}
       {r?.levelUp && <p className="text-2xl font-bold text-[#1f7a3a]">Level up! You're now level {r.levelUp}.</p>}
+      {r?.newSpell === 'wise_choice' && <p className="text-xl font-bold">All six zones are clear! Visit the Headmaster in the library to take Money Check 2 and open the portals.</p>}
+      {r?.tamed && <p className="text-2xl font-bold text-[#7048e8]">🐾 {b.monster.name} is tamed! Find it in your bag (🎒) to bring it along as a pet.</p>}
       {r?.scrollUsed && <p className="text-lg">Your Insurance Scroll paid out and is used up.</p>}
       {r?.newSpell && <p className="text-2xl font-bold text-[#1d5fd1]">New spell: {SPELLS[r.newSpell].name}! <span className="font-normal">{SPELLS[r.newSpell].blurb}</span></p>}
       {b.monster.lesson && <p className="text-xl"><strong>Lesson:</strong> {b.monster.lesson}</p>}

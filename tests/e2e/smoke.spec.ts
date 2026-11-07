@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
 
 interface Hooks {
   session: () => { prompt: string | null; battle: { phase: string } | null; scene: { kind: string } | null };
-  save: () => { slots: ({ nickname: string; progress: { coins: number; defeated: string[] }; questions: { accuracy: Record<string, { answered: number }> } } | null)[] };
+  save: () => { slots: ({ nickname: string; progress: { coins: number; defeated: string[] }; questions: { accuracy: Record<string, { answered: number }> }; moneyCheck: { pre: { total: number } | null } } | null)[] };
   correct: () => number;
   where: () => { screen: string | null; at: [number, number] | null };
   teleport: (x: number, y: number) => void;
@@ -46,6 +46,14 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('radio', { name: /Adventurer/ }).click();
   await page.getByRole('button', { name: 'Next' }).click();
+  // Money Check 1: 12 questions, scores at the end.
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  for (let i = 1; i <= 12; i++) {
+    await expect(page.getByText(`Question ${i} of 12`)).toBeVisible();
+    await page.keyboard.press(String((i % 4) + 1));
+  }
+  await expect(page.getByRole('heading', { name: /You got \d+ of 12!/ })).toBeVisible();
+  await shot(page, '02b-money-check');
   await page.getByRole('button', { name: 'Start the adventure' }).click();
   await closeDialogue(page);
   await expect(page.getByText('TestFox')).toBeVisible();
@@ -128,6 +136,7 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   await expect(page.getByText('TestFox')).toBeVisible();
   const after = await mq(page, (h) => h.save().slots[0]);
   expect(after?.progress).toEqual(before?.progress);
+  expect(after?.moneyCheck.pre?.total).toBeGreaterThanOrEqual(0);
   await page.getByRole('button', { name: 'Play' }).click();
   await expect(page.getByText('TestFox')).toBeVisible();
   await shot(page, '12-reloaded');

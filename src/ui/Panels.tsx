@@ -9,6 +9,8 @@ import { REDEEM_MESSAGES, REWARD_ONLY_ITEMS, redeem } from '../rewards/redeem.ts
 import { sfx } from '../audio.ts';
 import { useSave, useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
+import { MoneyCheck } from './MoneyCheck.tsx';
+import { Progress } from './Progress.tsx';
 
 type Frames = Record<string, { frame: { x: number; y: number; w: number; h: number } }>;
 const atlasCache = new Map<string, Promise<{ frames: Frames; size: { w: number; h: number } }>>();
@@ -22,7 +24,7 @@ const loadAtlas = (json: string) => {
 export function ItemArt({ it, scale = 2 }: { it: Item; scale?: number }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [atlas, setAtlas] = useState<{ frames: Frames; size: { w: number; h: number } } | null>(null);
-  const src = it.kind === 'pet' ? (it.art === 'pet_bull_calf' ? manifest.v1px.pet_bull_calf_walk : manifest.v1px.pets) : null;
+  const src = it.kind === 'pet' ? (it.tamed ? manifest.tamed : it.art === 'pet_bull_calf' ? manifest.v1px.pet_bull_calf_walk : manifest.v1px.pets) : null;
   useEffect(() => {
     if (it.kind === 'hat' && canvasRef.current) {
       const c = pixelMapCanvas(HAT_ART[it.art]!, scale * 2);
@@ -67,6 +69,8 @@ export function Panels() {
       {panel === 'shop' && <Shop onClose={close} />}
       {panel === 'bag' && <Bag onClose={close} />}
       {panel === 'redeem' && <Redeem onClose={close} />}
+      {panel === 'progress' && <Progress onClose={close} />}
+      {panel === 'check' && <MoneyCheck which="post" onDone={close} />}
       {celebrate && <Celebrate items={celebrate} />}
     </>
   );
@@ -98,7 +102,7 @@ function Shop({ onClose }: { onClose: () => void }) {
           );
         })}
       </ul>
-      <p className="text-base">The Laurel Wreath and the Bull Calf can’t be bought: they come only from winner cards.</p>
+      <p className="text-lg">The Laurel Wreath and the Bull Calf can’t be bought: they come only from winner cards.</p>
       {msg && <p className="text-lg font-semibold" role="status">{msg}</p>}
     </Modal>
   );
@@ -162,7 +166,7 @@ function Redeem({ onClose }: { onClose: () => void }) {
       </form>
       {scanning ? <Scanner onCode={(c) => (setScanning(false), setCode(c), submit(c))} onStop={() => setScanning(false)} /> : <button className="btn btn-quiet" onClick={() => setScanning(true)}>📷 Scan the QR code</button>}
       {msg && <p className="text-lg font-semibold text-[#a3271f]" role="alert">✗ {msg}</p>}
-      <p className="text-base">Each card works once per save. The camera stays on this device: nothing is sent anywhere.</p>
+      <p className="text-lg">Each card works once per save. The camera stays on this device: nothing is sent anywhere.</p>
     </Modal>
   );
 }

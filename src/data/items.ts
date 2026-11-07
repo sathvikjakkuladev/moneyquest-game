@@ -2,7 +2,9 @@
 // in Phase 4; prices are drafts. The Laurel Wreath and Bull Calf are reward-card prizes only and can
 // never be bought (src/rewards/redeem.ts REWARD_ONLY_ITEMS, tested).
 
-export interface Item { id: string; kind: 'hat' | 'pet'; name: string; price: number | null; art: string; legendary?: boolean }
+import { MONSTERS } from '../core/monsters.ts';
+
+export interface Item { id: string; kind: 'hat' | 'pet'; name: string; price: number | null; art: string; legendary?: boolean; tamed?: boolean }
 
 export const ITEMS: Item[] = [
   { id: 'hat-laurel', kind: 'hat', name: 'Laurel Wreath', price: null, art: 'laurel' },
@@ -18,7 +20,16 @@ export const ITEMS: Item[] = [
   { id: 'pet-vault-bot', kind: 'pet', name: 'Vault Bot', price: 120, art: 'pet_vault_bot' },
   { id: 'pet-professor-owl', kind: 'pet', name: 'Professor Owl', price: 150, art: 'pet_professor_owl', legendary: true },
 ];
-export const item = (id: string) => ITEMS.find((i) => i.id === id);
+/** Bonus-zone monsters tamed on their first defeat become pets: `tame:<monster id>` (bosses are legendary). */
+export const tameId = (monsterId: string) => `tame:${monsterId}`;
+
+export function item(id: string): Item | undefined {
+  if (id.startsWith('tame:')) {
+    const m = MONSTERS[id.slice(5)];
+    return m ? { id, kind: 'pet', name: m.name, price: null, art: m.id, legendary: m.boss, tamed: true } : undefined;
+  }
+  return ITEMS.find((i) => i.id === id);
+}
 
 /** What the shop sells: everything with a price, never a reward-card prize. */
 export const shopItems = (rewardOnly: ReadonlySet<string>) => ITEMS.filter((i) => i.price !== null && !rewardOnly.has(i.id));

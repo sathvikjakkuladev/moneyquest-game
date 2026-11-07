@@ -8,9 +8,23 @@ import { manifest, queueV1px } from './manifest.ts';
 const LAG = 22; // trail samples behind the player
 const WALK_ART = 'pet_bull_calf';
 
+/** Which texture and frame draw a pet. */
+export function petArt(petId: string): { key: string; frame: string; walker: boolean } | null {
+  const it = item(petId);
+  if (!it) return null;
+  if (it.tamed) return manifest.tamed ? { key: manifest.tamed.atlas, frame: it.art, walker: false } : null;
+  if (it.art === WALK_ART) return manifest.v1px.pet_bull_calf_walk ? { key: manifest.v1px.pet_bull_calf_walk.atlas, frame: 'down_0', walker: true } : null;
+  return manifest.v1px.pets ? { key: manifest.v1px.pets.atlas, frame: it.art, walker: false } : null;
+}
+
 export function queuePet(scene: Phaser.Scene, petId: string | null): void {
   const it = petId ? item(petId) : undefined;
   if (!it) return;
+  if (it.tamed) {
+    const t = manifest.tamed;
+    if (t && !scene.textures.exists(t.atlas)) scene.load.atlas(t.atlas, manifest.basePath + t.image, manifest.basePath + t.json);
+    return;
+  }
   queueV1px(scene, it.art === WALK_ART ? 'pet_bull_calf_walk' : 'pets');
 }
 
@@ -21,10 +35,10 @@ export class Follower {
   private hop = 0;
 
   constructor(scene: Phaser.Scene, petId: string, start: Pt) {
-    const it = item(petId)!;
-    this.walker = it.art === WALK_ART;
-    const key = this.walker ? manifest.v1px.pet_bull_calf_walk!.atlas : manifest.v1px.pets!.atlas;
-    this.sprite = scene.add.sprite(start[0] - 18, start[1], key, this.walker ? 'down_0' : it.art).setOrigin(0.5, 1);
+    const art = petArt(petId)!;
+    this.walker = art.walker;
+    const key = art.key;
+    this.sprite = scene.add.sprite(start[0] - 18, start[1], key, art.frame).setOrigin(0.5, 1);
     if (this.walker) {
       for (const dir of ['down', 'up', 'left', 'right']) {
         const k = `pet-bull:${dir}`;

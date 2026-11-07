@@ -22,7 +22,7 @@ export const maxHpFor = (level: number) => 100 + 10 * (level - 1);
 export interface BattleSetup { monster: MonsterDef; band: Band; level: number; wallet: number; petBonus?: number; rematch?: boolean; insured?: boolean }
 
 /** Tricks that apply to one question (set by an attack for the next turn). */
-export interface TurnFx { lock?: boolean; fog?: boolean; fakeHint?: boolean; shuffle?: boolean; riddle?: boolean; nap?: boolean; removeOption?: boolean; timer?: number; slowed?: boolean }
+export interface TurnFx { lock?: boolean; fog?: boolean; fakeHint?: boolean; shuffle?: boolean; riddle?: boolean; nap?: boolean; removeOption?: boolean; timer?: number; slowed?: boolean; glare?: boolean; scramble?: boolean }
 
 export interface BattleState {
   monsterId: string;
@@ -51,6 +51,8 @@ export interface BattleState {
   weaken: number | null; // next spell does this % damage
   slowTurns: number;
   bonusHit: number; // extra damage on the next hit (Explorer version of a rush)
+  burnLeft: number;
+  burnDamage: number;
   // The monster's state
   ramp: number;
   split: boolean;
@@ -78,6 +80,9 @@ export type BattleEvent =
   | { type: 'petOut' }
   | { type: 'woke' }
   | { type: 'bubble'; size: number }
+  | { type: 'burned'; amount: number; hp: number }
+  | { type: 'headDown'; left: number }
+  | { type: 'healed'; amount: number; hp: number }
   | { type: 'warning'; text: string }
   | { type: 'won'; coins: number; xp: number }
   | { type: 'lost' };
@@ -96,7 +101,7 @@ export function startBattle(s: BattleSetup): BattleState {
     hp: maxHp, maxHp, playerHp: playerMaxHp, playerMaxHp, wallet: s.wallet, coinsTaken: 0, pot: 0, potRate: 1,
     nextAttack: 0, turn: 0, now: {}, next: {},
     shield: 0, barrier: false, insured: !!s.insured, scrollUsed: false, streak: 0,
-    weaken: null, slowTurns: 0, bonusHit: 0,
+    weaken: null, slowTurns: 0, bonusHit: 0, burnLeft: 0, burnDamage: 0,
     ramp: 0, split: false, blaze: 0, bubble: 0, petBonus: s.petBonus ?? 0, petOut: false, rematch: !!s.rematch, outcome: 'fighting',
   };
 }
@@ -126,6 +131,17 @@ export function beginTurn(state: BattleState, m: MonsterDef): { state: BattleSta
     s = { ...s, split: true, hp: s.hp + add, maxHp: s.maxHp + add };
     events.push({ type: 'monsterGrows', text: `${m.name} split in two! Unpaid debt multiplies.`, hp: s.hp, maxHp: s.maxHp });
   }
+  if (s.burnLeft > 0) {
+    // Burns can't knock you out: fainting only happens from a monster's attack.
+    const amount = Math.min(s.playerHp - 1, Math.max(1, Math.round(s.burnDamage * (s.explorer ? EXPLORER_DAMAGE : 1))));
+    s = { ...s, playerHp: s.playerHp - amount, burnLeft: s.burnLeft - 1 };
+    events.push({ type: 'burned', amount, hp: s.playerHp });
+  }
+  const nth = ruleOf(m, 'everyNth');
+  if (nth) {
+    const left = (nth.n - (s.turn % nth.n)) % nth.n;
+    events.push({ type: 'warning', text: left === 0 ? `${m.name} is fully charged: a wrong answer now hits ×${nth.mult}!` : `${m.name} is charging up: ${left} more turn${left > 1 ? 's' : ''}.` });
+  }
   const burn = ruleOf(m, 'burnRamp');
   if (burn && s.turn > 1) {
     s = { ...s, blaze: s.blaze + burn.step, hp: Math.max(1, s.hp - burn.selfDamage) };
@@ -137,7 +153,7 @@ export function beginTurn(state: BattleState, m: MonsterDef): { state: BattleSta
 /** Right answer: cast. Wrong answer (or a rush timer running out): the monster attacks. */
 export function answer(state: BattleState, m: MonsterDef, right: boolean, spell: SpellId, ctx: AnswerCtx): Step {
   if (state.outcome !== 'fighting') return { state, events: [] };
-  return right ? cast(state, spell) : attack(state, m, ctx);
+  return right ? cast(state, spell, m) : attack(state, m, ctx);
 }
 
 /** A slow-strike timer ran out: one free hit, and the question stays open. */
@@ -148,16 +164,26 @@ export function slowStrike(state: BattleState, m: MonsterDef): Step {
 }
 
 /** How much a spell would hit for right now (shown on the card). */
-export function spellDamage(s: BattleState, spell: SpellId): number {
+export function spellDamage(s: BattleState, spell: SpellId, m?: MonsterDef): number {
+  if (s.weaken === 0) return 0; // blocked
   const pet = s.petOut ? 0 : s.petBonus;
   const base = SPELLS[spell].damage + (spell === 'compound_burst' ? 3 * s.streak : 0) + pet;
   let d = base * scale(s.level);
   if (s.weaken !== null) d *= s.weaken / 100;
   if (s.now.slowed) d *= 0.75;
+  if (m && ruleOf(m, 'halfSpells')) d *= 0.5;
   return Math.max(1, Math.round(d));
 }
 
-function cast(state: BattleState, spell: SpellId): Step {
+/** Hydra heads still standing: heads fall after `split` hits each (Lunar Hydra 2/2/3 of its 7). */
+export function headsLeft(s: BattleState, split: readonly number[]): number {
+  const total = split.reduce((a, b) => a + b, 0);
+  const hitsDone = ((s.maxHp - s.hp) / s.maxHp) * total + 1e-9;
+  let edge = 0;
+  return split.filter((n) => (edge += n) > hitsDone).length;
+}
+
+function cast(state: BattleState, spell: SpellId, m: MonsterDef): Step {
   const events: BattleEvent[] = [];
   let s: BattleState = { ...state, pot: state.pot + POT_PER_RIGHT };
   if (s.now.nap) {
@@ -165,10 +191,14 @@ function cast(state: BattleState, spell: SpellId): Step {
     events.push({ type: 'woke' }, { type: 'potUp', amount: POT_PER_RIGHT, pot: s.pot });
     return { state: { ...s, now: { ...s.now, nap: false } }, events };
   }
-  const damage = spellDamage(s, spell);
+  const damage = spellDamage(s, spell, m);
   const hp = Math.max(0, s.hp - damage);
+  const hydra = ruleOf(m, 'hydra');
+  const headsBefore = hydra ? headsLeft(s, hydra.split) : 0;
+  if (s.weaken === 0) events.push({ type: 'warning', text: `${m.name} blocked your spell!` });
   s = { ...s, hp, weaken: null, streak: s.streak + 1 };
   events.push({ type: 'cast', spell, damage }, { type: 'monsterHurt', amount: damage, hp }, { type: 'potUp', amount: POT_PER_RIGHT, pot: s.pot });
+  if (hydra && hp > 0 && headsLeft(s, hydra.split) < headsBefore) events.push({ type: 'headDown', left: headsLeft(s, hydra.split) });
   if (s.bubble > 0) s = { ...s, bubble: s.bubble - 1 };
   if (hp > 0) {
     switch (spell) {
@@ -189,8 +219,8 @@ function cast(state: BattleState, spell: SpellId): Step {
         events.push({ type: 'buff', text: 'Wise Choice: one wrong answer will vanish next question.' });
         break;
       case 'credit_cleanse': {
-        const { lock: _l, fog: _f, fakeHint: _h, shuffle: _s, riddle: _r, nap: _n, timer: _t, ...keep } = s.next;
-        s = { ...s, weaken: null, slowTurns: 0, bonusHit: 0, next: keep };
+        const { lock: _l, fog: _f, fakeHint: _h, shuffle: _s, riddle: _r, nap: _n, timer: _t, glare: _g, scramble: _c, ...keep } = s.next;
+        s = { ...s, weaken: null, slowTurns: 0, bonusHit: 0, burnLeft: 0, next: keep };
         events.push({ type: 'buff', text: 'Credit Cleanse washed away every bad effect.' });
         break;
       }
@@ -250,10 +280,20 @@ function attack(state: BattleState, m: MonsterDef, ctx: AnswerCtx): Step {
   base += s.ramp + (r.kind === 'burnRamp' ? s.blaze : 0);
   if (s.split) base = Math.round(base * 1.5);
   if (s.now.riddle) base *= 2;
+  if (r.kind === 'crit' && ctx.rng() < r.chance) {
+    base = Math.round(base * r.mult);
+    events.push({ type: 'warning', text: 'Critical hit!' });
+  }
+  if (r.kind === 'everyNth' && s.turn % r.n === 0) base *= r.mult;
 
-  const hits = r.kind === 'multiHit' && (r.chance === undefined || ctx.rng() < r.chance) ? r.hits : 1;
+  let hits = r.kind === 'multiHit' && (r.chance === undefined || ctx.rng() < r.chance) ? r.hits : 1;
+  if (r.kind === 'hydra') {
+    // Each living head bites once for its share of the attack.
+    hits = Math.max(1, headsLeft(s, r.split));
+    base = Math.round(a.damage / r.split.length) + s.ramp;
+  }
   for (let i = 1; i <= hits && s.outcome === 'fighting'; i++) s = strike(s, { ...a, damage: base }, i, hits, events);
-  if (s.outcome === 'fighting') s = afterHit(s, m, a, hadShield, events);
+  if (s.outcome === 'fighting') s = afterHit(s, m, a, hadShield, events, ctx);
   return { state: s, events };
 }
 
@@ -280,7 +320,7 @@ function strike(state: BattleState, a: Attack, hit: number, of: number, events: 
   return { ...s, outcome: 'lost' };
 }
 
-function afterHit(s: BattleState, m: MonsterDef, a: Attack, hadShield: boolean, events: BattleEvent[]): BattleState {
+function afterHit(s: BattleState, m: MonsterDef, a: Attack, hadShield: boolean, events: BattleEvent[], ctx: AnswerCtx): BattleState {
   const r = a.rule;
   const warn = (text: string) => events.push({ type: 'warning', text });
   switch (r.kind) {
@@ -312,8 +352,30 @@ function afterHit(s: BattleState, m: MonsterDef, a: Attack, hadShield: boolean, 
       return { ...s, pot: s.pot - cut };
     }
     case 'napNext':
+      if (r.chance !== undefined && ctx.rng() >= r.chance) return s;
       warn("You feel sleepy. Next turn, a right answer only wakes you up.");
       return { ...s, next: { ...s.next, nap: true } };
+    case 'burn':
+      warn(`You're burning: ${r.damage} damage at the start of the next ${r.turns} turns.`);
+      return { ...s, burnLeft: r.turns, burnDamage: r.damage };
+    case 'glare':
+      warn('Solar Glare! Next turn the answers take 2 seconds to appear.');
+      return { ...s, next: { ...s.next, glare: true } };
+    case 'runeShield':
+      warn(`${m.name} raises a rune shield: your next spell does ${r.percent}% damage.`);
+      return { ...s, weaken: r.percent };
+    case 'blockSpell':
+      warn(`${m.name} will block your next spell.`);
+      return { ...s, weaken: 0 };
+    case 'scramble':
+      warn('Crescent Screech! Next turn one answer gets scrambled for a moment.');
+      return { ...s, next: { ...s.next, scramble: true } };
+    case 'healSelf': {
+      const hp = Math.min(s.maxHp, s.hp + r.amount);
+      if (hp === s.hp) return s;
+      events.push({ type: 'healed', amount: hp - s.hp, hp });
+      return { ...s, hp };
+    }
     case 'weakenSpell':
       warn(`Panic! Your next spell does only ${r.percent}% damage.`);
       return { ...s, weaken: r.percent };

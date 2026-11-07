@@ -66,8 +66,11 @@ None of it is in the production build.
 
 Options shuffled every showing; regular monsters take 5 hits, bosses 7; bosses alternate attacks;
 Explorer never sees a timer; no repeats until a pool runs out and misses return 3–5 questions later;
-Money Check = 12 questions with fixed A/B forms per band, held out of battles; pets +2 damage
-(+4 legendary); fainting loses nothing; 3 save slots; customization is hats and pets only.
+Money Check = 12 questions with fixed A/B forms per band, held out of battles (Money Check 1 in the
+opening flow, Money Check 2 after the sixth boss; the bonus portals need both); pets +2 damage
+(+4 legendary); fainting loses nothing; 3 save slots; customization is hats and pets only; the
+first win over a bonus-zone monster tames it. The save schema is versioned (`src/core/save.ts`):
+any change bumps `SAVE_VERSION` and adds a migration with a test.
 
 ## Accessibility
 

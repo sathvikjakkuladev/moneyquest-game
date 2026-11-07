@@ -4211,5 +4211,28 @@
   }
  },
  "worldMap": "v1px/world_map.webp",
- "totalBytes": 1537800
+ "tamed": {
+  "atlas": "tamed",
+  "image": "tamed/tamed.webp",
+  "json": "tamed/tamed.json",
+  "frames": [
+   "boss_astral_colossus",
+   "mon_comet_hound",
+   "mon_relic_wraith",
+   "mon_rune_golem",
+   "boss_lunar_hydra",
+   "mon_crystal_crawler",
+   "mon_moonbat",
+   "mon_tide_specter",
+   "boss_galaxy_stag",
+   "mon_nebula_lynx",
+   "mon_starmoth",
+   "mon_void_sprout",
+   "boss_solar_wyrm",
+   "mon_cinder_scarab",
+   "mon_ember_jackal",
+   "mon_sunscale_basilisk"
+  ]
+ },
+ "totalBytes": 1567567
 }

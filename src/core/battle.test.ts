@@ -262,3 +262,67 @@ describe('Crossroads Observatory effects', () => {
     expect(b.s.hp).toBe(Math.round((q + (avg - q) / 2) * 70));
   });
 });
+
+describe('bonus-zone effects', () => {
+  it('Ember Jackal and Solar Wyrm burn for 2 turns (never below 1 HP); Credit Cleanse puts it out', () => {
+    const m = M('mon_ember_jackal');
+    const a = run(start('mon_ember_jackal'), m, [false]); // 9
+    const b = run(a.s, m, [true, true]); // burns 3 + 3
+    expect(b.s.playerHp).toBe(100 - 9 - 6);
+    expect(run(a.s, m, [true, true], ['credit_cleanse']).s.playerHp).toBe(100 - 9 - 3);
+    expect(run(start('boss_solar_wyrm'), M('boss_solar_wyrm'), [false, true]).s.playerHp).toBe(100 - 20 - 5);
+  });
+  it('Sunscale Basilisk glares (answers late next turn); Moonbat scrambles an answer', () => {
+    expect(beginTurn(run(start('mon_sunscale_basilisk'), M('mon_sunscale_basilisk'), [false]).s, M('mon_sunscale_basilisk')).state.now.glare).toBe(true);
+    expect(beginTurn(run(start('mon_moonbat'), M('mon_moonbat'), [false]).s, M('mon_moonbat')).state.now.scramble).toBe(true);
+  });
+  it('Cinder Scarab takes half spell damage', () => {
+    expect(run(start('mon_cinder_scarab'), M('mon_cinder_scarab'), [true]).s.hp).toBe(50 - 5);
+  });
+  it('Starmoth puts you to sleep about 30% of the time', () => {
+    let naps = 0;
+    for (let seed = 1; seed <= 400; seed++) if (run(start('mon_starmoth'), M('mon_starmoth'), [false], [], [], seed).s.next.nap) naps++;
+    expect(naps / 400).toBeGreaterThan(0.22);
+    expect(naps / 400).toBeLessThan(0.38);
+  });
+  it('Nebula Lynx sometimes lands a ×1.5 critical hit', () => {
+    const hits = new Set<number>();
+    for (let seed = 1; seed <= 60; seed++) hits.add(100 - run(start('mon_nebula_lynx'), M('mon_nebula_lynx'), [false], [], [], seed).s.playerHp);
+    expect([...hits].sort()).toEqual([11, 17]);
+  });
+  it('Galaxy Stag hits +4 harder each charge', () => {
+    expect(run(start('boss_galaxy_stag'), M('boss_galaxy_stag'), [false, false]).s.playerHp).toBe(100 - 19 - 23);
+  });
+  it('Rune Golem halves your next spell; Relic Wraith blocks it', () => {
+    const g = run(start('mon_rune_golem'), M('mon_rune_golem'), [false, true]);
+    expect(g.events.filter((e) => e.type === 'cast').map((e) => (e as { damage: number }).damage)).toEqual([5]);
+    const w = run(start('mon_relic_wraith'), M('mon_relic_wraith'), [false, true, true]);
+    expect(w.events.filter((e) => e.type === 'cast').map((e) => (e as { damage: number }).damage)).toEqual([0, 10]);
+  });
+  it('Comet Hound attacks first', () => {
+    expect(opening(start('mon_comet_hound'), M('mon_comet_hound')).state.playerHp).toBe(91);
+  });
+  it('Astral Colossus doubles its hit every 3rd turn', () => {
+    const m = M('boss_astral_colossus');
+    expect(run(start('boss_astral_colossus'), m, [false]).s.playerHp).toBe(76);
+    expect(run(start('boss_astral_colossus'), m, [true, true, false]).s.playerHp).toBe(100 - 48);
+  });
+  it('Crystal Crawler hits 3 times; Tide Specter heals 6', () => {
+    expect(run(start('mon_crystal_crawler'), M('mon_crystal_crawler'), [false]).s.playerHp).toBe(88);
+    const t = run(start('mon_tide_specter'), M('mon_tide_specter'), [true, false]);
+    expect(t.s.hp).toBe(46);
+  });
+  it('Lunar Hydra: 7 hits; heads fall after 2, 4 and 7; each living head bites for 7', () => {
+    const m = M('boss_lunar_hydra');
+    const bites = (rights: number) => run(run(start('boss_lunar_hydra'), m, Array(rights).fill(true)).s, m, [false]).events.filter((e) => e.type === 'attack').length;
+    expect([bites(0), bites(1), bites(2), bites(3), bites(4), bites(6)]).toEqual([3, 3, 2, 2, 1, 1]);
+    expect(run(start('boss_lunar_hydra'), m, [false]).s.playerHp).toBe(100 - 21);
+    expect(run(start('boss_lunar_hydra'), m, Array(7).fill(true)).s.outcome).toBe('won');
+    const downs = run(start('boss_lunar_hydra'), m, Array(7).fill(true)).events.filter((e) => e.type === 'headDown');
+    expect(downs.map((e) => (e as { left: number }).left)).toEqual([2, 1]);
+  });
+  it('every bonus-zone attack has a rule', () => {
+    for (const z of ['sunfire_pass', 'nebula_grove', 'astral_ruins', 'moonwell_cavern'])
+      for (const mm of Object.values(MONSTERS).filter((x) => x.zone === z)) for (const a of mm.attacks) expect(a.rule.kind, mm.id).not.toBe('plain');
+  });
+});

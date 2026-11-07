@@ -25,6 +25,7 @@ export function Hud() {
         <span className="text-lg font-semibold" aria-label={`${p.coins} coins`}>🪙 {p.coins}</span>
       </div>
       <div className="pointer-events-auto absolute right-2 top-2 flex gap-2">
+        <button className="btn" onClick={() => useSession.getState().setPanel('progress')} aria-label="Progress and Money Check">📊</button>
         <button className="btn" onClick={() => useSession.getState().setPanel('bag')} aria-label="Your bag: hats and pets">🎒</button>
         <button className="btn" onClick={() => useSession.getState().setPanel('redeem')} aria-label="Redeem a card">🎁</button>
         <button className="btn" onClick={() => setOpen(true)} aria-label="Settings">⚙</button>
@@ -80,7 +81,7 @@ export function Prompt() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
       <button className="btn pointer-events-auto flex items-center gap-2" onClick={() => roomActions.interact()}>
-        <kbd className="rounded border-2 border-frame bg-white px-1.5 text-base">Space</kbd>{prompt}
+        <kbd className="rounded border-2 border-frame bg-white px-1.5 text-lg">Space</kbd>{prompt}
       </button>
     </div>
   );

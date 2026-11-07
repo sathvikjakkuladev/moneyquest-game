@@ -3,11 +3,12 @@ import { sfx } from '../../audio.ts';
 import type { Pt } from '../../core/geometry.ts';
 import { canStand, step } from '../../core/geometry.ts';
 import { monster, zoneRegulars } from '../../core/monsters.ts';
-import { bossReady } from '../../core/progression.ts';
+import { bossReady, TOPIC_ZONE_ORDER } from '../../core/progression.ts';
+import { postCheckReady } from '../../core/moneyCheck.ts';
 import { HEADMASTER, headmasterTalk, MENTORS, MERCHANT, MERCHANT_TALK, SHOPKEEPER_TALK } from '../../data/dialogue.ts';
 import { canEnter } from '../../core/unlocks.ts';
 import { zoneById } from '../../data/zones.ts';
-import { Follower, queuePet } from '../pet.ts';
+import { Follower, petArt, queuePet } from '../pet.ts';
 import { Hat } from '../hats.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
 import type { Facing, Screen } from '../../data/rooms.ts';
@@ -91,7 +92,7 @@ export class RoomScene extends Phaser.Scene {
       for (const t of this.things) if (t.kind === 'monster' && this.dist(at, t) < t.range) this.touching.add(t.id);
       this.atPortal = this.portalNear(at);
       const petId = slot().inventory.pet;
-      if (petId && manifest.v1px.pets) this.pet = new Follower(this, petId, at);
+      if (petId && petArt(petId)) this.pet = new Follower(this, petId, at);
       const hatId = slot().inventory.hat;
       if (hatId) this.hat = new Hat(this, this.player, hatId);
     }
@@ -203,7 +204,14 @@ export class RoomScene extends Phaser.Scene {
       const dx = p.x - t.x, dy = p.y - t.y;
       pose(t.sprite, t.charId!, 'idle', Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'west' : 'east') : dy < 0 ? 'north' : 'south');
       sfx('talk');
-      if (t.id === 'headmaster') s.say(HEADMASTER, headmasterTalk(slot().progress.zonesCleared));
+      if (t.id === 'headmaster') {
+        if (postCheckReady(slot(), TOPIC_ZONE_ORDER))
+          s.say(HEADMASTER, ['You beat all six zone bosses! Before the portals open, show me how much you’ve learned.'], undefined, [
+            { label: 'Take Money Check 2', run: () => s.setPanel('check') },
+            { label: 'Later', run: () => {} },
+          ]);
+        else s.say(HEADMASTER, headmasterTalk(slot().progress.zonesCleared, slot().moneyCheck.post !== null));
+      }
       else if (t.id === 'merchant') s.say(MERCHANT, MERCHANT_TALK, () => s.setPanel('shop'));
       else if (t.id === 'shopkeeper') s.say({ name: 'Shopkeeper', sprite: 'merchant' }, SHOPKEEPER_TALK, () => s.setPanel('shop'));
       else {
@@ -280,8 +288,8 @@ export class RoomScene extends Phaser.Scene {
     const portal = this.portalNear([p.x, p.y]);
     if (portal && portal !== this.atPortal) {
       this.atPortal = portal;
-      if (canEnter(portal, slot().progress.zonesCleared, true)) return this.travel({ kind: 'room', zone: portal, entry: 'from_crossroads_observatory/portal_ring' });
-      useSession.getState().say(MENTORS.crossroads_observatory!.speaker, [`The ${zoneById(portal).name} portal is still sealed. It opens after you beat all six zone bosses.`]);
+      if (canEnter(portal, slot().progress.zonesCleared, true, slot().moneyCheck.post !== null)) return this.travel({ kind: 'room', zone: portal, entry: 'from_crossroads_observatory/portal_ring' });
+      useSession.getState().say(MENTORS.crossroads_observatory!.speaker, [`The ${zoneById(portal).name} portal is still sealed. It opens after you beat all six zone bosses and take Money Check 2 with the Headmaster.`]);
       return;
     }
     if (!portal) this.atPortal = null;

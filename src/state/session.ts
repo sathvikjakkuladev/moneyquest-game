@@ -18,7 +18,7 @@ import type { Speaker } from '../data/dialogue.ts';
 import { HELD_OUT } from '../data/moneyCheckForms.ts';
 import questionFile from '../data/questions.json';
 import { zoneById } from '../data/zones.ts';
-import { item } from '../data/items.ts';
+import { item, tameId } from '../data/items.ts';
 import { SCROLL } from '../core/shop.ts';
 import { sfx } from '../audio.ts';
 import { slot, useSave } from './save.ts';
@@ -41,11 +41,11 @@ export interface Choice { label: string; run: () => void }
 export interface Dialogue { speaker: Speaker; lines: string[]; i: number; then?: () => void; choices?: Choice[] }
 
 export type Phase = 'intro' | 'ask' | 'resolving' | 'right' | 'explain' | 'won' | 'lost';
-export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number; scrollUsed: boolean }
+export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number; scrollUsed: boolean; tamed: boolean }
 
 /** This question's tricks, made concrete: which answer is chained, fogged, hinted or removed. */
-export interface Mods { lock: number | null; lockTaps: number; fog: number | null; fakeHint: number | null; removed: number | null; shuffle: boolean; riddle: boolean; nap: boolean }
-const NO_MODS: Mods = { lock: null, lockTaps: 0, fog: null, fakeHint: null, removed: null, shuffle: false, riddle: false, nap: false };
+export interface Mods { lock: number | null; lockTaps: number; fog: number | null; fakeHint: number | null; removed: number | null; shuffle: boolean; riddle: boolean; nap: boolean; glare: boolean; scramble: number | null }
+const NO_MODS: Mods = { lock: null, lockTaps: 0, fog: null, fakeHint: null, removed: null, shuffle: false, riddle: false, nap: false, glare: false, scramble: null };
 
 export interface Battle {
   monster: MonsterDef;
@@ -78,7 +78,7 @@ interface Session {
   float: (x: number, y: number, text: string, tone: Float['tone']) => void;
   scene: SceneReq | null;
   dialogue: Dialogue | null;
-  panel: 'shop' | 'bag' | 'redeem' | null;
+  panel: 'shop' | 'bag' | 'redeem' | 'progress' | 'check' | null;
   setPanel: (p: Session['panel']) => void;
   celebrate: string[] | null; // prizes just unlocked by a reward card
   setCelebrate: (items: string[] | null) => void;
@@ -130,7 +130,7 @@ function makeMods(fx: engine.TurnFx, q: Shown): Mods {
   };
   const lock = fx.lock ? pick([removed]) : null;
   const fog = fx.fog ? pick([removed, lock]) : null;
-  return { lock, lockTaps: lock === null ? 0 : 3, fog, fakeHint: fx.fakeHint ? wrong() : null, removed, shuffle: !!fx.shuffle, riddle: !!fx.riddle, nap: !!fx.nap };
+  return { lock, lockTaps: lock === null ? 0 : 3, fog, fakeHint: fx.fakeHint ? wrong() : null, removed, shuffle: !!fx.shuffle, riddle: !!fx.riddle, nap: !!fx.nap, glare: !!fx.glare, scramble: fx.scramble ? pick([removed, lock, fog]) : null };
 }
 
 export const useSession = create<Session>()((set, get) => {
@@ -247,7 +247,7 @@ export const useSession = create<Session>()((set, get) => {
       const st = b.state;
       if (st.outcome === 'won') {
         const won = b.events.find((e): e is Extract<BattleEvent, { type: 'won' }> => e.type === 'won')!;
-        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken, scrollUsed: st.scrollUsed };
+        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken, scrollUsed: st.scrollUsed, tamed: false };
         useSave.getState().edit((x) => {
           const p = x.progress;
           const first = !p.defeated.includes(b.monster.id);
@@ -256,15 +256,20 @@ export const useSession = create<Session>()((set, get) => {
           const newSpell = spell && !p.spells.includes(spell) ? spell : null;
           const xp = p.xp + won.xp;
           const level = levelFor(xp);
-          result = { ...result, levelUp: level > p.level ? level : null, newSpell };
+          // Bonus zones: the first win over a monster tames it as a pet.
+          const tames = first && zoneById(b.monster.zone).bonus;
+          result = { ...result, levelUp: level > p.level ? level : null, newSpell, tamed: tames };
+          let owned = st.scrollUsed ? dropOne(x.inventory.owned, SCROLL) : x.inventory.owned;
+          if (tames && !owned.includes(tameId(b.monster.id))) owned = [...owned, tameId(b.monster.id)];
           return {
             ...x,
-            inventory: st.scrollUsed ? { ...x.inventory, owned: dropOne(x.inventory.owned, SCROLL) } : x.inventory,
+            inventory: { ...x.inventory, owned },
             progress: {
               ...p, xp, level, coins: st.wallet + won.coins,
               defeated: first ? [...p.defeated, b.monster.id] : p.defeated,
               zonesCleared: clears && !p.zonesCleared.includes(b.monster.zone) ? [...p.zonesCleared, b.monster.zone] : p.zonesCleared,
               spells: newSpell ? [...p.spells, newSpell] : p.spells,
+              tamed: tames ? [...p.tamed, b.monster.id] : p.tamed,
             },
           };
         });

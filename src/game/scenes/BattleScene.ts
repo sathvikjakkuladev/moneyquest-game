@@ -11,8 +11,7 @@ import { beam, burst, coinsFly, shieldRing, tween, wait } from '../fx.ts';
 import { battleKey, manifest, monsterAnims, queueBattleBg, queueCharacter, queueMonster } from '../manifest.ts';
 import { reducedMotion } from '../motion.ts';
 import { PLAYER } from './RoomScene.ts';
-import { item } from '../../data/items.ts';
-import { queuePet } from '../pet.ts';
+import { petArt, queuePet } from '../pet.ts';
 import { Hat } from '../hats.ts';
 
 // Layout on the 640×360 canvas. The question card covers the bottom, so everyone stands above it.
@@ -67,10 +66,10 @@ export class BattleScene extends Phaser.Scene {
     if (hatId) this.hat = new Hat(this, this.player, hatId);
     // The equipped pet stands beside you (half your height) and helps each spell.
     const petId = slot().inventory.pet;
-    const it = petId ? item(petId) : undefined;
-    if (it && manifest.v1px.pets) {
-      const walk = it.art === 'pet_bull_calf';
-      this.pet = this.add.sprite(PLAYER_X - 46, FEET, walk ? manifest.v1px.pet_bull_calf_walk!.atlas : manifest.v1px.pets.atlas, walk ? 'right_0' : it.art).setOrigin(0.5, 1).setFlipX(!walk);
+    const art = petId ? petArt(petId) : null;
+    if (art) {
+      // Facing the monster: the Bull Calf has real right-facing frames; pets drawn facing left get flipped.
+      this.pet = this.add.sprite(PLAYER_X - 46, FEET, art.key, art.walker ? 'right_0' : art.frame).setOrigin(0.5, 1).setFlipX(!art.walker);
       this.tweens.add({ targets: this.pet, y: FEET - 2, duration: 500, yoyo: true, repeat: -1, ease: 'Stepped', easeParams: [2] });
     }
 
@@ -200,6 +199,18 @@ export class BattleScene extends Phaser.Scene {
       case 'petOut':
         if (this.pet) await tween(this, { targets: this.pet, alpha: 0.25, angle: -90, duration: f ? 80 : 300 });
         s.float(PLAYER_X - 46, FEET - 50, 'Pet knocked out!', 'info');
+        return;
+      case 'burned':
+        s.float(PLAYER_X, FEET - 80, `🔥 -${e.amount}`, 'hurt');
+        burst(this, PLAYER_X, playerMid, 0xff922b, 8, 20, f);
+        return;
+      case 'headDown':
+        s.float(FOE_X, this.foeTop - 10, `A head is down! ${e.left} left`, 'info');
+        await wait(this, f ? 100 : 350);
+        return;
+      case 'healed':
+        s.float(FOE_X, this.foeTop - 10, `+${e.amount} HP`, 'info');
+        burst(this, FOE_X, foeMid, 0x8ce99a, 10, 24, f);
         return;
       case 'woke':
         s.float(PLAYER_X, FEET - 90, 'Zzz… awake!', 'info');

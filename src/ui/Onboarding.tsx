@@ -4,7 +4,7 @@ import type { Band } from '../core/types.ts';
 import { HEADMASTER, WELCOME } from '../data/dialogue.ts';
 import { useSave } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
-import { Portrait } from './Portrait.tsx';
+import { MoneyCheck } from './MoneyCheck.tsx';
 
 type Step = 'welcome' | 'name' | 'level' | 'check';
 
@@ -18,9 +18,13 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
     if (step === 'welcome') useSession.getState().say(HEADMASTER, WELCOME, () => setStep('name'));
   }, [step]);
 
-  const start = () => {
-    // Which Money Check form comes first is picked at random, so pre/post forms are counterbalanced.
+  // The save is made before Money Check 1 so its result can be stored. Which form comes first is
+  // picked at random, so the pre/post forms are counterbalanced across players.
+  const toCheck = () => {
     useSave.getState().create(slotIndex, newSlot(name, band, Math.random() < 0.5 ? 'A' : 'B'));
+    setStep('check');
+  };
+  const start = () => {
     const s = useSession.getState();
     s.setScreen('play');
     s.go({ kind: 'room', zone: 'coin_academy', entry: 'from_world_map' });
@@ -28,6 +32,7 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
   };
 
   if (step === 'welcome') return null; // the dialogue box shows the welcome
+  if (step === 'check') return <MoneyCheck which="pre" onDone={start} />;
   return (
     <div className="flex h-full items-center justify-center p-3">
       <div className="panel flex max-h-full w-[min(42rem,100%)] flex-col gap-4 overflow-auto p-5">
@@ -59,16 +64,8 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
             </div>
             <div className="flex justify-between">
               <button className="btn btn-quiet" onClick={() => setStep('name')}>Back</button>
-              <button className="btn" onClick={() => setStep('check')}>Next</button>
+              <button className="btn" onClick={toCheck}>Next</button>
             </div>
-          </div>
-        )}
-        {step === 'check' && (
-          <div className="flex flex-col items-center gap-3 text-center">
-            <Portrait id="headmaster" scale={2} alt={HEADMASTER.name} />
-            <h2 className="text-3xl font-bold">Money Check</h2>
-            <p className="text-lg">Soon you'll start with a quick 12-question Money Check, so you can see how much you learn by the end. It's coming in a later version of the game.</p>
-            <button className="btn" autoFocus onClick={start}>Start the adventure</button>
           </div>
         )}
       </div>

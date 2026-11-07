@@ -5,11 +5,12 @@ import { TOPIC_ZONE_ORDER, zoneOpen } from './progression.ts';
 
 export const devMode = () => import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('dev');
 
-export function bonusOpen(cleared: readonly string[]): boolean {
-  return TOPIC_ZONE_ORDER.every((z) => cleared.includes(z));
+/** The bonus-zone portals open after all six topic bosses and Money Check 2. */
+export function bonusOpen(cleared: readonly string[], postCheckDone: boolean): boolean {
+  return postCheckDone && TOPIC_ZONE_ORDER.every((z) => cleared.includes(z));
 }
 
-export function canEnter(zone: string, cleared: readonly string[], bonus: boolean): boolean {
+export function canEnter(zone: string, cleared: readonly string[], bonus: boolean, postCheckDone = false): boolean {
   if (devMode()) return true;
-  return bonus ? bonusOpen(cleared) : zoneOpen(zone, cleared);
+  return bonus ? bonusOpen(cleared, postCheckDone) : zoneOpen(zone, cleared);
 }

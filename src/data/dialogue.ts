@@ -13,10 +13,13 @@ export const WELCOME = [
   'First, tell me what to call you.',
 ];
 
-export const headmasterTalk = (cleared: readonly string[]) =>
-  cleared.includes('piggybank_village')
-    ? ['You beat King Splurge! Piggybank Village is safe again.', 'More villages open soon. Keep practising your Save Shield!']
-    : ['Money monsters have taken over the villages around the academy.', 'Go out through the Great Hall doors to the world map, and start with Piggybank Village.'];
+export const headmasterTalk = (cleared: readonly string[], postDone = false): string[] => {
+  const n = ['piggybank_village', 'borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory'].filter((z) => cleared.includes(z)).length;
+  if (postDone) return ['The portals at the Crossroads Observatory are open. Bonus zones mix every topic, and any monster you beat there is tamed as a pet!', 'Check your progress (📊) to see how much you have grown.'];
+  if (n === 0) return ['Money monsters have taken over the villages around the academy.', 'Go out through the Great Hall doors to the world map, and start with Piggybank Village.'];
+  if (n < 6) return [`You have cleared ${n} of 6 zones. Wonderful work!`, 'Each boss you beat teaches you a new spell and opens the next zone on the world map.'];
+  return ['You beat all six zone bosses!'];
+};
 
 export const MERCHANT_TALK = ['Welcome, welcome! My shop opens soon.', 'Save the coins you win in battles and come back to see me.'];
 export const SHOPKEEPER_TALK = ['Fresh coins, shiny jars! The real shop is at the academy.', 'Careful out there: the monsters here love impulse buys.'];

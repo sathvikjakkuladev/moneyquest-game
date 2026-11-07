@@ -149,3 +149,17 @@ describe('geometry and rooms', () => {
     expect(ids.sort()).toEqual(['boss_king_splurge', 'mon_impulse_magpie', 'mon_jar_muncher', 'mon_spendling']);
   });
 });
+
+describe('save migrations', () => {
+  it('upgrades a v1 save (Phases 2–4) to v2, keeping everything and adding tamed: []', () => {
+    const v1 = {
+      version: 1, active: 0,
+      slots: [{ nickname: 'Old', band: 'K-5', createdAt: '2026-11-07T00:00:00Z', progress: { level: 3, xp: 320, coins: 42, defeated: ['mon_spendling'], zonesCleared: [], spells: ['budget_beam'], spell: 'budget_beam' }, inventory: { owned: ['hat-laurel'], hat: 'hat-laurel', pet: null }, questions: newQuestionState(), moneyCheck: { firstForm: 'B', pre: null, post: null }, redeemed: ['x'], settings: { readAloud: false, reducedMotion: null } }, null, null],
+    };
+    const v2 = migrate(v1, 1);
+    expect(v2.version).toBe(2);
+    expect(v2.active).toBe(0);
+    expect(v2.slots[0]!.progress).toEqual({ ...v1.slots[0]!.progress, tamed: [] });
+    expect(v2.slots[0]!.inventory.hat).toBe('hat-laurel');
+  });
+});

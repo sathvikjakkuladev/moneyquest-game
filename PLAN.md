@@ -330,3 +330,36 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   Phase 1 commit in git history still contains that one printed code (see the note to you).
 - Tests: 92 unit tests; two Playwright tests (the smoke test now also checks the shop, and a new
   reward-card test covers the link, a typed dashed code, the celebration and once-per-save).
+
+### Phase 5 — bonus zones, Money Check, progress, accessibility, performance (done 2026-11-07)
+- **All 16 bonus-zone monster effects** as data rules with tests: burns over 2 turns (Ember
+  Jackal, Solar Wyrm; burns can't knock you out, and Credit Cleanse puts them out), Solar Glare
+  (answers appear 2 s late), Cinder Scarab takes half spell damage, Starmoth's 30% nap, Nebula
+  Lynx's 25% critical hit (×1.5), Void Sprout steals a buff, Galaxy Stag charges +4, Rune Golem's
+  shield (next spell half), Relic Wraith blocks your next spell, Comet Hound attacks first, Astral
+  Colossus doubles every 3rd turn (with a countdown), Moonbat scrambles an answer for 3 s
+  (read-aloud reads the real text), Crystal Crawler's triple hit, Tide Specter heals 6, and the
+  Lunar Hydra: 7 hits, heads fall after 2, 4 and 7, each living head bites for 7.
+- **Taming:** the first win over each bonus-zone monster tames it (bosses are legendary pets, +4).
+  The importer makes 32 px versions (half the player's height) of all 16; tamed pets follow you and
+  fight beside you like the others. Save schema **v2** adds `progress.tamed`, with a v1 → v2
+  migration and a test.
+- **Money Check:** Money Check 1 runs in the opening flow (after the level choice); the save is
+  created first so the result is stored. Questions alternate topics, options are shuffled, nothing
+  is marked right or wrong until the end, then a star score per topic and the total. Money Check 2
+  opens after all six bosses: the Headmaster offers it (and the Progress screen has a button). It
+  shows the improvement per topic and in total. The bonus portals open only after Money Check 2.
+- **Progress screen (📊):** accuracy bar per topic, both Money Checks side by side with the change,
+  and **Export results (CSV)**: one row per test for every save on the device (nickname, test, date,
+  band, form, score per topic, total, improvement), saved as a file on the device.
+- **Accessibility:** axe (WCAG 2.1 AA) finds no serious or critical problems on the title,
+  onboarding, Money Check, hub, settings, shop, bag, progress, redeem, world map, battle card and
+  explanation. A test checks every battle-card button is at least 48 px with 18 px text; the last
+  16 px labels were raised to 18 px. Keyboard play covers answering (1–4/A–D by position), spells
+  (Q/E), read-aloud (R), dialogue (Space/Enter) and Money Check. Reduced motion skips animations,
+  screen shake and confetti.
+- **Performance** (production build, measured): first load **0.74 MB** (budget 10 MB), whole game
+  **3.9 MB** (budget 40 MB), **60 fps at 4× CPU throttle** on the title, while walking with a pet,
+  and during a boss battle; JS heap 27 MB. Each location's screens and monsters load when you enter
+  it; jsQR loads only when the camera scanner opens.
+- Tests: 111 unit tests; five Playwright tests (smoke, reward cards, end game, two accessibility).

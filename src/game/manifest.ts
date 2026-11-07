@@ -13,6 +13,7 @@ export interface Manifest {
   characters: Record<string, { atlas: string; image: string; json: string; size: number; foot: number; height: number; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }>;
   v1px: Record<string, { atlas: string; image: string; json: string; frames: string[]; anims?: Record<string, { frames: string[]; flipX: boolean }> }>;
   worldMap: string | null;
+  tamed: { atlas: string; image: string; json: string; frames: string[] } | null;
 }
 export const manifest = manifestJson as unknown as Manifest;
 const url = (p: string) => manifest.basePath + p;

@@ -2,7 +2,6 @@
 // effect table). Attack names, effect text and damage come from monster_attacks.json; this file only
 // maps each attack to a rule, so it can be reviewed on its own. One entry per attack, in JSON order
 // (a boss's second attack is index 1). ★ marks a rule that interprets or simplifies the text.
-// Bonus-zone monsters get their rules in Phase 5; until then they hit plainly.
 
 export type EffectRule =
   | { kind: 'plain' }
@@ -26,8 +25,8 @@ export type EffectRule =
   | { kind: 'lockAnswer' }
   /** Takes `percent`% of this battle's coin pot. */
   | { kind: 'potTax'; percent: number }
-  /** ★ Next turn you're napping: a right answer only wakes you (no damage). */
-  | { kind: 'napNext' }
+  /** ★ Next turn you're napping: a right answer only wakes you (no damage). With `chance`, only sometimes. */
+  | { kind: 'napNext'; chance?: number }
   /** Damage is random from `min` to `max`. */
   | { kind: 'randomDamage'; min: number; max: number }
   /** Each turn: +`step` damage, but the monster loses `selfDamage` HP. */
@@ -59,7 +58,27 @@ export type EffectRule =
   /** Next question is a RIDDLE: a wrong answer does double damage. */
   | { kind: 'riddle' }
   /** Both health bars move halfway toward their average percentage. */
-  | { kind: 'balanceHp' };
+  | { kind: 'balanceHp' }
+  /** After the hit, you burn for `damage` at the start of each of the next `turns` turns (never down to 0). */
+  | { kind: 'burn'; damage: number; turns: number }
+  /** ★ Next turn the answers appear 2 seconds late (fading text would break contrast for young readers). */
+  | { kind: 'glare' }
+  /** Hard to hit: always takes half spell damage. */
+  | { kind: 'halfSpells' }
+  /** `chance` of a critical hit for ×`mult` damage. */
+  | { kind: 'crit'; chance: number; mult: number }
+  /** ★ It raises a shield for itself: your next spell does `percent`% damage. */
+  | { kind: 'runeShield'; percent: number }
+  /** Blocks your next spell completely. */
+  | { kind: 'blockSpell' }
+  /** Every `n`th turn its attack hits ×`mult` (the card counts down). */
+  | { kind: 'everyNth'; n: number; mult: number }
+  /** ★ Next turn one answer's letters scramble and settle back over 3 seconds (read-aloud reads the real text). */
+  | { kind: 'scramble' }
+  /** After hitting, it heals `amount` HP. */
+  | { kind: 'healSelf'; amount: number }
+  /** Several heads that fall after `split` hits each (in order); every living head bites once, so beating a head removes its bite. */
+  | { kind: 'hydra'; split: number[] };
 
 export const EFFECT_RULES: Record<string, EffectRule[]> = {
   // Piggybank Village: Spending and Saving
@@ -92,4 +111,22 @@ export const EFFECT_RULES: Record<string, EffectRule[]> = {
   mon_inflation_balloon: [{ kind: 'inflation', percent: 10 }],
   mon_doubt_wraith: [{ kind: 'fogAnswer' }],
   boss_chaos_sphinx: [{ kind: 'riddle' }, { kind: 'balanceHp' }],
+  // Bonus zones (mixed review). Their bosses have a single attack.
+  mon_ember_jackal: [{ kind: 'burn', damage: 3, turns: 2 }],
+  mon_sunscale_basilisk: [{ kind: 'glare' }],
+  mon_cinder_scarab: [{ kind: 'halfSpells' }],
+  boss_solar_wyrm: [{ kind: 'burn', damage: 5, turns: 2 }],
+  mon_starmoth: [{ kind: 'napNext', chance: 0.3 }],
+  mon_nebula_lynx: [{ kind: 'crit', chance: 0.25, mult: 1.5 }],
+  mon_void_sprout: [{ kind: 'removeBuff' }],
+  boss_galaxy_stag: [{ kind: 'rampOnMiss', step: 4 }],
+  mon_rune_golem: [{ kind: 'runeShield', percent: 50 }],
+  mon_relic_wraith: [{ kind: 'blockSpell' }],
+  mon_comet_hound: [{ kind: 'attacksFirst' }],
+  boss_astral_colossus: [{ kind: 'everyNth', n: 3, mult: 2 }],
+  mon_moonbat: [{ kind: 'scramble' }],
+  mon_crystal_crawler: [{ kind: 'multiHit', hits: 3 }],
+  mon_tide_specter: [{ kind: 'healSelf', amount: 6 }],
+  // Lunar Hydra: 7 hits split 2/2/3 across three heads (PLAN.md §3).
+  boss_lunar_hydra: [{ kind: 'hydra', split: [2, 2, 3] }],
 };

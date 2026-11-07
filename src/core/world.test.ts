@@ -46,11 +46,12 @@ describe('the world', () => {
 });
 
 describe('unlocks', () => {
-  it('topic zones open in order; bonus zones after all six bosses', () => {
+  it('topic zones open in order; bonus zones after all six bosses and Money Check 2', () => {
     expect(canEnter('borrowers_bridges', [], false)).toBe(false);
     expect(canEnter('borrowers_bridges', ['piggybank_village'], false)).toBe(true);
-    expect(bonusOpen(TOPIC_ZONE_ORDER.slice(0, 5))).toBe(false);
-    expect(bonusOpen([...TOPIC_ZONE_ORDER])).toBe(true);
+    expect(bonusOpen(TOPIC_ZONE_ORDER.slice(0, 5), true)).toBe(false);
+    expect(bonusOpen([...TOPIC_ZONE_ORDER], false)).toBe(false);
+    expect(bonusOpen([...TOPIC_ZONE_ORDER], true)).toBe(true);
   });
 });
 

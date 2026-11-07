@@ -1,14 +1,16 @@
 // Overworld rooms: each location is a few connected screens. Layouts are game-side
 // (src/data/rooms/<zone>.json, 640×360), seeded from the pack's rooms.json plus collision.
 
+import type { Front } from '../core/fronts.ts';
 import type { Poly, Pt } from '../core/geometry.ts';
+import { canStand } from '../core/geometry.ts';
 
 export type Facing = 'south' | 'north' | 'east' | 'west';
 export interface RoomExit { edge: 'left' | 'right' | 'top' | 'bottom'; range: [number, number]; to: string; enterAt: Pt | null }
 export interface RoomNpc { id: string; sprite: string; x: number; y: number; face: Facing }
 export interface RoomMonster { id: string; x: number; y: number }
 export interface Portal { at: Pt; color: string; to: string }
-export interface Screen { exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[]; portals?: Portal[] }
+export interface Screen { exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[]; portals?: Portal[]; fronts?: Front[] }
 export interface Rooms { zone: string; start: string; screens: Record<string, Screen> }
 
 const files = import.meta.glob<Rooms>('./rooms/*.json', { eager: true, import: 'default' });
@@ -34,4 +36,21 @@ export function exitTarget(zone: string, e: RoomExit): { kind: 'world' } | { kin
   if (e.to === 'world_map') return { kind: 'world' };
   const [z, s] = e.to.includes('/') ? (e.to.split('/') as [string, string]) : [zone, e.to];
   return { kind: 'room', zone: z, screen: s };
+}
+
+/**
+ * The player's feet stay this far from the top and side edges so the whole 64 px sprite stays on
+ * screen, except where an exit leads off that edge.
+ */
+export const EDGE_TOP = 58;
+export const EDGE_SIDE = 12;
+
+/** Can the player stand here: walkable, not blocked, and not hanging off the screen edge. */
+export function standable(s: Screen, [x, y]: Pt): boolean {
+  if (!canStand([x, y], s.walk, s.block)) return false;
+  const exitThrough = (edge: RoomExit['edge'], along: number) => s.exits.some((e) => e.edge === edge && along >= e.range[0] && along <= e.range[1]);
+  if (y < EDGE_TOP && !exitThrough('top', x)) return false;
+  if (x < EDGE_SIDE && !exitThrough('left', y)) return false;
+  if (x > 640 - EDGE_SIDE && !exitThrough('right', y)) return false;
+  return true;
 }

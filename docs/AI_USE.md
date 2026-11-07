@@ -14,6 +14,7 @@ updated at the end of every build phase.
 | Mentor tips and NPC lines (`src/data/dialogue.ts`) | **Claude Code**, drafted for student review | Reviews for accuracy |
 | Hat pixel art (`src/data/hats.ts`) and spell effects | Drawn in code by **Claude Code** | Chose the hats and approved the look |
 | Monster effect rules (`src/data/effectRules.ts`) | **Claude Code**, from the effect table the student approved | Approved the rules |
+| Scenery layering: the outlines and footprints in `src/data/rooms/*.json` (which parts of each screen draw over the player) | **Claude Code**, traced by checking each screen | Reported the problem; playtests the result |
 | Game code, build tools, tests, documentation (`game/`) | **Claude Code** (Anthropic) | Wrote the design brief, made the gameplay decisions, playtests each phase |
 | Reward-card codes (`src/rewards/rewardCodes.ts`, `rewardSecret.ts`) | Copied unchanged from the student's earlier MakeBank project (also built with Claude Code) | Printed and handed out the 110 cards |
 

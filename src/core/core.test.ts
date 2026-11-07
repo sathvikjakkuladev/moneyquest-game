@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import questionFile from '../data/questions.json';
 import { HELD_OUT, MONEY_CHECK_FORMS } from '../data/moneyCheckForms.ts';
-import { exitAt, exitTarget, ROOMS } from '../data/rooms.ts';
-import { canStand, inPoly, step } from './geometry.ts';
+import { exitAt, exitTarget, ROOMS, standable } from '../data/rooms.ts';
+import { inPoly, step } from './geometry.ts';
 import type { Poly, Pt } from './geometry.ts';
 import { bossReady, levelFor, zoneOpen } from './progression.ts';
 import { battlePool, draw, newQuestionState, poolOf, record, show } from './questions.ts';
@@ -128,15 +128,15 @@ describe('geometry and rooms', () => {
   it('every entry and arrival is standable and not inside an exit; every exit can be reached', () => {
     for (const rooms of Object.values(ROOMS)) {
       for (const [name, sc] of Object.entries(rooms.screens)) {
-        for (const [k, p] of Object.entries(sc.entries)) expect(canStand(p, sc.walk, sc.block), `${rooms.zone}/${name} ${k}`).toBe(true);
+        for (const [k, p] of Object.entries(sc.entries)) expect(standable(sc, p), `${rooms.zone}/${name} ${k}`).toBe(true);
         for (const e of sc.exits) {
           const mid = (e.range[0] + e.range[1]) / 2;
           const edge: Pt = e.edge === 'left' ? [4, mid] : e.edge === 'right' ? [636, mid] : e.edge === 'top' ? [mid, 4] : [mid, 356];
-          expect(canStand(edge, sc.walk, sc.block), `${rooms.zone}/${name} ${e.edge} exit`).toBe(true);
+          expect(standable(sc, edge), `${rooms.zone}/${name} ${e.edge} exit`).toBe(true);
           const t = exitTarget(rooms.zone, e);
           if (t.kind === 'room' && t.zone === rooms.zone) {
             const target = rooms.screens[t.screen]!;
-            expect(canStand(e.enterAt!, target.walk, target.block), `${name} → ${t.screen}`).toBe(true);
+            expect(standable(target, e.enterAt!), `${name} → ${t.screen}`).toBe(true);
             expect(exitAt(target, e.enterAt!)).toBeNull();
           }
         }

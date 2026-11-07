@@ -13,5 +13,13 @@ export function installTestHooks(game: Phaser.Game): void {
     correct: () => useSession.getState().battle?.q.correct ?? -1,
     where: () => room()?.where() ?? { screen: useSession.getState().scene?.kind ?? null, at: null },
     teleport: (x: number, y: number) => room()?.teleport(x, y),
+    /** Draw order: the fronts (scenery cut-outs) and every sprite, with their depth and box. */
+    layers: () =>
+      (room()?.children.list ?? []).flatMap((o) => {
+        const g = o as Phaser.GameObjects.Image;
+        if (!g.texture) return [];
+        const b = g.getBounds();
+        return [{ key: g.texture.key.startsWith('front:') ? 'front' : g.texture.key, depth: g.depth, x: b.x, y: b.y, w: b.width, h: b.height }];
+      }),
   };
 }

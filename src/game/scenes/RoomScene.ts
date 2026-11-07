@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { sfx } from '../../audio.ts';
 import type { Pt } from '../../core/geometry.ts';
-import { canStand, step } from '../../core/geometry.ts';
+import { step } from '../../core/geometry.ts';
 import { monster, zoneRegulars } from '../../core/monsters.ts';
 import { bossReady, TOPIC_ZONE_ORDER } from '../../core/progression.ts';
 import { postCheckReady } from '../../core/moneyCheck.ts';
@@ -10,9 +10,10 @@ import { canEnter } from '../../core/unlocks.ts';
 import { zoneById } from '../../data/zones.ts';
 import { Follower, petArt, queuePet } from '../pet.ts';
 import { Hat } from '../hats.ts';
+import { addFronts } from '../fronts.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
 import type { Facing, Screen } from '../../data/rooms.ts';
-import { exitAt, exitTarget, PORTAL_REACH, portalSpot, ROOMS } from '../../data/rooms.ts';
+import { exitAt, exitTarget, PORTAL_REACH, portalSpot, ROOMS, standable } from '../../data/rooms.ts';
 import { slot, useSave } from '../../state/save.ts';
 import { buyScroll, SCROLL, SCROLL_PRICE } from '../../core/shop.ts';
 import type { SceneReq } from '../../state/session.ts';
@@ -26,6 +27,7 @@ import { currentRoom } from '../current.ts';
 export const PLAYER = 'player_coin_wizard';
 const SPEED = 120; // px per second on the 640×360 canvas
 const DARK_SCREENS = new Set(['piggybank_village/cottages', 'borrowers_bridges/toll']); // brightened (pack README)
+const BRIGHTEN = 0.08;
 
 interface Thing { kind: 'npc' | 'monster'; id: string; name: string; x: number; y: number; range: number; sprite: Phaser.GameObjects.Sprite; charId?: string; beaten?: boolean }
 
@@ -77,8 +79,11 @@ export class RoomScene extends Phaser.Scene {
 
   create(): void {
     Object.assign(currentRoom, { zone: this.zone, screen: this.screenName });
-    this.add.image(0, 0, screenKey(this.zone, this.screenName)).setOrigin(0).setScale(2);
-    if (DARK_SCREENS.has(`${this.zone}/${this.screenName}`)) this.add.rectangle(0, 0, 640, 360, 0xffffff, 0.08).setOrigin(0).setBlendMode(Phaser.BlendModes.ADD);
+    const bg = screenKey(this.zone, this.screenName);
+    this.add.image(0, 0, bg).setOrigin(0).setScale(2);
+    const dark = DARK_SCREENS.has(`${this.zone}/${this.screenName}`);
+    if (dark) this.add.rectangle(0, 0, 640, 360, 0xffffff, BRIGHTEN).setOrigin(0).setBlendMode(Phaser.BlendModes.ADD);
+    addFronts(this, bg, this.screen.fronts, dark ? BRIGHTEN : 0); // scenery the player walks behind
     // NPCs whose art isn't made yet are skipped (noted in ASSET_REPORT.md).
     for (const n of this.screen.npcs) if (manifest.characters[n.sprite]) this.addNpc(n.id, n.sprite, n.x, n.y, n.face);
     this.addMonsters();
@@ -274,7 +279,7 @@ export class RoomScene extends Phaser.Scene {
 
     if (vx || vy) {
       const len = Math.hypot(vx, vy), dist = (SPEED * dtMs) / 1000;
-      const next = step([p.x, p.y], (vx / len) * dist, (vy / len) * dist, (q) => canStand(q, this.screen.walk, this.screen.block));
+      const next = step([p.x, p.y], (vx / len) * dist, (vy / len) * dist, (q) => standable(this.screen, q));
       if (next[0] === p.x && next[1] === p.y) this.target = null;
       p.setPosition(next[0], next[1]);
       this.face = Math.abs(vx) > Math.abs(vy) ? (vx < 0 ? 'west' : 'east') : vy < 0 ? 'north' : 'south'; // diagonals: nearest drawn direction

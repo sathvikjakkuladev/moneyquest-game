@@ -55,12 +55,22 @@ None of it is in the production build.
 
 ## Rendering (pixel art throughout)
 
-- Internal resolution 640×360, Phaser `pixelArt: true`, nearest-neighbour everywhere. Whole-number
-  zoom to fit the window (2× = 1280×720, 3× = 1920×1080), letterboxed; below 2× it scales to fit
-  with `image-rendering: pixelated` (`src/ui/useStage.ts`). iPad portrait: canvas on top, UI below.
+- Internal resolution 640×360, Phaser `pixelArt: true`, nearest-neighbour everywhere. The canvas
+  fills the browser window (16:9 kept, thin bars only on the longer side) with CSS
+  `image-rendering: pixelated` (`src/ui/useStage.ts`); Settings has a Full screen button. iPad
+  portrait: canvas on top, UI below.
+- The player's feet stay 58 px from the top and 12 px from the sides (`standable()` in
+  `src/data/rooms.ts`) except at exits, so the sprite never leaves the screen.
 - Screen art (320×180) drawn at 2×; sprites at 1× (the player is 64 px). `rooms.json` coordinates
   (640×360) are used as they are. Bosses: 1× (96 px) on the overworld, 2× (192 px) in battle.
 - All text is React in Fredoka at 18 px or more, never pixel text.
+- **Depth:** every sprite's depth is its feet y. Scenery the player walks behind (trees, signs,
+  lamps, pillars, arches) is a room's `fronts`: outlines cut out of the screen art at runtime
+  (`src/core/fronts.ts`, drawn by `src/game/fronts.ts`) at the depth of their `base` line. Blocks
+  are footprints (trunk, post, base), not the whole picture. Outlines must enclose the object with
+  some ground around it; use `trim` where the object shares colours with the ground (leaves and
+  grass), `keep` for plain rectangles, `dark` on near-black floors. Tests check every front keeps
+  pixels and that blocks never cut off an exit, entry, NPC, monster or portal.
 
 ## Gameplay rules already decided (PLAN.md §3)
 

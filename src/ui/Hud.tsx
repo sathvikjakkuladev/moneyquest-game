@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { xpToReach } from '../core/progression.ts';
 import type { Band } from '../core/types.ts';
 import { pad, roomActions } from '../game/input.ts';
@@ -40,6 +40,12 @@ function Settings({ onClose }: { onClose: () => void }) {
   const set = (patch: Partial<typeof s.settings>) => useSave.getState().edit((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
   const setBand = (band: Band) => useSave.getState().edit((x) => ({ ...x, band }));
   const rm = s.settings.reducedMotion;
+  const [full, setFull] = useState(() => document.fullscreenElement !== null);
+  useEffect(() => {
+    const on = () => setFull(document.fullscreenElement !== null);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
   return (
     <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-black/50 p-3" role="dialog" aria-label="Settings">
       <div className="panel flex max-h-full w-[min(32rem,100%)] flex-col gap-3 overflow-auto p-5">
@@ -64,6 +70,11 @@ function Settings({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         </fieldset>
+        {document.fullscreenEnabled && (
+          <button className="btn btn-quiet self-start" aria-pressed={full} onClick={() => void (full ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})}>
+            {full ? 'Leave full screen' : 'Full screen'}
+          </button>
+        )}
         <div className="flex flex-wrap justify-between gap-2 pt-1">
           <button className="btn btn-quiet" onClick={() => { useSave.getState().open(null); const ss = useSession.getState(); ss.setScreen('title'); ss.go({ kind: 'room', zone: 'coin_academy', attract: true }); }}>Save and quit</button>
           <button className="btn" autoFocus onClick={onClose}>Done</button>

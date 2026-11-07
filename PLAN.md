@@ -370,3 +370,35 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   420 MB freed.
 - Before deleting, the ~2 MB of v1 art the importer still uses was copied to `game/assets-src/v1/`
   and the importer now reads it from there. A re-import produced identical art and manifest.
+
+### Scenery layering (2026-11-07)
+- You reported walking over rocks and signs in Piggybank Village. Cause: each screen was one
+  background image under every sprite, and several blocks were missing or didn't match the art.
+- Every screen (all 33) now has **fronts**: outlines around trees, signs, lamps, pillars, fences,
+  crystals, arches and bushes. At runtime the object's pixels are cut out of the screen art (a
+  flood fill clears the ground inside the outline; black outlines stop it) and drawn at the
+  object's base line, so the player, pets, NPCs and monsters go behind it when standing higher up
+  the screen and in front when lower. Cut once per screen (about 4 ms, worst 25 ms) and cached.
+- Blocks were reworked to match: footprints (trunk, post, base) instead of whole pictures, so you
+  can walk under leaves and behind lamps; missing ones were added (the market lamp, the library
+  globe and desk, crossroads crystals, rocks on the beach, mushrooms, cacti, bridge posts and more);
+  misplaced ones fixed (plaza trees, the lighthouse rope). Arches (Piggybank gate, orchard gate,
+  canyon and cave portals) are traced as rings, so you walk under them.
+- The `?dev=1` map editor shows fronts (dashed blue) and their base line (purple); edit them in
+  the room JSON.
+- Tests: front sanity and cut-out unit tests, a reachability flood fill per screen (no block cuts
+  off an exit, entry, NPC, monster or portal), and a Playwright test (behind/in front of the gate
+  lamp, under the arch, behind a tree, the market lamp is solid). 117 unit tests, six Playwright tests.
+
+### Plaza exits, screen edges and window size (2026-11-07)
+- The plaza's left and right exits covered only the top of the path (y 124–160 on a path 130–190),
+  so walking along it hit the edge without changing screen: both now cover 126–196. The cottages'
+  right exit had the same problem (now 40–112).
+- The player could walk behind the fountain right up to the top edge, mostly off screen. New rule
+  for every screen: feet stay at least 58 px from the top and 12 px from the sides unless an exit
+  leads off that edge. The reachability test now uses the same rule (everything still reachable).
+- The canvas now fills the browser window instead of using whole-number zoom (pixels stay sharp
+  with `image-rendering: pixelated`; a window wider than 16:9 gets thin side bars). Settings has a
+  Full screen button where the browser supports it.
+- Playwright test: walking the plaza path left and right changes screen; walking up stops on screen.
+

@@ -138,6 +138,16 @@ export function MapEditor({ stage }: { stage: Stage }) {
         onPointerUp={() => (drag.current = null)}
         onDoubleClick={() => drawing && finish()}
       >
+        {/* Fronts (scenery drawn over the player; edit them in the room JSON): outline and base line. */}
+        {shapes.fronts?.map((f, i) => {
+          const xs = f.poly.map((p) => p[0]);
+          return (
+            <g key={`f${i}`} pointerEvents="none">
+              <polygon points={f.poly.map((p) => p.join(',')).join(' ')} fill="none" stroke="#3bc9db" strokeWidth={1} strokeDasharray="3 2" />
+              <line x1={Math.min(...xs)} x2={Math.max(...xs)} y1={f.base} y2={f.base} stroke="#da77f2" strokeWidth={1.5} />
+            </g>
+          );
+        })}
         {(['walk', 'block'] as const).map((kind) =>
           shapes[kind].map((poly, i) => {
             const on = sel && sel.kind === kind && sel.i === i;
@@ -197,7 +207,7 @@ export function MapEditor({ stage }: { stage: Stage }) {
           <button className="btn btn-quiet px-2 text-base" onClick={del} disabled={!sel || (sel.kind !== 'walk' && sel.kind !== 'block')}>Delete</button>
         </div>
         <p className="leading-snug">
-          {drawing ? 'Click to add points. Enter or double-click to finish, Esc to cancel.' : 'Drag points and markers. Click a shape to select it; Delete removes a selected point or the shape.'}
+          {drawing ? 'Click to add points. Enter or double-click to finish, Esc to cancel.' : 'Drag points and markers. Click a shape to select it; Delete removes a selected point or the shape. Dashed blue: scenery drawn over the player when they stand above its purple base line.'}
         </p>
         <div className="flex gap-1">
           <button className="btn flex-1 px-2 text-base" onClick={save}>Save</button>

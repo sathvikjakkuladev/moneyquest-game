@@ -4,8 +4,8 @@ Browser RPG teaching personal finance to grades K–8 (DECA Financial Literacy P
 wizard school and money-themed zones one screen at a time and battle "money monsters" by answering
 multiple-choice questions. It must be accurate, demo-ready for judges, run on school Chromebooks and
 iPads, and deploy as a static website (Netlify). Design and every decision: `PLAN.md`. Asset facts:
-`ASSET_REPORT.md`. The old build is archived at `../_archive/game-old-2026-11-07/` (reference only;
-don't copy code from it).
+`ASSET_REPORT.md`. The old build and its archive were deleted on 2026-11-07 at the user's request;
+the only thing kept from it is the v1 art the importer still needs (`assets-src/v1/`).
 
 ## Commands
 
@@ -15,7 +15,7 @@ npm run typecheck          # tsc, strict, must be clean
 npm test                   # Vitest, must pass
 npm run e2e                # Playwright (uses the installed Google Chrome)
 npm run import:questions   # ../make-bank-question-bank.csv + src/data/question-overrides.json → src/data/questions.json
-npm run import:assets      # ../MoneyQuest Assets/ + assets-src/pixellab/ (+ pixelized v1 gaps from the archive) → public/assets/, src/assets/manifest.json, ASSET_REPORT.md
+npm run import:assets      # ../MoneyQuest Assets/ + assets-src/pixellab/ (+ pixelized v1 gaps from assets-src/v1/) → public/assets/, src/assets/manifest.json, ASSET_REPORT.md
 node tools/seed-rooms.ts <zone>   # first version of src/data/rooms/<zone>.json (never overwrites without --force)
 ```
 
@@ -25,7 +25,7 @@ no enums, namespaces or constructor parameter properties.
 ## Hard rules
 
 - **Inputs are read-only. Never edit, move or write into them:** `../make-bank-question-bank.csv`,
-  `../MoneyQuest Assets/`, and the archive `../_archive/`. Fix questions only through
+  `../MoneyQuest Assets/`, and `assets-src/v1/` (the only copy of the v1 art). Fix questions only through
   `src/data/question-overrides.json`, and every override needs a `reason`.
 - **`src/rewards/rewardCodes.ts` and `rewardSecret.ts` are byte-identical copies** of
   `/Users/jakkula/MakeBank/client/src/data/` (a test checks their SHA-256). 110 cards are printed

@@ -363,3 +363,10 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   and during a boss battle; JS heap 27 MB. Each location's screens and monsters load when you enter
   it; jsQR loads only when the camera scanner opens.
 - Tests: 111 unit tests; five Playwright tests (smoke, reward cards, end game, two accessibility).
+
+### Cleanup (2026-11-07)
+- At your request, deleted the old folders: `_archive/` (the old build, its git history and 355 MB of
+  node_modules and caches), the empty `MakeBank Assets/`, and `.playwright-mcp/` screenshots. About
+  420 MB freed.
+- Before deleting, the ~2 MB of v1 art the importer still uses was copied to `game/assets-src/v1/`
+  and the importer now reads it from there. A re-import produced identical art and manifest.

@@ -1,6 +1,6 @@
 // Asset importer: `../MoneyQuest Assets/` (read-only) → public/assets/, src/assets/manifest.json and
-// ASSET_REPORT.md. Also pixelizes the few pieces the pack doesn't have from the archived v1 art
-// (read-only), and imports any extra PixelLab characters saved in `assets-src/pixellab/`.
+// ASSET_REPORT.md. Also pixelizes the few pieces the pack doesn't have from the v1 art in
+// assets-src/v1/ (read-only), and imports any extra PixelLab characters saved in `assets-src/pixellab/`.
 //   node tools/import-assets.ts   (or: npm run import:assets)
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { alphaBox, atlasJson, flipX, loadImg, pack, padBottomCenter, pixelize, t
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACK = join(root, '..', 'MoneyQuest Assets');
-const V1 = join(root, '..', '_archive', 'game-old-2026-11-07', 'public', 'assets'); // smooth v1 art, read-only
+const V1 = join(root, 'assets-src', 'v1'); // smooth v1 art (Meta AI) kept from the old build, read-only
 const EXTRA = join(root, 'assets-src', 'pixellab'); // PixelLab characters made for this game
 const OUT = join(root, 'public', 'assets');
 const MANIFEST = join(root, 'src', 'assets', 'manifest.json');
@@ -185,7 +185,7 @@ async function importCharacters() {
   for (const id of listDirs(EXTRA)) await importCharacter(id, join(EXTRA, id), 'pixellab-extra');
 }
 
-// ── Gaps filled from the archived v1 art (pixelized, PLAN.md §7) ─────────
+// ── Gaps filled from the v1 art in assets-src/v1 (pixelized, PLAN.md §7) ─
 const v1px: Record<string, { atlas: string; image: string; json: string; frames: string[]; anims?: Record<string, { frames: string[]; flipX: boolean }> }> = {};
 let worldMap: string | null = null;
 let tamed: { atlas: string; image: string; json: string; frames: string[] } | null = null;
@@ -206,7 +206,7 @@ async function importTamed() {
 async function v1Frames(atlasName: string): Promise<Record<string, Img>> {
   const json = JSON.parse(readFileSync(join(V1, 'atlas', `${atlasName}.json`), 'utf8')) as { frames: Record<string, { frame: { x: number; y: number; w: number; h: number } }> };
   const src = join(V1, 'atlas', `${atlasName}.webp`);
-  claim(src, `v1 art (archive), pixelized for the game`);
+  claim(src, `v1 art (assets-src/v1), pixelized for the game`);
   const out: Record<string, Img> = {};
   for (const [name, f] of Object.entries(json.frames)) out[name] = await loadImg(src, f.frame);
   return out;
@@ -214,7 +214,7 @@ async function v1Frames(atlasName: string): Promise<Record<string, Img>> {
 
 async function importV1Gaps() {
   if (!existsSync(V1)) {
-    defects.push(`archived v1 art not found at ${V1}: pets, Bull Calf, Laurel Wreath icon and world map were skipped`);
+    defects.push(`v1 art not found at ${V1}: pets, Bull Calf, Laurel Wreath icon and world map were skipped`);
     return;
   }
   // Pets: half the player's height (32 px).
@@ -256,7 +256,7 @@ async function importV1Gaps() {
     const walk = await v1Frames(`walk_npc_mentor_${zone}`);
     const front = npcs[`npc_mentor_${zone}`] ?? walk.down_0;
     const side = walk.left_0 ?? front;
-    // Stormwatch's v1 "up" row is a side view (archive ASSET_REPORT), so use the side frame for north there.
+    // Stormwatch's v1 "up" row is a side view, so use the side frame for north there.
     const back = zone === 'stormwatch_coast' ? side : (walk.up_0 ?? side);
     if (!front) continue;
     const H = 64, CANVAS = 72;
@@ -277,10 +277,10 @@ async function importV1Gaps() {
   // World map: the v1 painting of all 11 islands, reduced to 640×360 pixel art.
   const map = join(V1, 'bg', 'world_map.webp');
   if (existsSync(map)) {
-    claim(map, 'v1 world map (archive), pixelized to 640×360');
+    claim(map, 'v1 world map (assets-src/v1), pixelized to 640×360');
     const img = await loadImg(await (await import('sharp')).default(map).resize(640, 360, { kernel: 'lanczos3' }).png({ palette: true, colors: 64, dither: 0 }).toBuffer());
     worldMap = await writeWebp(img, join(OUT, 'v1px', 'world_map.webp'));
-  } else defects.push('v1 world map not found in the archive');
+  } else defects.push('v1 world map not found in assets-src/v1');
 }
 
 // ── Report ────────────────────────────────────────────────────────────────
@@ -307,9 +307,9 @@ function writeReport(total: number) {
     '- Each screen was generated separately, so paths don’t line up exactly at screen edges (pack README). Entry points in `rooms.json` place the player on each screen’s own path.',
     '- Collision is not in the pack; the game ships a first pass in `src/data/rooms/` and the `?dev=1` editor refines it.',
     '',
-    '## Gaps filled from the archived v1 art',
+    '## Gaps filled from the v1 art',
     '',
-    'Pixelized from `_archive/game-old-2026-11-07/public/assets/` (smooth Meta AI art) with the same method as `_tools/make_monster_sheets.py`: trim, Lanczos downscale, alpha cut at 110, 40 colours, no dithering.',
+    'Pixelized from `assets-src/v1/` (smooth Meta AI art kept from the old build) with the same method as `_tools/make_monster_sheets.py`: trim, Lanczos downscale, alpha cut at 110, 40 colours, no dithering.',
     '',
     `- Pets: ${v1px.pets?.frames.join(', ') ?? 'skipped'} (32 px tall)`,
     `- Bull Calf walk cycle: ${v1px.pet_bull_calf_walk ? '4 directions × 4 frames, 32 px' : 'skipped'}`,

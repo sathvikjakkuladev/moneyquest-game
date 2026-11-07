@@ -14,9 +14,9 @@ Output: `public/assets/`, 1.49 MB. Pixel art is drawn with nearest-neighbour fil
 - Each screen was generated separately, so paths don’t line up exactly at screen edges (pack README). Entry points in `rooms.json` place the player on each screen’s own path.
 - Collision is not in the pack; the game ships a first pass in `src/data/rooms/` and the `?dev=1` editor refines it.
 
-## Gaps filled from the archived v1 art
+## Gaps filled from the v1 art
 
-Pixelized from `_archive/game-old-2026-11-07/public/assets/` (smooth Meta AI art) with the same method as `_tools/make_monster_sheets.py`: trim, Lanczos downscale, alpha cut at 110, 40 colours, no dithering.
+Pixelized from `assets-src/v1/` (smooth Meta AI art kept from the old build) with the same method as `_tools/make_monster_sheets.py`: trim, Lanczos downscale, alpha cut at 110, 40 colours, no dithering.
 
 - Pets: pet_bull_calf, pet_coin_sprite, pet_gem_turtle, pet_piggy_dragonling, pet_professor_owl, pet_sapling_fox, pet_star_kitten, pet_vault_bot (32 px tall)
 - Bull Calf walk cycle: 4 directions × 4 frames, 32 px

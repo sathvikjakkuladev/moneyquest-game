@@ -1,0 +1,479 @@
+{
+ "CD-E-03": {
+  "option_c": "A person who works at the bank counter",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-05": {
+  "option_a": "Get free money from the bank every single month",
+  "option_c": "Take money out of your savings account for free",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-06": {
+  "option_b": "The debt keeps growing forever no matter what",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-11": {
+  "option_a": "To lose money on purpose each year",
+  "option_d": "To give a gift to everyone who borrows",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-12": {
+  "option_a": "Money you have saved in your wallet or piggy bank",
+  "option_c": "A store coupon that takes money off the price",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-13": {
+  "option_a": "Borrow anyway and hope you have money later",
+  "option_d": "Buy it first and figure out the money part later",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-E-14": {
+  "option_b": "Money you found on the sidewalk on your way home",
+  "option_c": "Birthday cash that your grandma gave you",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-02": {
+  "option_c": "Track how much someone spends at each store",
+  "option_d": "Show how much income someone earns each year",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-06": {
+  "option_a": "Savings in the bank to the total debt owed",
+  "option_d": "Assets you own to the liabilities you owe",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-09": {
+  "option_b": "They have no due date, so you can repay anytime",
+  "option_c": "They increase your savings while you borrow",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-10": {
+  "option_c": "Asking the lender to forgive the debt",
+  "reason": "ambiguous: 'Paying off debt with new debt' is literally what consolidation does"
+ },
+ "CD-M-12": {
+  "option_a": "Banks reward late payers with lower rates",
+  "option_c": "They lower your bill because you waited longer",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-13": {
+  "option_a": "One day, and then the card is canceled",
+  "option_b": "Forever, as long as you keep using the card",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-14": {
+  "option_a": "Earn interest from the borrower",
+  "option_b": "Take all profits from what the loan buys",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "CD-M-15": {
+  "option_a": "A student loan with a low fixed rate",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-E-01": {
+  "option_a": "Spend at a store",
+  "option_c": "Owe to a friend",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-E-02": {
+  "option_a": "A game you play with friends",
+  "option_d": "A school subject like math",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-E-04": {
+  "option_a": "A bill for your phone or water",
+  "option_c": "A loan you owe back to a friend",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-E-06": {
+  "option_a": "Gifts from friends that you keep in a piggy bank",
+  "option_b": "Fees a bank charges you for opening an account",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-E-08": {
+  "option_c": "Because every job is fun all of the time",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-01": {
+  "option_b": "Total hours worked times your hourly wage",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-02": {
+  "option_a": "Savings goals you set for next year",
+  "option_c": "Bank balances in all of your accounts",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-03": {
+  "option_a": "Public schools in your town only",
+  "option_b": "Building roads and bridges only",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-04": {
+  "option_b": "A refund the government sends you every payday",
+  "option_d": "A loan your employer gives you before payday",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-06": {
+  "option_b": "The average hourly pay most workers in a state receive",
+  "option_c": "A bonus paid to workers who work the fewest hours",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-07": {
+  "option_a": "You get the same salary every month from one boss",
+  "option_c": "You work for free to get experience",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-08": {
+  "option_a": "Gig income is free from all taxes by law",
+  "option_b": "Clients always pay the worker's taxes for them",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-09": {
+  "option_a": "Include your private bank account numbers",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-10": {
+  "option_b": "Always improve your grades at school",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-11": {
+  "option_a": "Worthless, since only salary counts as pay",
+  "option_c": "Loans the employer takes back when you quit",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-12": {
+  "option_a": "A credit card employers give to new workers",
+  "option_d": "An insurance policy that pays for car repairs",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-13": {
+  "option_a": "You match the taxes your employer pays the government",
+  "option_b": "The employer takes back money you put in the plan",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "EI-M-14": {
+  "option_b": "Quitting school to work more hours now",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "ES-E-09": {
+  "option_b": "A type of bank that keeps your money for you",
+  "option_c": "A kind of coin that is worth more than a dollar",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "ES-M-03": {
+  "option_a": "Banks pay higher interest rates to 12-year-olds",
+  "option_b": "Prices are lower for teens, so saving is easier",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "ES-M-04": {
+  "option_a": "The 30-dollar price of the game and nothing else",
+  "option_c": "The sales tax you paid on top of the price",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "ES-M-11": {
+  "option_a": "Candy you buy whenever you feel like it",
+  "option_d": "Gifts you buy for friends on their birthdays",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "ES-M-13": {
+  "option_c": "Spend first and save whatever is left over later",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-01": {
+  "option_a": "Buy it right away before the price goes up",
+  "option_c": "Ask a friend to buy it for you so you save money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-02": {
+  "option_a": "Hide money from your family",
+  "option_c": "Spend more than you earn",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-04": {
+  "option_a": "A bill you have to pay right away every month",
+  "option_c": "Money you borrow from a friend",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-06": {
+  "option_a": "The cost of something that is free to get",
+  "option_b": "A discount a store gives you for buying two",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-09": {
+  "option_b": "Wants always cost more money than needs do",
+  "option_d": "Needs are free, so you can get them without money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-E-14": {
+  "option_a": "Kids are not allowed to talk about money",
+  "option_c": "Adults always say no to every money idea",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-01": {
+  "option_a": "The price tag printed on the item you choose",
+  "option_c": "The extra amount a store adds to the price to make a profit",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-02": {
+  "option_b": "Money loses value only when you spend it at a store",
+  "option_d": "Prices usually fall over time, so future money buys more",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-04": {
+  "option_a": "Simple, money-based, approved, reasonable, and temporary",
+  "option_d": "Only long-term goals that take more than ten years",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-05": {
+  "option_a": "Money you plan to spend next month on bills",
+  "option_b": "Future savings you expect to earn from a job",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-07": {
+  "option_a": "Keep going no matter what it costs you",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-09": {
+  "option_a": "Money only matters once you are an adult",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-10": {
+  "option_a": "Which brand logo looks the best",
+  "option_c": "Which store is closest to you",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-11": {
+  "option_a": "Looking only at which choice has the lowest price",
+  "option_d": "Picking whichever choice your friends picked",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-13": {
+  "option_a": "Money is unlimited, so everyone can have everything",
+  "option_c": "Prices never change, so planning is not needed",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-14": {
+  "option_b": "Getting both choices for free with no cost",
+  "option_d": "Having no costs because you chose carefully",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "FD-M-15": {
+  "option_a": "Only when you run out of money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-01": {
+  "option_a": "Spending money on snacks you enjoy right now",
+  "option_d": "Giving money away to friends who need it",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-02": {
+  "option_b": "A bank account that pays you a fixed amount each year",
+  "option_d": "A credit card that a company gives to its workers",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-04": {
+  "explanation": "Diversifying spreads your risk so one bad investment does not hurt you as much.",
+  "reason": "explanation overstated ('does not hurt you much')"
+ },
+ "IN-E-07": {
+  "option_a": "A loan from a bank that a company must pay back",
+  "option_d": "A type of debt that shareholders owe the company",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-08": {
+  "option_a": "Prices never change over many years",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-09": {
+  "option_a": "A small piece of a company that lets you share in its profits",
+  "option_c": "A fee the bank charges you for keeping your money safe",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-10": {
+  "option_a": "Buying candy to eat after school",
+  "option_b": "Paying rent for an apartment",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-11": {
+  "option_a": "A bank that keeps your coins in one safe place",
+  "option_d": "A debt that many people share and pay back together",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-E-12": {
+  "option_a": "Spending everything as soon as you get it",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-01": {
+  "option_b": "The taxes you owe on every investment",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-02": {
+  "option_a": "How risky the fund's investments are",
+  "option_c": "The dividend rate the fund pays each year",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-03": {
+  "option_a": "Picks one stock that experts think will win",
+  "option_c": "Guarantees returns no matter what the market does",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-04": {
+  "option_a": "A company's debt to its total assets",
+  "option_c": "Sales to the cash a company has",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-05": {
+  "option_b": "Guaranteed returns, since time removes all risk",
+  "option_c": "No need to diversify, since time fixes everything",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-06": {
+  "option_a": "Short selling borrowed shares",
+  "option_b": "Market timing the highs and lows",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-08": {
+  "option_b": "Revenue minus costs for the whole year",
+  "option_d": "Debt plus the cash the company has in the bank",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-09": {
+  "option_a": "A fee you pay a broker every time you buy a stock",
+  "option_d": "Interest a savings account pays you each month",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-12": {
+  "option_a": "How fast you spend money after you get paid each month",
+  "option_d": "How much money a bank will let you borrow at once",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-13": {
+  "option_a": "It always earns more money than stocks do over time",
+  "option_b": "It lets you avoid paying any taxes on your investments",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-14": {
+  "option_b": "A type of bond sold by farming companies",
+  "option_d": "A sudden one-day drop in most stock prices",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "IN-M-15": {
+  "option_b": "Doubles the company's profits and its total value overnight",
+  "option_d": "Lowers the company's total market value by half",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-01": {
+  "option_b": "A savings account that pays back double what you put in",
+  "option_d": "A loan from a bank that you never have to pay back at all",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-02": {
+  "option_b": "A prize the insurance company sends you each year",
+  "option_c": "A bonus a bank gives you for saving money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-03": {
+  "option_a": "A guaranteed win that always pays you money",
+  "option_d": "A bank account that keeps money safe",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-04": {
+  "option_a": "Buying a helmet before you ride your bike",
+  "option_b": "Wearing a seatbelt every time you ride in a car",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-05": {
+  "option_a": "Riding a bike that has no brakes",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-06": {
+  "option_a": "Money set aside for a fun vacation",
+  "option_b": "Money you borrow when you want toys",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-07": {
+  "option_a": "To buy more toys whenever you see new ones",
+  "option_b": "To lend to friends and never ask for it back",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-08": {
+  "option_a": "Video games when you feel bored",
+  "option_d": "Candy and snacks at the store",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-09": {
+  "option_a": "A prize the insurance company gives you for staying safe",
+  "option_c": "A fee the bank charges each time you use your card",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-12": {
+  "option_a": "Increase the risk of a crash",
+  "option_c": "Avoid following the safety rules",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-13": {
+  "option_a": "Banks give free money to anyone who has an accident",
+  "option_c": "One person pays for everyone's losses all by themselves",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-E-14": {
+  "question": "Why is a bank savings account safer than hiding cash at home?",
+  "option_a": "The bank keeps it protected, and accounts are insured",
+  "option_b": "Cash hidden at home earns more interest",
+  "option_c": "The bank lets you spend money you do not have",
+  "option_d": "Cash at home can never be lost or stolen",
+  "correct": "A",
+  "explanation": "Banks keep money safe, and deposit insurance protects savings even if the bank has trouble.",
+  "reason": "near-duplicate of IN-E-06 (identical options); rewritten as a new risk question"
+ },
+ "RI-E-15": {
+  "option_b": "Unrelated, because a safer choice always pays more money",
+  "option_c": "Opposites, since riskier choices always lose all their money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-01": {
+  "option_d": "Insurance pays for everything",
+  "explanation": "Taking on more of the cost yourself lowers your premium.",
+  "reason": "ambiguous: 'More savings needed' is arguably true; premiums aren't always monthly"
+ },
+ "RI-M-02": {
+  "option_a": "Risk from you to the government, which pays all your losses",
+  "option_b": "Profit from the insurer to you every month, even with no loss",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-05": {
+  "option_a": "Only one person pays for everyone's losses",
+  "option_d": "Insurers take no money from their customers",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-08": {
+  "option_b": "Increasing risk by putting all your money in one place",
+  "option_c": "Paying extra interest to borrow money faster",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-09": {
+  "option_a": "Loans you take out to pay your rent each month",
+  "option_d": "The landlord's building, including its roof and walls",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-10": {
+  "option_a": "The color of the store and how friendly it looks",
+  "option_b": "How many sales the salesperson needs this month",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-11": {
+  "option_b": "A code of rules that insurers must follow by law",
+  "option_c": "Fraud committed by banks against their customers",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-13": {
+  "option_a": "All of your car repair costs after any accident",
+  "option_c": "Your savings if the bank loses your money",
+  "reason": "length cue: correct answer was the longest option"
+ },
+ "RI-M-14": {
+  "option_a": "A written contract that explains all fees",
+  "option_b": "A clear refund policy posted on the website",
+  "reason": "length cue: correct answer was the longest option"
+ }
+}

@@ -1,0 +1,418 @@
+{
+ "piggybank_village": [
+  {
+   "monster": "Spendling",
+   "type": "regular",
+   "attack": "Grab Bag",
+   "does": "Swings a shopping bag that sucks up your coins.",
+   "effect": "Steals 5 coins if you answer wrong.",
+   "lesson": "Impulse buys drain savings fast.",
+   "damage": 8
+  },
+  {
+   "monster": "Impulse Magpie",
+   "type": "regular",
+   "attack": "Shiny Swoop",
+   "does": "Dives claws first and snatches coins.",
+   "effect": "Hits first if you take longer than 10 seconds.",
+   "lesson": "Shiny things tempt you to buy without thinking.",
+   "damage": 9
+  },
+  {
+   "monster": "Jar Muncher",
+   "type": "regular",
+   "attack": "Coin Crunch",
+   "does": "Lunges with chomping jaws and spits coins.",
+   "effect": "Eats part of your savings shield.",
+   "lesson": "Small leaks empty the jar.",
+   "damage": 10
+  },
+  {
+   "monster": "King Splurge",
+   "type": "boss",
+   "attack": "Shopping Spree Storm",
+   "does": "Rains shopping bags across the whole screen.",
+   "effect": "Hits twice in a row on a wrong answer.",
+   "lesson": "Big splurges wreck a budget.",
+   "damage": 16,
+   "second_attack": {
+    "attack": "Buy Now Beam",
+    "does": "Fires a blinking BUY NOW ray.",
+    "effect": "Shrinks your answer timer for 1 turn.",
+    "damage": 12
+   }
+  }
+ ],
+ "borrowers_bridges": [
+  {
+   "monster": "Debt Slime",
+   "type": "regular",
+   "attack": "Split Splat",
+   "does": "Splits in two and hurls slime blobs with IOU notes.",
+   "effect": "Splits into 2 slimes if not beaten in 3 turns.",
+   "lesson": "Unpaid debt multiplies.",
+   "damage": 8
+  },
+  {
+   "monster": "Interest Imp",
+   "type": "regular",
+   "attack": "Compound Sting",
+   "does": "Stabs with its percent-sign tail.",
+   "effect": "Damage goes up +2 every turn it is ignored.",
+   "lesson": "Interest grows on top of interest.",
+   "damage": 6
+  },
+  {
+   "monster": "Late Fee Troll",
+   "type": "regular",
+   "attack": "Late Smash",
+   "does": "Slams its stopwatch club and sends out a clock shockwave.",
+   "effect": "Extra damage if your answer is slow.",
+   "lesson": "Paying late costs extra.",
+   "damage": 10
+  },
+  {
+   "monster": "Loan Shark Lord",
+   "type": "boss",
+   "attack": "Chain Lash",
+   "does": "Cracks a chain whip covered in IOU tags.",
+   "effect": "Locks one answer button for a turn.",
+   "lesson": "Bad loans trap you.",
+   "damage": 15,
+   "second_attack": {
+    "attack": "Feeding Frenzy",
+    "does": "Circles and bites three times.",
+    "effect": "Hits 3 times for small damage.",
+    "damage": 5
+   }
+  }
+ ],
+ "guildworks": [
+  {
+   "monster": "Tax Gremlin",
+   "type": "regular",
+   "attack": "Paycheck Nibble",
+   "does": "Tears open a paycheck and coins fly out.",
+   "effect": "Takes a slice of coins you earned this battle.",
+   "lesson": "Gross pay vs. take-home pay.",
+   "damage": 8
+  },
+  {
+   "monster": "Slacker Golem",
+   "type": "regular",
+   "attack": "Nap Quake",
+   "does": "Flops down and sends out a Zzz shockwave.",
+   "effect": "Makes you skip a turn.",
+   "lesson": "Skipping work means no pay.",
+   "damage": 9
+  },
+  {
+   "monster": "Gig Goblin",
+   "type": "regular",
+   "attack": "Toolstorm Toss",
+   "does": "Juggles and throws tools and delivery boxes.",
+   "effect": "Random damage from 4 to 14.",
+   "lesson": "Gig income is unpredictable.",
+   "damage": 9
+  },
+  {
+   "monster": "Burnout Blaze",
+   "type": "boss",
+   "attack": "Overtime Inferno",
+   "does": "Shoots fireballs made of spinning gears.",
+   "effect": "Gets stronger each turn but loses health too.",
+   "lesson": "Working nonstop burns you out.",
+   "damage": 16,
+   "second_attack": {
+    "attack": "Anvil Drop",
+    "does": "Drops a giant anvil from above.",
+    "effect": "Big single hit.",
+    "damage": 20
+   }
+  }
+ ],
+ "compound_orchard": [
+  {
+   "monster": "Hype Hornet",
+   "type": "regular",
+   "attack": "FOMO Rocket",
+   "does": "Dives with its rocket stinger trailing green up arrows.",
+   "effect": "Fast; always attacks first.",
+   "lesson": "Fear of missing out leads to bad investments.",
+   "damage": 9
+  },
+  {
+   "monster": "Bubble Beetle",
+   "type": "regular",
+   "attack": "Bubble Pop Burst",
+   "does": "Inflates its bubble until it bursts.",
+   "effect": "Grows for 2 turns, then pops for big damage.",
+   "lesson": "Bubbles always pop.",
+   "damage": 14
+  },
+  {
+   "monster": "Panic Bear",
+   "type": "regular",
+   "attack": "Sell-Off Slam",
+   "does": "Smashes down a red down-arrow sign.",
+   "effect": "Knocks your next spell's power down.",
+   "lesson": "Panic selling locks in losses.",
+   "damage": 10
+  },
+  {
+   "monster": "Crash Treant",
+   "type": "boss",
+   "attack": "Market Crash",
+   "does": "Slams its red-chart branches and drops rotten coin fruit.",
+   "effect": "Hits everyone; your pet too.",
+   "lesson": "Markets drop, but patience recovers.",
+   "damage": 17,
+   "second_attack": {
+    "attack": "Root Recession",
+    "does": "Roots burst out of the ground.",
+    "effect": "Slows you for 2 turns.",
+    "damage": 10
+   }
+  }
+ ],
+ "stormwatch_coast": [
+  {
+   "monster": "Risk Squall",
+   "type": "regular",
+   "attack": "Thunder Jab",
+   "does": "Punches with lightning fists.",
+   "effect": "25% chance of a double hit.",
+   "lesson": "Risks can strike any time.",
+   "damage": 9
+  },
+  {
+   "monster": "Mishap Crab",
+   "type": "regular",
+   "attack": "Oops Pinch",
+   "does": "Snaps its cracked claws.",
+   "effect": "Breaks your shield if you have no insurance spell up.",
+   "lesson": "Accidents happen; insurance helps.",
+   "damage": 9
+  },
+  {
+   "monster": "Flood Eel",
+   "type": "regular",
+   "attack": "Riptide Shock",
+   "does": "Shoots a rushing water blast with sparks.",
+   "effect": "Washes away 1 buff.",
+   "lesson": "Disasters can wipe out what you have.",
+   "damage": 11
+  },
+  {
+   "monster": "Catastrophe Leviathan",
+   "type": "boss",
+   "attack": "Perfect Storm",
+   "does": "Summons a tidal wave plus lightning.",
+   "effect": "Huge hit unless Insurance Barrier is up.",
+   "lesson": "Plan for the worst case.",
+   "damage": 22,
+   "second_attack": {
+    "attack": "Whirlpool",
+    "does": "Spins you around in a whirlpool.",
+    "effect": "Shuffles the answer buttons.",
+    "damage": 8
+   }
+  }
+ ],
+ "crossroads_observatory": [
+  {
+   "monster": "Scam Serpent",
+   "type": "regular",
+   "attack": "Too Good To Be True",
+   "does": "Opens a FREE PRIZE box that explodes into hypnotic spirals.",
+   "effect": "Shows a fake answer hint.",
+   "lesson": "If it sounds too good to be true, it's a scam.",
+   "damage": 9
+  },
+  {
+   "monster": "Inflation Balloon",
+   "type": "regular",
+   "attack": "Price Puff",
+   "does": "Puffs up and squeezes coins smaller.",
+   "effect": "Your coins are worth less until it's beaten.",
+   "lesson": "Inflation shrinks what money buys.",
+   "damage": 8
+  },
+  {
+   "monster": "Doubt Wraith",
+   "type": "regular",
+   "attack": "Second Guess",
+   "does": "Swings question-mark lanterns that confuse you.",
+   "effect": "Hides one answer choice for a turn.",
+   "lesson": "Make a plan and stick to it.",
+   "damage": 9
+  },
+  {
+   "monster": "Chaos Sphinx",
+   "type": "boss",
+   "attack": "Riddle Rift",
+   "does": "Fires a star beam from its wings.",
+   "effect": "Asks a bonus riddle; wrong = double damage.",
+   "lesson": "Think before big decisions.",
+   "damage": 18,
+   "second_attack": {
+    "attack": "Scale Smash",
+    "does": "Slams its golden scale.",
+    "effect": "Balances both health bars toward the middle.",
+    "damage": 12
+   }
+  }
+ ],
+ "sunfire_pass": [
+  {
+   "monster": "Ember Jackal",
+   "type": "regular",
+   "attack": "Flame Pounce",
+   "does": "Leaps with a fiery mane.",
+   "effect": "Burn: 3 damage for 2 turns.",
+   "damage": 9,
+   "tames_into": "Ember Jackal pet"
+  },
+  {
+   "monster": "Sunscale Basilisk",
+   "type": "regular",
+   "attack": "Solar Glare",
+   "does": "Flashes its sun plates.",
+   "effect": "Blinds: answers fade for 1 turn.",
+   "damage": 9,
+   "tames_into": "Sunscale Basilisk pet"
+  },
+  {
+   "monster": "Cinder Scarab",
+   "type": "regular",
+   "attack": "Molten Roll",
+   "does": "Rolls into a ball of molten gold.",
+   "effect": "Hard to hit; takes half spell damage.",
+   "damage": 10,
+   "tames_into": "Cinder Scarab pet"
+  },
+  {
+   "monster": "Solar Wyrm",
+   "type": "boss",
+   "attack": "Sunfall Breath",
+   "does": "Breathes a beam of sunfire.",
+   "effect": "Huge burn damage.",
+   "damage": 20,
+   "tames_into": "Solar Wyrm pet (legendary)"
+  }
+ ],
+ "nebula_grove": [
+  {
+   "monster": "Starmoth",
+   "type": "regular",
+   "attack": "Stardust Gust",
+   "does": "Flaps galaxy wings, blowing stardust.",
+   "effect": "Sleepy: skip a turn 30% of the time.",
+   "damage": 8,
+   "tames_into": "Starmoth pet"
+  },
+  {
+   "monster": "Nebula Lynx",
+   "type": "regular",
+   "attack": "Comet Claw",
+   "does": "Slashes with glowing star claws.",
+   "effect": "Critical hit chance up.",
+   "damage": 11,
+   "tames_into": "Nebula Lynx pet"
+  },
+  {
+   "monster": "Void Sprout",
+   "type": "regular",
+   "attack": "Black Hole Bloom",
+   "does": "Opens a tiny black hole flower.",
+   "effect": "Pulls in 1 of your buffs.",
+   "damage": 9,
+   "tames_into": "Void Sprout pet"
+  },
+  {
+   "monster": "Galaxy Stag",
+   "type": "boss",
+   "attack": "Constellation Charge",
+   "does": "Charges with glowing star antlers.",
+   "effect": "Hits harder each time it charges.",
+   "damage": 19,
+   "tames_into": "Galaxy Stag pet (legendary)"
+  }
+ ],
+ "astral_ruins": [
+  {
+   "monster": "Rune Golem",
+   "type": "regular",
+   "attack": "Rune Slam",
+   "does": "Slams the ground and runes light up.",
+   "effect": "Shield up for itself next turn.",
+   "damage": 11,
+   "tames_into": "Rune Golem pet"
+  },
+  {
+   "monster": "Relic Wraith",
+   "type": "regular",
+   "attack": "Ancient Shield Bash",
+   "does": "Bashes with an old star shield.",
+   "effect": "Blocks your next spell.",
+   "damage": 10,
+   "tames_into": "Relic Wraith pet"
+  },
+  {
+   "monster": "Comet Hound",
+   "type": "regular",
+   "attack": "Comet Dash",
+   "does": "Dashes past with a blazing comet tail.",
+   "effect": "Always attacks first.",
+   "damage": 9,
+   "tames_into": "Comet Hound pet"
+  },
+  {
+   "monster": "Astral Colossus",
+   "type": "boss",
+   "attack": "Planet Crush",
+   "does": "Hurls its orbiting planet down.",
+   "effect": "Massive hit every 3rd turn.",
+   "damage": 24,
+   "tames_into": "Astral Colossus pet (legendary)"
+  }
+ ],
+ "moonwell_cavern": [
+  {
+   "monster": "Moonbat",
+   "type": "regular",
+   "attack": "Crescent Screech",
+   "does": "Screeches crescent-shaped sound waves.",
+   "effect": "Scrambles one answer's text.",
+   "damage": 8,
+   "tames_into": "Moonbat pet"
+  },
+  {
+   "monster": "Crystal Crawler",
+   "type": "regular",
+   "attack": "Shard Spray",
+   "does": "Fires glowing crystal shards.",
+   "effect": "Hits 3 times for small damage.",
+   "damage": 4,
+   "tames_into": "Crystal Crawler pet"
+  },
+  {
+   "monster": "Tide Specter",
+   "type": "regular",
+   "attack": "Moon Tide",
+   "does": "Washes a ghostly wave over you.",
+   "effect": "Heals itself a little.",
+   "damage": 9,
+   "tames_into": "Tide Specter pet"
+  },
+  {
+   "monster": "Lunar Hydra",
+   "type": "boss",
+   "attack": "Triple Moonbeam",
+   "does": "All three heads fire silver beams.",
+   "effect": "3 hits; each head can be beaten separately.",
+   "damage": 21,
+   "tames_into": "Lunar Hydra pet (legendary)"
+  }
+ ]
+}

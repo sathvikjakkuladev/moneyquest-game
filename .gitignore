@@ -1,0 +1,8 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.asset-cache/
+# Printed reward-card code lists: test fixtures only, never committed.
+tests/fixtures/reward-cards/
+.DS_Store

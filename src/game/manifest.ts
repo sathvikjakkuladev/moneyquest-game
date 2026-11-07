@@ -10,7 +10,7 @@ export interface Manifest {
   basePath: string;
   locations: Record<string, { topic: string; start: string; battleBg: string | null; screens: Record<string, PackScreen> }>;
   monsters: Record<string, { zone: string; atlas: string; image: string; json: string; cell: number; baseline: number; size: number; boss: boolean; anims: Anim[] }>;
-  characters: Record<string, { atlas: string; image: string; json: string; size: number; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }>;
+  characters: Record<string, { atlas: string; image: string; json: string; size: number; foot: number; height: number; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }>;
   v1px: Record<string, { atlas: string; image: string; json: string; frames: string[]; anims?: Record<string, { frames: string[]; flipX: boolean }> }>;
   worldMap: string | null;
 }

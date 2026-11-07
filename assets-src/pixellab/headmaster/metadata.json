@@ -1,0 +1,36 @@
+{
+  "group_id": "faa74474-5bda-4eeb-9a8a-d69d35e79fd4",
+  "states": [
+    {
+      "character": {
+        "id": "54c559a9-87e8-44df-a72a-671150cababa",
+        "name": "Idle",
+        "prompt": "wise elderly chibi wizard headmaster, big round head, big kind eyes, long white beard, tall purple wizard hat with gold coin stars, deep purple robe with gold trim, holding a tall staff topped with a glowing gold coin, bright saturated cozy cartoon fantasy colors",
+        "size": {
+          "width": 92,
+          "height": 92
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-11-07T05:36:46.434720+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-11-07T05:38:39.438706"
+}

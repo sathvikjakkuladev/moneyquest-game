@@ -226,3 +226,40 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   they face right; five sprites still need checking. The flip list goes in data then.
 - Tests: 31 (question parsing and validation, image helpers, the generated manifest, reward codes,
   canvas zoom).
+
+### Phase 2 — the hub and Piggybank Village, playable (done 2026-11-07)
+- **PixelLab (with your OK):** Headmaster and merchant, standard mode, 1 generation each (2 of the
+  5 trial generations; 3 left plus the daily bonus). Same settings as the pack's characters. Saved
+  in `assets-src/pixellab/` and imported like the pack. They stand still with a 1-pixel bob; the
+  shopkeeper in the Piggybank market reuses the merchant sprite.
+- **Rooms:** `src/data/rooms/coin_academy.json` and `piggybank_village.json`, seeded by
+  `tools/seed-rooms.ts` from the pack's `rooms.json` (640×360, used as-is) plus first-pass collision.
+  Placed by hand where rooms.json only describes a spot: merchant by the potion counter, Headmaster
+  beside his desk (behind it would need an occlusion layer), Penny Meadows by the cottages,
+  Spendling and Jar Muncher in the market, Impulse Magpie by the cottages (one cottages spot is
+  spare), King Splurge on the gate's boss spot.
+- **Overworld:** walk with arrows/WASD, click or tap to walk, an on-screen arrow pad on touch
+  screens; Space/Enter or a tap talks. Exits fade to the next screen. Walking into an unbeaten
+  monster starts a battle; beaten ones show ✓ and can be re-fought with Space (half rewards). The
+  boss shows 🔒 until the three monsters are beaten. The two darker screens get a slight brighten.
+  Facing: west mirrors east; diagonals use the nearest drawn direction; no drawn animation for a
+  facing falls back to that rotation image.
+- **Battle:** Piggybank battle background at 2×; the wizard's idle, cast and hit animations; the
+  monster sheet rows (idle, attack, hit, defeat); King Splurge at 2×. Spells and effects are code
+  (pixel beam, sparks, shield ring, flying coins). Damage numbers are real text. A right answer
+  shows ✓ and the explanation for 3.5 s (or tap Next); a wrong one shows ✗, the right answer and
+  "Why", until "Got it". Piggybank effects: Spendling takes 5 coins, Impulse Magpie's 10 s timer
+  (Adventurer only), Jar Muncher eats a shield or takes 3 coins, King Splurge's double hit and his
+  8 s rush timer (Explorer: +4 damage instead). Save Shield unlocks by beating King Splurge.
+- **Opening flow:** title (3 save slots) → Headmaster's welcome → nickname → level (changeable in
+  Settings) → a Money Check placeholder screen (the real test is Phase 5; each save already gets a
+  random first form, A or B) → the Great Hall.
+- **Settings:** auto read-aloud, quest level, motion (device / less / full), save and quit.
+  Read-aloud uses on-device voices only. Sound: no-op `sfx()` and `music()` with call sites in place.
+- **Layouts checked:** 1280×720 (2×), 1024×768 (fit), iPad portrait (bars and card below the game).
+- **Tests:** 55 unit tests (battle rules and every Piggybank effect, question bags and the miss
+  queue, Money Check forms, saves and migrations, rooms: every entry standable and every exit
+  reachable). The Playwright smoke test plays title → nickname → Adventurer → Great Hall (talk to
+  the merchant) → library (Headmaster) → world map → gate → plaza → market → walks into Spendling →
+  one wrong and five right answers → win → reload, with no console errors.
+- Build: 3.6 MB (`dist/`), of which art is 1.7 MB.

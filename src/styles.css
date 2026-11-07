@@ -29,3 +29,30 @@ canvas { display: block; image-rendering: pixelated; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+.title-text { color: #fff6dc; paint-order: stroke fill; -webkit-text-stroke: 5px #1b1410; text-shadow: 0 3px 0 #1b1410; }
+.btn:disabled { opacity: 0.75; cursor: default; }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #1b1410; }
+.btn-quiet { background: #fff8e6; }
+.btn-danger { background: #ffb4a8; }
+.btn-locked:disabled { background: #d9d0c0; color: #3b3026; opacity: 1; }
+
+/* Answer buttons. Right/wrong always adds a ✓ or ✗, never colour alone. */
+.opt { display: flex; align-items: center; gap: 0.6rem; min-height: 54px; padding: 0.35rem 0.7rem; border-radius: 6px;
+  border: 3px solid var(--color-frame); background: #fffaf0; color: var(--color-ink); font-size: 1.2rem; font-weight: 600; line-height: 1.2;
+  box-shadow: 0 4px 0 #1b1410; }
+.opt:hover:not(:disabled) { background: #fff3c4; }
+.opt:focus-visible { outline: 4px solid #1d5fd1; outline-offset: 3px; }
+.opt:disabled { cursor: default; }
+.opt-letter { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2.1rem; height: 2.1rem;
+  border-radius: 4px; background: var(--color-frame); color: #fff6dc; font-weight: 700; }
+.opt-right { background: #d3f9d8 !important; border-color: #1f7a3a; color: #0b3d1a; }
+.opt-right .opt-letter { background: #1f7a3a; }
+.opt-wrong { background: #ffe3e0 !important; border-color: #a3271f; color: #5c0f0a; }
+.opt-wrong .opt-letter { background: #a3271f; }
+
+/* The question card slides in; floating numbers drift up and fade. Both turn off with reduced motion. */
+@keyframes card-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card-in { animation: card-in 0.22s ease-out; }
+@keyframes float-up { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, -36px); opacity: 0; } }
+.float-up { animation: float-up 1s ease-out forwards; }

@@ -15,7 +15,8 @@ npm run typecheck          # tsc, strict, must be clean
 npm test                   # Vitest, must pass
 npm run e2e                # Playwright (uses the installed Google Chrome)
 npm run import:questions   # ../make-bank-question-bank.csv + src/data/question-overrides.json → src/data/questions.json
-npm run import:assets      # ../MoneyQuest Assets/ (+ pixelized v1 gaps from the archive) → public/assets/, src/assets/manifest.json, ASSET_REPORT.md
+npm run import:assets      # ../MoneyQuest Assets/ + assets-src/pixellab/ (+ pixelized v1 gaps from the archive) → public/assets/, src/assets/manifest.json, ASSET_REPORT.md
+node tools/seed-rooms.ts <zone>   # first version of src/data/rooms/<zone>.json (never overwrites without --force)
 ```
 
 Node 26 runs `tools/*.ts` directly (type stripping): use `import type`, explicit `.ts` extensions,

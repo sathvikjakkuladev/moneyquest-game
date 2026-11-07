@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Img } from './lib/img.ts';
-import { atlasJson, flipX, loadImg, pack, padBottomCenter, pixelize, toSharp } from './lib/img.ts';
+import { alphaBox, atlasJson, flipX, loadImg, pack, padBottomCenter, pixelize, toSharp } from './lib/img.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PACK = join(root, '..', 'MoneyQuest Assets');
@@ -141,7 +141,7 @@ async function importMonsters() {
 }
 
 // ── Characters (PixelLab layout) ──────────────────────────────────────────
-interface CharEntry { atlas: string; image: string; json: string; size: number; source: 'pack' | 'pixellab-extra'; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }
+interface CharEntry { atlas: string; image: string; json: string; size: number; foot: number; height: number; source: 'pack' | 'pixellab-extra'; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }
 const characters: Record<string, CharEntry> = {};
 
 async function importCharacter(id: string, base: string, source: CharEntry['source']) {
@@ -170,10 +170,14 @@ async function importCharacter(id: string, base: string, source: CharEntry['sour
       }
     }
   }
+  // Feet line and visible height from the south rotation, so characters on different canvas sizes
+  // (PixelLab standard mode pads to 92 px) stand on the same spot.
+  const south = items.find((it) => it.name === 'rot_south')!.img;
+  const box = alphaBox(south)!;
   const packed = pack(items);
   const image = await writeWebp(packed.sheet, join(OUT, 'characters', `${id}.webp`));
   const json = writeJson(atlasJson(`${id}.webp`, packed), join(OUT, 'characters', `${id}.json`));
-  characters[id] = { atlas: `chr:${id}`, image, json, size: state.character.size.height, source, anims, rotations };
+  characters[id] = { atlas: `chr:${id}`, image, json, size: state.character.size.height, foot: box.y + box.h, height: box.h, source, anims, rotations };
 }
 
 async function importCharacters() {

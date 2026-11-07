@@ -3854,6 +3854,8 @@
    "image": "characters/mentor_piggybank_village.webp",
    "json": "characters/mentor_piggybank_village.json",
    "size": 64,
+   "foot": 62,
+   "height": 60,
    "source": "pack",
    "anims": {
     "walk": {
@@ -3907,6 +3909,8 @@
    "image": "characters/player_coin_wizard.webp",
    "json": "characters/player_coin_wizard.json",
    "size": 64,
+   "foot": 61,
+   "height": 59,
    "source": "pack",
    "anims": {
     "walk": {
@@ -3970,6 +3974,46 @@
      ]
     }
    },
+   "rotations": {
+    "south": "rot_south",
+    "south-east": "rot_south-east",
+    "east": "rot_east",
+    "north-east": "rot_north-east",
+    "north": "rot_north",
+    "north-west": "rot_north-west",
+    "west": "rot_west",
+    "south-west": "rot_south-west"
+   }
+  },
+  "headmaster": {
+   "atlas": "chr:headmaster",
+   "image": "characters/headmaster.webp",
+   "json": "characters/headmaster.json",
+   "size": 92,
+   "foot": 80,
+   "height": 74,
+   "source": "pixellab-extra",
+   "anims": {},
+   "rotations": {
+    "south": "rot_south",
+    "south-east": "rot_south-east",
+    "east": "rot_east",
+    "north-east": "rot_north-east",
+    "north": "rot_north",
+    "north-west": "rot_north-west",
+    "west": "rot_west",
+    "south-west": "rot_south-west"
+   }
+  },
+  "merchant": {
+   "atlas": "chr:merchant",
+   "image": "characters/merchant.webp",
+   "json": "characters/merchant.json",
+   "size": 92,
+   "foot": 78,
+   "height": 72,
+   "source": "pixellab-extra",
+   "anims": {},
    "rotations": {
     "south": "rot_south",
     "south-east": "rot_south-east",
@@ -4067,5 +4111,5 @@
   }
  },
  "worldMap": "v1px/world_map.webp",
- "totalBytes": 1489831
+ "totalBytes": 1502253
 }

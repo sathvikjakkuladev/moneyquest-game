@@ -1,0 +1,6 @@
+// The server is its own package: the game's tsconfigs and `npm run build` never include it.
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": { "lib": ["ES2023"], "types": ["@cloudflare/workers-types", "node"] },
+  "include": ["src", "test", "scripts", "vitest.config.ts", "../src/net/names.ts", "../src/net/codes.ts", "../src/net/protocol.ts"]
+}

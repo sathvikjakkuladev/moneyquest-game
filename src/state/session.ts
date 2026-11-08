@@ -265,7 +265,7 @@ export const useSession = create<Session>()((set, get) => {
             ...x,
             inventory: { ...x.inventory, owned },
             progress: {
-              ...p, xp, level, coins: st.wallet + won.coins,
+              ...p, xp, level, coins: st.wallet + won.coins, coinsEarned: p.coinsEarned + won.coins,
               defeated: first ? [...p.defeated, b.monster.id] : p.defeated,
               zonesCleared: clears && !p.zonesCleared.includes(b.monster.zone) ? [...p.zonesCleared, b.monster.zone] : p.zonesCleared,
               spells: newSpell ? [...p.spells, newSpell] : p.spells,

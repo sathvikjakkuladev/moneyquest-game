@@ -6,3 +6,4 @@ playwright-report/
 # Printed reward-card code lists: test fixtures only, never committed.
 tests/fixtures/reward-cards/
 .DS_Store
+.wrangler/

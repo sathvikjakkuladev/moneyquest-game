@@ -3,7 +3,9 @@
 Browser RPG teaching personal finance to grades K–8 (DECA Financial Literacy Project). Kids explore a
 wizard school and money-themed zones one screen at a time and battle "money monsters" by answering
 multiple-choice questions. It must be accurate, demo-ready for judges, run on school Chromebooks and
-iPads, and deploy as a static website (Netlify). Design and every decision: `PLAN.md`. Asset facts:
+iPads, and deploy as a static website. **Hosting (2026-11-07): the game is live on Vercel at
+`https://nhsqa.org/`; the domain is registered at Porkbun.** Optional multiplayer runs on a Cloudflare
+Worker (`server/`, planned at `mp.nhsqa.org`; PLAN.md §10). Design and every decision: `PLAN.md`. Asset facts:
 `ASSET_REPORT.md`. The old build and its archive were deleted on 2026-11-07 at the user's request;
 the only thing kept from it is the v1 art the importer still needs (`assets-src/v1/`).
 
@@ -17,7 +19,13 @@ npm run e2e                # Playwright (uses the installed Google Chrome)
 npm run import:questions   # ../make-bank-question-bank.csv + src/data/question-overrides.json → src/data/questions.json
 npm run import:assets      # ../MoneyQuest Assets/ + assets-src/pixellab/ (+ pixelized v1 gaps from assets-src/v1/) → public/assets/, src/assets/manifest.json, ASSET_REPORT.md
 node tools/seed-rooms.ts <zone>   # first version of src/data/rooms/<zone>.json (never overwrites without --force)
+npm run dev:all            # multiplayer: local server (wrangler, :8787) + game with VITE_MP_URL (:5173)
+npm run server:typecheck   # the server package (game/server/), separate from the game build
+npm run server:test        # server tests (Node SQLite with the real D1 migrations)
 ```
+
+Multiplayer server: `server/README.md` (settings, secrets, Vercel variables). The game's `npm run
+build` never builds or type-checks `server/`; `.vercelignore` keeps it out of Vercel uploads.
 
 Node 26 runs `tools/*.ts` directly (type stripping): use `import type`, explicit `.ts` extensions,
 no enums, namespaces or constructor parameter properties.
@@ -39,8 +47,23 @@ no enums, namespaces or constructor parameter properties.
   `src/assets/manifest.json`, `public/assets/**`, `ASSET_REPORT.md`. Re-run the importer. Room
   layouts in `src/data/rooms/<zone>.json` are game-side and edited by hand or the `?dev=1` editor.
 - **Monster data comes only from `monster_attacks.json`.** Effect rules map onto it in code.
-- **Kids' privacy:** nickname only. No analytics, ads, accounts or network calls (the only allowed
-  one is optional reward-code checking). Fonts and libraries are bundled locally.
+- **Kids' privacy.** Originally "no accounts or network calls"; **reversed 2026-11-07 by the user
+  for multiplayer** (PLAN.md §10). The rules now:
+  - **The game works with no server.** Single-player and the local save never depend on the
+    network. With no `VITE_MP_URL` at build time, multiplayer code isn't loaded and the game makes
+    no requests (except optional reward-code checking). If the server is unreachable, the game
+    quietly carries on.
+  - **Students never type text another student sees.** No chat, no free-text names. Public names
+    come from the generator or the teacher's list; emotes and preset phrases travel as numbers
+    and are drawn from lists built into the game. The private nickname never leaves the device.
+  - **Minimal data.** Students: class membership, public name, token hash, progress summaries. No
+    real names, emails, birthdays, photos or location. Only teachers have accounts (email +
+    PBKDF2 password hash). Retention: idle classes deleted after 12 months, reports after 90 days.
+  - **No third parties:** no analytics, ads or trackers (Vercel Analytics and Speed Insights stay
+    off). Fonts and libraries are bundled locally.
+  - **Secrets** live in `wrangler secret`, never in the repo or any `VITE_` variable (those end up
+    in the public bundle).
+  - **Teachers stay in control:** classes, mute/remove, world mode (off by default), data deletion.
 - **Mark drafts:** learning text written by AI (mentor tips, overrides, explanations) is a draft
   for the user to review.
 - **PixelLab costs generations** (trial account): ask the user before every generation.

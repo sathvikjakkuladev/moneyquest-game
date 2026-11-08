@@ -6,22 +6,29 @@ import { newQuestionState } from './questions.ts';
 import type { SpellId } from './spells.ts';
 import type { Band, Topic } from './types.ts';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SLOTS = 3;
 
 /** One Money Check result: score per topic (0–2) and total (0–12). */
 export interface CheckResult { date: string; band: Band; form: FormId; perTopic: Record<Topic, number>; total: number }
 
+/**
+ * This save slot's class membership (multiplayer). `url` is the server it belongs to, so the token is
+ * never sent to a different server. The nickname is never sent anywhere; others see `publicName`.
+ */
+export interface Membership { url: string; classCode: string; className: string; token: string; publicName: string }
+
 export interface Slot {
   nickname: string;
   band: Band;
   createdAt: string;
-  progress: { level: number; xp: number; coins: number; defeated: string[]; zonesCleared: string[]; spells: SpellId[]; spell: SpellId; tamed: string[] };
+  progress: { level: number; xp: number; coins: number; coinsEarned: number; defeated: string[]; zonesCleared: string[]; spells: SpellId[]; spell: SpellId; tamed: string[] };
   inventory: { owned: string[]; hat: string | null; pet: string | null };
   questions: QuestionState;
   moneyCheck: { firstForm: FormId; pre: CheckResult | null; post: CheckResult | null };
   redeemed: string[];
-  settings: { readAloud: boolean; reducedMotion: boolean | null }; // null = follow the device
+  settings: { readAloud: boolean; reducedMotion: boolean | null; playOffline: boolean }; // reducedMotion null = follow the device
+  online: Membership | null;
 }
 
 export interface SaveFile { version: number; slots: (Slot | null)[]; active: number | null }
@@ -31,12 +38,13 @@ export const emptySave = (): SaveFile => ({ version: SAVE_VERSION, slots: Array.
 export function newSlot(nickname: string, band: Band, firstForm: FormId, now = new Date()): Slot {
   return {
     nickname, band, createdAt: now.toISOString(),
-    progress: { level: 1, xp: 0, coins: 0, defeated: [], zonesCleared: [], spells: ['budget_beam'], spell: 'budget_beam', tamed: [] },
+    progress: { level: 1, xp: 0, coins: 0, coinsEarned: 0, defeated: [], zonesCleared: [], spells: ['budget_beam'], spell: 'budget_beam', tamed: [] },
     inventory: { owned: [], hat: null, pet: null },
     questions: newQuestionState(),
     moneyCheck: { firstForm, pre: null, post: null },
     redeemed: [],
-    settings: { readAloud: false, reducedMotion: null },
+    settings: { readAloud: false, reducedMotion: null, playOffline: false },
+    online: null,
   };
 }
 
@@ -54,6 +62,16 @@ const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, 
     ...s,
     version: 2,
     slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, progress: { ...(x.progress as object), tamed: [] } } : null)),
+  }),
+  // v2 → v3 (multiplayer): coins earned (seeded from the wallet), the Play offline switch, class membership.
+  2: (s) => ({
+    ...s,
+    version: 3,
+    slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => {
+      if (!x) return null;
+      const p = x.progress as Record<string, unknown>;
+      return { ...x, progress: { ...p, coinsEarned: typeof p.coins === 'number' ? p.coins : 0 }, settings: { ...(x.settings as object), playOffline: false }, online: null };
+    }),
   }),
 };
 

@@ -4,6 +4,8 @@ Status: **approved 2026-11-07.** All six decisions in §9 went with the recommen
 §7 missing-asset plan approved (ask before each PixelLab generation); bosses 2× in battle and 1× on
 the overworld; customization is hats and pets only; keep the question overrides; the empty
 top-level `.git` was deleted and the repo lives in `game/`; host on Netlify.
+**Update 2026-11-07:** the game is live on **Vercel** at `https://nhsqa.org/` (domain registered at
+**Porkbun**), not Netlify. It stays on Vercel. Multiplayer (§10) adds a Cloudflare server.
 Paths are relative to `DECA MoneyQuest/`.
 
 ---
@@ -198,11 +200,238 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
 5. **The empty git repo in `DECA MoneyQuest/`:** I recommend deleting that empty `.git` and starting
    a new repo inside `game/`. A top-level repo would contain the archive's own `.git` (a repo inside
    a repo) and the asset pack.
-6. **Hosting:** I recommend **Netlify**. It deploys from a private repo or a plain folder upload.
+6. **Hosting:** (superseded 2026-11-07: the game is on Vercel, domain at Porkbun) I recommended **Netlify**. It deploys from a private repo or a plain folder upload.
    Free GitHub Pages needs a public repo, which would publish the reward secret's source file and
    make printed codes easy to fake.
 
-## 10. Phase log
+## 10. Multiplayer (approved 2026-11-07)
+
+From `MULTIPLAYER_PROMPT.md`. **This reverses the original rule "no accounts or network calls"** at
+the user's request (2026-11-07); the privacy rules that replace it are in CLAUDE.md.
+
+### Context
+MoneyQuest (`game/`, Phases 1–5 done) is live on Vercel at `https://nhsqa.org/`. The domain is
+registered at Porkbun. MULTIPLAYER_PROMPT.md asks for multiplayer similar to Prodigy:
+- **Class mode:** classmates see each other and share goals.
+- **World mode:** players from other classes are visible, with tight safety limits.
+- **Teacher dashboard:** includes the Money Check CSV, which is the DECA impact data.
+
+The server runs on Cloudflare (Workers Paid, $5 a month). This reverses the CLAUDE.md rule "no
+accounts or network calls". Single-player must keep working with no server, and every phase must
+deploy cleanly on Vercel with multiplayer off.
+
+### Decisions (answered 2026-11-07)
+| # | Question | Answer |
+|---|---|---|
+| 1 | Server address | **mp.nhsqa.org** (staging: mp-staging.nhsqa.org; first smoke test on workers.dev) |
+| 2 | DNS | **Move DNS to Cloudflare** in Phase 6; domain stays registered at Porkbun |
+| 3 | Teacher sign-in | **Email + password, no email sending**; the NHSQA admin resets passwords |
+| 4 | World mode default | **Off** for new classes |
+| 5 | Leaderboards | **Coins earned, all-time**: spending doesn't lower rank; no weekly reset. The class goal stays weekly. |
+| 6 | Retention | Inactive classes deleted after **12 months**; reports after **90 days** |
+| 7 | Public names | **Generated + teacher lists** |
+| 8 | World reports | **Build an admin view** in /teacher, shown only to the NHSQA account. Its email is a Cloudflare secret. |
+
+### Teacher login across sites (trade-off and recommendation)
+**The cookie problem:**
+- An HttpOnly, SameSite=Lax cookie from `mp.nhsqa.org` works on `nhsqa.org`, because both are the same site.
+- It fails in Safari for staging: `*.workers.dev` and Vercel previews on `*.vercel.app` are cross-site, so the cookie is third-party and Safari blocks it.
+
+**Recommendation: one approach everywhere, with no cookies:**
+- Login returns a random session token. The /teacher page keeps it in `sessionStorage` and sends it as `Authorization: Bearer`.
+- Sessions last 12 hours. Logout and a password reset revoke them.
+- Only a SHA-256 of the token is stored in D1.
+
+**CSRF and XSS:**
+- Browsers never attach a bearer token by themselves, so cross-site requests can't act as the teacher.
+- As CSRF defense in depth, every state-changing request must also pass the Origin allowlist and send `Content-Type: application/json`, so a plain form post can't trigger it.
+- The XSS risk is covered by a strict CSP (`script-src 'self'`), React escaping and the short expiry.
+
+### Architecture
+- **The game stays a static Vite build on Vercel.**
+  - A second Vite entry, `teacher/index.html`, becomes the `/teacher` page.
+  - `vercel.json` adds a rewrite (`/teacher` → `/teacher/index.html`), security headers, and a CSP whose `connect-src` is `'self'` plus `https://mp.nhsqa.org wss://mp.nhsqa.org`. Staging uses its own CSP.
+  - Vercel Analytics and Speed Insights stay off.
+- **Server in `game/server/`:**
+  - Its own package: wrangler, TypeScript and Vitest, with its own `tsconfig`.
+  - It's outside the game's tsconfig includes, so Vercel's `npm run build` never touches it.
+  - Routes: `/api/*` returns JSON; `/ws/class/:code` and `/ws/world/:zone/:screen` handle WebSockets.
+- **`VITE_MP_URL` switch:**
+  - When it's unset, `src/net/` is never imported: no requests, no UI, and the game is exactly as it is today.
+  - When it's set, `src/net/` loads lazily, only for slots that have joined a class and aren't in "Play offline".
+- **Origin allowlist:**
+  - Exact matches: `https://nhsqa.org`, `http://localhost:5173` and `http://localhost:4173`.
+  - On staging only, a regex for this project's Vercel preview URLs.
+  - Used for CORS (never `*`), with credentials allowed only for those origins.
+  - Checked on every WebSocket upgrade; any other origin gets a 403.
+- **Durable Objects (SQLite storage, WebSocket hibernation API):**
+  - **`ClassRoom`, one per class:**
+    - Handles the class's sockets, who's online and on which screen, and movement relay between classmates on the same screen.
+    - Also emotes and phrases, class goal progress, the leaderboard cache, and live teacher actions (mute, kick, world mode on or off).
+    - Pings get an automatic reply (`setWebSocketAutoResponse`), so heartbeats never wake the object.
+  - **`WorldScreen`, one per screen (e.g. `piggybank_village/plaza`):**
+    - Only for classes with world mode on.
+    - Each player sees at most 15 world players: classmates first (already shown by `ClassRoom`), then the nearest.
+    - If a busy screen still overflows, it splits into numbered shards.
+- **D1 holds:** teachers, sessions, classes, members, progress summaries, coins earned, name lists, reports, reward redemptions and login attempts. Migrations are numbered in `server/migrations/0001_init.sql`, and so on.
+- **Retention:** a cron trigger runs once a day. It deletes classes idle for more than 12 months, with all their data, and reports older than 90 days.
+- **Secrets** (set with `wrangler secret`, never `VITE_*`):
+  - `ADMIN_EMAIL`, the NHSQA admin account.
+  - `PEPPER`, an extra secret mixed into password hashes.
+
+### Accounts and joining
+- **Teacher passwords:**
+  - Hashed with PBKDF2-SHA256 (WebCrypto, 210k iterations, 16-byte salt) plus the pepper.
+  - Login is rate-limited per email and per IP: after 5 failures, a 15-minute lock.
+  - There's no email sending. The admin view resets a teacher's password and shows a one-time temporary password.
+- **Class codes:**
+  - 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, so nothing confusing like 0/O or 1/I.
+  - They're easy to read aloud, and a code is never reused while its class exists.
+- **Students join in Settings:**
+  - Enter the class code, then choose a public name: generated ("BraveOtter42") or from the teacher's list.
+  - The device stores a random 32-byte membership token for that save slot; D1 keeps only its hash.
+  - The private nickname is never sent. Students can leave the class, and the teacher can reset their token.
+- **Save schema v3** (migration and test, as CLAUDE.md requires):
+  - `slot.online: { url, classCode, token, publicName } | null`.
+  - `settings.playOffline: boolean`.
+  - `progress.coinsEarned`, seeded from the current balance.
+  - A local `syncQueue` of progress summaries.
+- **Rule: nothing a student types is ever shown to anyone.**
+  - Public names are generated, or picked from the teacher's list.
+  - Emotes and phrases travel as numbers and are drawn from lists built into the game.
+  - The server rejects anything that isn't a known number.
+
+### Protocol and anti-abuse
+- **Format:** JSON messages, each at most 512 bytes; anything larger closes the socket.
+- **Strict validation:** a small hand-written validator shared by client and server (`src/net/protocol.ts`, imported by the server).
+- **Client to server:**
+  - `hello{token}` must come first, within 5 seconds. Browsers can't set WebSocket headers, and a token in the URL would end up in logs.
+  - `move{screen,x,y,face}` about 4 times a second, only while moving.
+  - `screen{id}`, `emote{i}`, `phrase{i}`, `busy{battle:boolean}`, `mute{id}`, `report{id}`.
+- **Server to client:**
+  - Batched `state` messages about 5 times a second, containing only what changed.
+  - `join`, `leave`, `say{id,emote|phrase}`, `goal`, `kicked`, `muted`, `world{on}`.
+- **Server checks:**
+  - The screen is a real screen; the list is generated from `src/data/rooms`.
+  - Position is within 0–640 × 0–360.
+  - Speed is at most 120 px/s × 1.5 over the time since the last move. A jump is allowed only with a screen change.
+  - Per-connection token buckets: moves 6/s, emotes and phrases 1 every 3 s, reports 3/min. The bucket state lives in the socket attachment, so it survives hibernation.
+- **Teacher mute:** that player's emotes and phrases are dropped for everyone. They still move and appear.
+- **Personal mute:** hides that player's bubbles on the muting device only.
+- **Report:**
+  - Carries the last 10 emotes and phrases (by number) of the reported player that the reporter saw.
+  - Classmate reports go to their teacher. World reports go to the admin view and to both teachers.
+- **Battles stay single-player.** `busy` shows a ⚔ icon over the player.
+
+### Features (by phase)
+1. **Server foundation:**
+   - wrangler.toml, D1 schema, and teacher sign-up and login.
+   - Classes and codes, student join with generated names or teacher lists.
+   - The `VITE_MP_URL` switch, CORS and origin checks, and `vercel.json` (headers, CSP, `/teacher` rewrite).
+   - Minimal `/teacher` (login, create class, show code), and Settings → "Join a class".
+   - Docs say Vercel/Porkbun; CLAUDE.md records the reversal and the privacy rules.
+2. **Class presence:**
+   - `ClassRoom` DO; the client `NetLayer` (`src/net/`).
+   - `RoomScene` draws remote wizards (same sprite, hat and pet) with smoothed movement.
+   - React name labels: classmates in gold, world players in blue (Phase 5).
+   - Offline fallback: if the server can't be reached, retry with backoff and say nothing.
+3. **Emotes, phrases and safety:**
+   - 8 emotes and about 25 preset phrases (draft list for your review) in a speech bubble.
+   - A tap menu on each player with Mute and Report; teacher mute and remove.
+   - A Play offline switch in Settings.
+4. **Teacher dashboard and progress sync:**
+   - Roster, online status, accuracy by topic and zone progress.
+   - Money Check pre and post scores, with the class average and a CSV export.
+   - Actions: mute, remove, reset token, world mode switch, set class goal, hide leaderboard, delete class, name lists.
+   - Uploads after each battle and Money Check (batched, with retry).
+   - A weekly class goal bar in the HUD with a celebration.
+   - Class leaderboard: top 10 by coins earned, plus your own rank.
+   - Admin view: password resets and world reports.
+5. **World mode:**
+   - `WorldScreen` DOs with visibility caps and shards.
+   - World leaderboard by public name, the teacher switch, and a server-side reward check: `/api/redeem` stores the code in D1 so it works once across all devices.
+   - The offline check stays for when there's no connection.
+6. **Deploy:** step by step, waiting for your OK at each step:
+   - Cloudflare login, then a workers.dev staging server with a Vercel Preview pointed at it.
+   - Move the DNS (copy records, Vercel records set to DNS only, DNSSEC off, nameservers changed, check the game).
+   - Add `mp.nhsqa.org`, set `VITE_MP_URL` for Production, upgrade to Paid, then the alerts, the load test and the play-through.
+
+Each phase ends with:
+- Both typechecks clean.
+- Game and server tests passing.
+- A clean Vercel build with multiplayer off.
+- A PLAN.md log entry and an AI_USE.md update.
+- A commit and a stop for you to test.
+
+### Privacy and legal (drafts, Phase 4)
+These two pages are served from the game site, clearly marked as drafts and not legal advice:
+- **`/privacy`:** explains that schools authorize use. It lists exactly what's collected:
+  - Teacher: email and password hash.
+  - Student: class, public name, token hash, and progress summaries (XP, level, zones, accuracy by topic, Money Check scores, coins earned).
+  - Reports.
+- **`/teacher-notice`:** the same facts in plain terms for teachers.
+
+Both pages also give retention periods and say there are no ads or trackers. They name Vercel (game hosting) and Cloudflare (server and database).
+
+### Cost
+| Item | Estimate |
+|---|---|
+| Messages per 30-min session, class of 30 | 30 × 4/s × about 30% moving × 1,800 s ≈ 65k incoming WebSocket messages |
+| Billed DO requests | WebSocket messages billed 20:1 ≈ 3.3k, plus connects, emotes and sync. Well under the 13,500 target. |
+| Server → client batches | Not billed as requests |
+| Duration | Hibernation keeps idle classes free |
+
+The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,000 classes against current Cloudflare pricing, which I'll check at that point.
+
+### Critical files
+**Server (new, `game/server/`):**
+- `package.json`, `wrangler.toml`, `tsconfig.json`
+- `migrations/0001_init.sql`
+- `src/index.ts`: router, CORS, origin checks
+- `src/auth.ts`: PBKDF2 hashing, sessions, rate limits
+- `src/classes.ts`: codes, join, names
+- `src/ClassRoom.ts`, `src/WorldScreen.ts`
+- `src/cron.ts`
+- tests
+
+**Game (new):**
+- `src/net/`: `protocol.ts` (shared validator), `client.ts` (sockets, backoff), `store.ts` (Zustand), `names.ts`, `phrases.ts`
+- `src/game/remote.ts`: remote players, interpolation
+- `src/ui/Online*.tsx`: labels, bubbles, emote bar, tap menu, join flow
+- `teacher/index.html` and `src/teacher/*`
+- `vercel.json`, `public/privacy/`
+
+**Game (changed):**
+- `src/core/save.ts` (v3)
+- `src/game/scenes/RoomScene.ts`: remote layer, `busy`, `screen` messages
+- `src/ui/Hud.tsx`: Settings join and offline switch, goal bar
+- `src/state/session.ts`: hooks after battle and Money Check
+- `src/rewards/redeem.ts`: wraps the optional server check; the reward files stay untouched
+- `vite.config.ts`: second entry
+- `package.json`: `dev:all` runs `wrangler dev` and `vite` together
+- `CLAUDE.md`, `PLAN.md`, `docs/AI_USE.md`
+
+**Reused:**
+- `standable()` and `ROOMS` (`src/data/rooms.ts`): server screen list and bounds
+- `addChar` and `pose` (`src/game/chars.ts`), `Hat` and `Follower` for remote players
+- `randomNickname` pattern (`src/core/save.ts`) → `src/net/names.ts`
+- `resultsCsv` (`src/core/csv.ts`) for the class CSV
+- `Floats.tsx` positioning for labels and bubbles
+
+### Verification
+- **Unit tests (Vitest, both packages):**
+  - Message validation, rate limits, movement checks, the name generator, class codes.
+  - Leaderboard ranking (top 10 plus own rank), the class goal, retention queries.
+  - The origin allowlist, PBKDF2 round trip, and the save v2 → v3 migration.
+- **Local run:** `npm run dev:all` (wrangler dev on 8787, vite on 5173 with `VITE_MP_URL=http://localhost:8787`).
+- **Playwright with two browser contexts:**
+  - Two players join a class and see each other move.
+  - An emote and a phrase show up; mute hides them; the teacher removes a player.
+- **No-network check:** with no `VITE_MP_URL`, the production build (`vite preview`) makes zero requests to other origins.
+- **Load script:** `server/scripts/load.ts`, with 30 simulated players moving for 5 minutes. Reports the request count and projected cost.
+- **Every phase:** `npm run build` with `VITE_MP_URL` unset passes and plays exactly as now. This is the live-site safety check.
+
+## 11. Phase log
 
 ### Phase 1 — setup and pipelines (done 2026-11-07)
 - Step 0 done (§1). The empty top-level `.git` was deleted; the new repo lives in `game/`.
@@ -401,4 +630,38 @@ this should be easy), 60 fps on a mid-range Chromebook at 4× CPU throttle.
   with `image-rendering: pixelated`; a window wider than 16:9 gets thin side bars). Settings has a
   Full screen button where the browser supports it.
 - Playwright test: walking the plaza path left and right changes screen; walking up stops on screen.
+
+### Multiplayer Phase 1 — server foundation (done 2026-11-07)
+- **Docs:** CLAUDE.md and PLAN.md now say Vercel + Porkbun, record the reversal of the network rule
+  and the new privacy rules, and PLAN.md §10 holds the approved multiplayer plan.
+- **Server (`server/`, its own package):** a Cloudflare Worker (wrangler 4.152.0) with D1. The
+  schema (`migrations/0001_init.sql`) covers teachers, sessions, rate limits, classes, name lists,
+  members, progress, weekly goals, reports and redemptions.
+  - Teacher sign-up, login, logout and password change (PBKDF2 100k + pepper, lockout after 5
+    wrong tries, bearer sessions for 12 hours).
+  - Classes with 6-character codes (no 0/O, 1/I/L, U/V), teacher name lists, delete class.
+  - Students join with a code and pick a generated or listed name; free text is refused. The
+    device keeps a random membership token (hash only on the server). Leaving works.
+  - Origin allowlist for CORS (never `*`), JSON-only state changes, a body size limit, per-IP
+    limits on sign-ups and code guesses, and a daily retention cron (12 months / 90 days).
+- **Game:**
+  - `VITE_MP_URL` switch: without it no multiplayer code is in the game bundle and nothing is
+    requested (tested).
+  - Settings → Class: join with a code and pick a name, or leave.
+  - Save schema **v3**: `online` membership, `settings.playOffline`, `progress.coinsEarned` (for
+    the money leaderboard, seeded from the wallet), with a migration and tests.
+  - `/teacher` page (second Vite entry): sign up / log in, create classes (optional name list),
+    see codes and student counts, delete classes.
+  - `vercel.json`: `/teacher` rewrite, CSP (`connect-src` limited to the site and mp /
+    mp-staging.nhsqa.org), nosniff, frame denial, referrer and permissions policies. `vite preview`
+    serves the same headers, so the e2e suite runs under the real CSP.
+- **Tests:**
+  - 123 game unit tests (+ names, codes, save v3) and 12 server tests (origin allowlist,
+    passwords, lockout, sessions, joining, name lists, rate limits, deletes, retention).
+  - The server was also run in the real local Workers runtime (`wrangler dev`).
+  - Playwright: 8 tests on the production build (including a zero-foreign-requests and
+    zero-CSP-violation check), plus a two-browser teacher/student join test against the local
+    server (`MP_E2E=1`).
+- **Not yet:** WebSockets and seeing classmates (Phase 2). Nothing is deployed; the live site is
+  unchanged until `VITE_MP_URL` is set in Phase 6.
 

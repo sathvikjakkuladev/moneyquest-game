@@ -1,0 +1,64 @@
+# MoneyQuest multiplayer server
+
+A Cloudflare Worker with a D1 database. It's optional: the game works without it, and it's
+switched on only when the game is built with `VITE_MP_URL`. Design and decisions: `../PLAN.md` §10.
+
+## Run it locally
+
+From `game/`:
+
+```sh
+npm run dev:all        # the server on http://localhost:8787 and the game on http://localhost:5173
+```
+
+`dev:all` does two things:
+- It applies the D1 migrations to a local database (in `server/.wrangler/`, never committed).
+- It starts the game with `VITE_MP_URL=http://localhost:8787`.
+
+Teachers sign up at http://localhost:5173/teacher/. Students join in the game under Settings → Join a class.
+
+Tests (no Cloudflare account needed: they run against Node's built-in SQLite with the real migrations):
+
+```sh
+npm run server:test
+npm run server:typecheck
+MP_E2E=1 E2E_URL=http://localhost:5173 npx playwright test class-join   # with dev:all running
+```
+
+## Settings
+
+| What | Where | Value |
+|---|---|---|
+| `ALLOWED_ORIGINS` | `wrangler.toml` vars (per environment) | Exact origins allowed to call the API: production `https://nhsqa.org`; dev `http://localhost:5173,http://localhost:4173` |
+| `PREVIEW_ORIGIN_PATTERN` | `wrangler.toml` vars (staging only) | A regex for this project's Vercel preview URLs, set in Phase 6; empty everywhere else |
+| `ADMIN_EMAIL` | **secret**: `wrangler secret put ADMIN_EMAIL --env production` | The NHSQA admin account's email |
+| `PEPPER` | **secret**: `wrangler secret put PEPPER --env production` | A long random string, for example from `openssl rand -base64 32`. Never change it after teachers sign up, or their passwords stop working. |
+
+Secrets never go in the repo or in any `VITE_` variable (those end up in the public game bundle).
+
+## Vercel settings for the game (Phase 6)
+
+In the Vercel project, under Settings → Environment Variables:
+
+| Variable | Environment | Value |
+|---|---|---|
+| `VITE_MP_URL` | Production | `https://mp.nhsqa.org` |
+| `VITE_MP_URL` | Preview | The staging server: first `https://moneyquest-mp-staging.<account>.workers.dev`, later `https://mp-staging.nhsqa.org` |
+
+**Leaving it unset keeps multiplayer off.** That's the case today: the live game makes no requests to the server.
+
+The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhsqa.org`. A `workers.dev` staging address gets added there in Phase 6.
+
+## Security notes
+
+- **Teacher sessions:**
+  - Bearer tokens, kept in the /teacher tab's sessionStorage and valid for 12 hours. No cookies, so it also works from staging and preview sites.
+  - D1 stores only a SHA-256 of each token.
+- **Passwords:**
+  - PBKDF2-SHA256 at 100,000 iterations (the Workers limit), with a 16-byte salt, then HMAC with `PEPPER`.
+  - 5 wrong tries lock that email (and that IP) for 15 minutes.
+- **Origins:** every API call must come from an allowlisted origin (CORS never uses `*`), and state changes must be JSON (CSRF defense in depth). WebSockets (Phase 2) check the same allowlist.
+- **Students:**
+  - A class membership with a random token (D1 stores only its hash) and a public name from the generator or the teacher's list. Free text is refused.
+  - Class-code guesses are limited to 20 per IP per 10 minutes.
+- **Retention (daily cron):** classes idle for 12 months are deleted with all their data; reports go after 90 days, along with expired sessions and old rate-limit rows.

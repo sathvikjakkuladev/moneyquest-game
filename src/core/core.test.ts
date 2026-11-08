@@ -151,15 +151,29 @@ describe('geometry and rooms', () => {
 });
 
 describe('save migrations', () => {
-  it('upgrades a v1 save (Phases 2–4) to v2, keeping everything and adding tamed: []', () => {
+  it('upgrades a v1 save (Phases 2–4) through v2 to v3, keeping everything', () => {
     const v1 = {
       version: 1, active: 0,
       slots: [{ nickname: 'Old', band: 'K-5', createdAt: '2026-11-07T00:00:00Z', progress: { level: 3, xp: 320, coins: 42, defeated: ['mon_spendling'], zonesCleared: [], spells: ['budget_beam'], spell: 'budget_beam' }, inventory: { owned: ['hat-laurel'], hat: 'hat-laurel', pet: null }, questions: newQuestionState(), moneyCheck: { firstForm: 'B', pre: null, post: null }, redeemed: ['x'], settings: { readAloud: false, reducedMotion: null } }, null, null],
     };
-    const v2 = migrate(v1, 1);
-    expect(v2.version).toBe(2);
-    expect(v2.active).toBe(0);
-    expect(v2.slots[0]!.progress).toEqual({ ...v1.slots[0]!.progress, tamed: [] });
-    expect(v2.slots[0]!.inventory.hat).toBe('hat-laurel');
+    const v3 = migrate(v1, 1);
+    expect(v3.version).toBe(3);
+    expect(v3.active).toBe(0);
+    // v2 added tamed; v3 added coinsEarned (seeded from the wallet), playOffline and online.
+    expect(v3.slots[0]!.progress).toEqual({ ...v1.slots[0]!.progress, tamed: [], coinsEarned: 42 });
+    expect(v3.slots[0]!.settings).toEqual({ readAloud: false, reducedMotion: null, playOffline: false });
+    expect(v3.slots[0]!.online).toBeNull();
+    expect(v3.slots[0]!.inventory.hat).toBe('hat-laurel');
+  });
+  it('upgrades a v2 save to v3 without touching the rest', () => {
+    const s2 = { ...newSlot('Two', '6-8', 'A'), progress: { ...newSlot('Two', '6-8', 'A').progress, coins: 7 } } as Record<string, unknown>;
+    delete (s2.progress as Record<string, unknown>).coinsEarned;
+    delete s2.online;
+    s2.settings = { readAloud: true, reducedMotion: true };
+    const v3 = migrate({ version: 2, active: 0, slots: [s2, null, null] }, 2);
+    expect(v3.slots[0]!.progress.coinsEarned).toBe(7);
+    expect(v3.slots[0]!.settings).toEqual({ readAloud: true, reducedMotion: true, playOffline: false });
+    expect(v3.slots[0]!.online).toBeNull();
+    expect(v3.slots[0]!.nickname).toBe('Two');
   });
 });

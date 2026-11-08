@@ -1,0 +1,37 @@
+# MoneyQuest multiplayer server. Local dev: `npm run dev` (D1 runs locally, nothing is deployed).
+# Secrets are set with `wrangler secret put <NAME> --env <env>`, never written here:
+#   ADMIN_EMAIL  the NHSQA admin account (gets the Admin view on /teacher)
+#   PEPPER       extra secret mixed into password hashes
+name = "moneyquest-mp"
+main = "src/index.ts"
+compatibility_date = "2026-10-20"
+compatibility_flags = ["nodejs_compat"]
+
+# Local development (wrangler dev). The database id is a placeholder: local D1 doesn't need a real one.
+[vars]
+ENVIRONMENT = "development"
+ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173"
+PREVIEW_ORIGIN_PATTERN = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "moneyquest"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["17 4 * * *"] # daily retention clean-up (04:17 UTC)
+
+# Staging: workers.dev first, later mp-staging.nhsqa.org. Vercel Preview deployments may connect.
+[env.staging]
+name = "moneyquest-mp-staging"
+vars = { ENVIRONMENT = "staging", ALLOWED_ORIGINS = "https://nhsqa.org,http://localhost:5173,http://localhost:4173", PREVIEW_ORIGIN_PATTERN = "" }
+triggers = { crons = ["17 4 * * *"] }
+d1_databases = [{ binding = "DB", database_name = "moneyquest-staging", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]
+
+# Production: mp.nhsqa.org. Only the live game may connect.
+[env.production]
+name = "moneyquest-mp"
+vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "https://nhsqa.org", PREVIEW_ORIGIN_PATTERN = "" }
+triggers = { crons = ["17 4 * * *"] }
+d1_databases = [{ binding = "DB", database_name = "moneyquest", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]

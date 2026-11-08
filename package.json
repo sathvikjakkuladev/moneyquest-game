@@ -11,7 +11,10 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "import:questions": "node tools/import-questions.ts",
-    "import:assets": "node tools/import-assets.ts"
+    "import:assets": "node tools/import-assets.ts",
+    "dev:all": "concurrently -k -n server,game -c blue,green \"npm --prefix server run dev -- --var PEPPER:dev-pepper\" \"VITE_MP_URL=http://localhost:8787 vite\"",
+    "server:typecheck": "npm --prefix server run typecheck",
+    "server:test": "npm --prefix server test"
   },
   "dependencies": {
     "jsqr": "1.4.0",
@@ -29,6 +32,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.2.1",
+    "concurrently": "10.0.6",
     "sharp": "0.35.5",
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2",

@@ -1,0 +1,2 @@
+# The multiplayer server deploys to Cloudflare, not Vercel.
+server/

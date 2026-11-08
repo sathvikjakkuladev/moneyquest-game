@@ -1,5 +1,6 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -38,10 +39,22 @@ function roomsEditor(): Plugin {
   };
 }
 
+/** The security headers from vercel.json, so `vite preview` behaves like the live site (CSP included). */
+function vercelHeaders(): Record<string, string> {
+  const v = JSON.parse(readFileSync(new URL('./vercel.json', import.meta.url), 'utf8')) as { headers: { source: string; headers: { key: string; value: string }[] }[] };
+  return Object.fromEntries(v.headers.find((h) => h.source === '/(.*)')!.headers.filter((h) => h.key !== 'Strict-Transport-Security').map((h) => [h.key, h.value]));
+}
+
 export default defineConfig({
   // Relative base so the static build works from any folder or host.
   base: './',
   plugins: [react(), tailwindcss(), roomsEditor()],
-  build: { target: 'es2022', chunkSizeWarningLimit: 2000 },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 2000,
+    // Two pages: the game, and /teacher (the teacher dashboard).
+    rollupOptions: { input: { main: fileURLToPath(new URL('./index.html', import.meta.url)), teacher: fileURLToPath(new URL('./teacher/index.html', import.meta.url)) } },
+  },
+  preview: { headers: vercelHeaders() },
   test: { include: ['src/**/*.test.ts', 'tools/**/*.test.ts'], environment: 'node' },
 });

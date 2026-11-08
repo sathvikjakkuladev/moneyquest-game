@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { xpToReach } from '../core/progression.ts';
 import type { Band } from '../core/types.ts';
 import { pad, roomActions } from '../game/input.ts';
@@ -35,6 +35,10 @@ export function Hud() {
   );
 }
 
+// Multiplayer UI is only built when VITE_MP_URL is set: Vite replaces the variable with a constant,
+// so without it this branch (and the ClassJoin chunk) is dropped from the build.
+const ClassJoin = import.meta.env.VITE_MP_URL ? lazy(() => import('./ClassJoin.tsx')) : null;
+
 function Settings({ onClose }: { onClose: () => void }) {
   const s = useSlot()!;
   const set = (patch: Partial<typeof s.settings>) => useSave.getState().edit((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
@@ -70,6 +74,11 @@ function Settings({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         </fieldset>
+        {ClassJoin && (
+          <Suspense fallback={null}>
+            <ClassJoin />
+          </Suspense>
+        )}
         {document.fullscreenEnabled && (
           <button className="btn btn-quiet self-start" aria-pressed={full} onClick={() => void (full ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})}>
             {full ? 'Leave full screen' : 'Full screen'}

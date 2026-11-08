@@ -1,0 +1,20 @@
+{
+  "name": "moneyquest-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MoneyQuest multiplayer server (Cloudflare Worker). Separate from the game build.",
+  "scripts": {
+    "dev": "wrangler d1 migrations apply moneyquest --local && wrangler dev --port 8787",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261023.1",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0",
+    "wrangler": "4.152.0"
+  }
+}

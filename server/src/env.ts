@@ -1,6 +1,8 @@
 /** Bindings and settings (wrangler.toml vars and `wrangler secret`). */
 export interface Env {
   DB: D1Database;
+  /** One ClassRoom Durable Object per class (live presence). */
+  CLASSROOM: DurableObjectNamespace;
   ENVIRONMENT: string;
   /** Comma-separated exact origins allowed to call the API and open WebSockets. */
   ALLOWED_ORIGINS: string;

@@ -11,6 +11,10 @@ import { zoneById } from '../../data/zones.ts';
 import { Follower, petArt, queuePet } from '../pet.ts';
 import { Hat } from '../hats.ts';
 import { addFronts } from '../fronts.ts';
+import { RemotePlayers } from '../remote.ts';
+import { bridge } from '../../net/bridge.ts';
+import { FACES } from '../../net/protocol.ts';
+import type { Face } from '../../net/protocol.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
 import type { Facing, Screen } from '../../data/rooms.ts';
 import { exitAt, exitTarget, PORTAL_REACH, portalSpot, ROOMS, standable } from '../../data/rooms.ts';
@@ -55,6 +59,7 @@ export class RoomScene extends Phaser.Scene {
   private pet: Follower | null = null;
   private hat: Hat | null = null;
   private atPortal: string | null = null;
+  private remotes: RemotePlayers | null = null; // classmates on this screen (multiplayer)
 
   constructor() {
     super('room');
@@ -66,7 +71,7 @@ export class RoomScene extends Phaser.Scene {
     const rooms = ROOMS[req.zone]!;
     this.screenName = req.screen && rooms.screens[req.screen] ? req.screen : rooms.start;
     this.screen = rooms.screens[this.screenName]!;
-    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, hat: null, atPortal: null });
+    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, hat: null, atPortal: null, remotes: null });
   }
 
   preload(): void {
@@ -115,6 +120,8 @@ export class RoomScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.tap(p.worldX, p.worldY));
     roomActions.interact = () => !this.blocked() && this.near && this.interact(this.near);
     this.events.once('shutdown', () => {
+      this.remotes?.destroy();
+      this.remotes = null;
       roomActions.interact = () => {};
       useSession.getState().setPrompt(null);
     });
@@ -245,6 +252,19 @@ export class RoomScene extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => useSession.getState().go(to));
   }
 
+  /** Multiplayer: draw classmates on this screen, and tell the network code where we are. */
+  private syncRemotes(dtMs: number): void {
+    if (this.req.attract) return;
+    if (bridge.on && !this.remotes) this.remotes = new RemotePlayers(this, PLAYER);
+    if (!bridge.on && this.remotes) (this.remotes.destroy(), (this.remotes = null));
+    this.remotes?.update(dtMs);
+  }
+
+  private tell(moving: boolean): void {
+    const p = this.player!;
+    if (bridge.on) bridge.report({ s: `${this.zone}/${this.screenName}`, x: Math.round(p.x), y: Math.round(p.y), f: FACES.indexOf(this.face) as Face, moving });
+  }
+
   /** Test hooks. */
   where(): { screen: string; at: Pt | null } {
     return { screen: this.screenName, at: this.player && this.sys.isActive() ? [this.player.x, this.player.y] : null };
@@ -258,8 +278,10 @@ export class RoomScene extends Phaser.Scene {
     const pressed = this.pressed;
     this.pressed = false;
     this.hat?.update();
+    this.syncRemotes(dtMs);
     if (this.blocked()) {
       if (this.player && !this.leaving) pose(this.player, PLAYER, 'idle', this.face);
+      if (this.player && !this.leaving) this.tell(false);
       this.wasBlocked = true;
       return;
     }
@@ -286,6 +308,7 @@ export class RoomScene extends Phaser.Scene {
       pose(p, PLAYER, 'walk', this.face);
     } else pose(p, PLAYER, 'idle', this.face);
     p.setDepth(p.y);
+    this.tell(Boolean(vx || vy));
     currentRoom.player = [p.x, p.y];
     this.pet?.update([p.x, p.y], Boolean(vx || vy), dtMs);
 

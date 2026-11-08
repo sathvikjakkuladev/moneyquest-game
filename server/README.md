@@ -57,7 +57,12 @@ The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhs
 - **Passwords:**
   - PBKDF2-SHA256 at 100,000 iterations (the Workers limit), with a 16-byte salt, then HMAC with `PEPPER`.
   - 5 wrong tries lock that email (and that IP) for 15 minutes.
-- **Origins:** every API call must come from an allowlisted origin (CORS never uses `*`), and state changes must be JSON (CSRF defense in depth). WebSockets (Phase 2) check the same allowlist.
+- **Origins:** every API call must come from an allowlisted origin (CORS never uses `*`), and state changes must be JSON (CSRF defense in depth). WebSockets check the same allowlist on upgrade.
+- **Live presence (`/ws/class/<code>`):**
+  - One `ClassRoom` Durable Object per class, using the hibernation API.
+  - The first message must be `hello` with the membership token, within 5 seconds.
+  - Every message is validated (`src/net/protocol.ts`, shared with the game): at most 512 bytes, real screens only, in bounds, walking speed, rate-limited.
+  - Local `wrangler dev` (`ENVIRONMENT=development`) loosens the HTTP rate limits 50×.
 - **Students:**
   - A class membership with a random token (D1 stores only its hash) and a public name from the generator or the teacher's list. Free text is refused.
   - Class-code guesses are limited to 20 per IP per 10 minutes.

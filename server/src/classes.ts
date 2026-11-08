@@ -5,7 +5,7 @@ import { requireTeacher } from './auth.ts';
 import { cryptoRandom, newToken, randomBytes, sha256 } from './crypto.ts';
 import type { Env } from './env.ts';
 import { bearer, clientIp, HttpError, readJson, str } from './http.ts';
-import { hit, LIMITS } from './limits.ts';
+import { hit, limitFor, LIMITS } from './limits.ts';
 
 export const MAX_LIST_NAMES = 60;
 export const MAX_MEMBERS = 60;
@@ -91,7 +91,7 @@ export async function deleteClass(req: Request, env: Env, now: number, classId: 
 
 async function classByCode(req: Request, env: Env, now: number, raw: string): Promise<ClassRow> {
   const code = normalizeCode(raw);
-  if (!(await hit(env.DB, `join:${clientIp(req)}`, now, LIMITS.join))) throw new HttpError(429, 'slow-down', 'Too many tries. Wait a few minutes and try again.');
+  if (!(await hit(env.DB, `join:${clientIp(req)}`, now, limitFor(env, LIMITS.join)))) throw new HttpError(429, 'slow-down', 'Too many tries. Wait a few minutes and try again.');
   const c = isClassCode(code) ? await env.DB.prepare('SELECT id, code, name, names_mode, world_mode, teacher_id FROM classes WHERE code = ?').bind(code).first<ClassRow>() : null;
   if (!c) throw new HttpError(404, 'no-class', 'There’s no class with that code. Check it with your teacher.');
   return c;

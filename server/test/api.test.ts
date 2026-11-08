@@ -3,6 +3,7 @@ import { isClassCode } from '../../src/net/codes.ts';
 import { isGeneratedName } from '../../src/net/names.ts';
 import { hashPassword, newSalt, sameString } from '../src/crypto.ts';
 import { originAllowed } from '../src/http.ts';
+import { limitFor, LIMITS } from '../src/limits.ts';
 import { handle } from '../src/index.ts';
 import { CLASS_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
 import { ORIGIN, testEnv } from './d1.ts';
@@ -148,6 +149,11 @@ describe('classes and joining', () => {
     expect((await call(env, 'POST', '/api/join', { code: cls.code })).body.choices).toEqual(['Owl 01']);
     expect((await call(env, 'PUT', `/api/teacher/classes/${cls.id}/names`, { names: ['<script>'] }, token)).status).toBe(400);
     expect((await call(env, 'PUT', `/api/teacher/classes/${cls.id}/names`, { names: [] }, token)).body.namesMode).toBe('generated');
+  });
+  it('only local development (wrangler dev) loosens the limits', () => {
+    expect(limitFor({ ENVIRONMENT: 'production' }, LIMITS.login).max).toBe(5);
+    expect(limitFor({ ENVIRONMENT: 'staging' }, LIMITS.join).max).toBe(20);
+    expect(limitFor({ ENVIRONMENT: 'development' }, LIMITS.login).max).toBe(250);
   });
   it('wrong codes are rate-limited per IP', async () => {
     const env = testEnv();

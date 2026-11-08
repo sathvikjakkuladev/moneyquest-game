@@ -5,11 +5,13 @@ import { isClassCode, normalizeCode } from '../net/codes.ts';
 import { api, ApiError } from '../net/api.ts';
 import { MP_URL } from '../net/config.ts';
 import { useSave, useSlot } from '../state/save.ts';
+import { useNet } from '../net/bridge.ts';
 
 type Step = { kind: 'idle' } | { kind: 'code' } | { kind: 'names'; code: string; className: string; choices: string[] };
 
 export default function ClassJoin() {
   const s = useSlot()!;
+  const status = useNet((n) => n.status);
   const [step, setStep] = useState<Step>({ kind: 'idle' });
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,6 +66,9 @@ export default function ClassJoin() {
         <>
           <p className="text-lg">
             You’re in <strong>{s.online.className}</strong>. Classmates see you as <strong>{s.online.publicName}</strong>.
+          </p>
+          <p className="text-lg" role="status">
+            {status === 'online' ? '🟢 Connected: classmates on your screen can see you.' : status === 'connecting' ? 'Connecting…' : status === 'offline' ? 'Offline right now. The game works as usual and reconnects by itself.' : ''}
           </p>
           <button className="btn btn-quiet self-start" disabled={busy} onClick={leave}>Leave class</button>
         </>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { seeded } from '../core/rng.ts';
 import { CODE_ALPHABET, CODE_LENGTH, isClassCode, makeClassCode, normalizeCode } from './codes.ts';
+import { ROOMS } from '../data/rooms.ts';
+import { SCREENS } from './protocol.ts';
 import { isGeneratedName, isListName, makeName, NAME_ADJECTIVES, NAME_ANIMALS, nameChoices } from './names.ts';
 
 describe('public names', () => {
@@ -37,5 +39,12 @@ describe('class codes', () => {
   it('typed codes are tidied: case, spaces and dashes', () => {
     expect(normalizeCode(' ab c-d9 2')).toBe('ABCD92');
     expect(isClassCode('ABCD9O')).toBe(false); // O isn't used
+  });
+});
+
+describe('protocol screens', () => {
+  it('match the room files exactly (the server only accepts these)', () => {
+    const all = Object.values(ROOMS).flatMap((r) => Object.keys(r.screens).map((s) => `${r.zone}/${s}`)).sort();
+    expect([...SCREENS].sort()).toEqual(all);
   });
 });

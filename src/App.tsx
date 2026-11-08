@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import * as Phaser from 'phaser';
 import { connectDirector } from './game/director.ts';
 import { BattleScene } from './game/scenes/BattleScene.ts';
@@ -20,6 +20,11 @@ import { WorldButtons } from './ui/WorldButtons.tsx';
 import { devMode } from './core/unlocks.ts';
 import { DevPanel } from './dev/DevPanel.tsx';
 import { MapEditor } from './dev/MapEditor.tsx';
+
+// Multiplayer is only built when VITE_MP_URL is set (a build-time constant): without it these are
+// null, the code is dropped from the bundle, and the game makes no requests.
+const OnlineLayer = import.meta.env.VITE_MP_URL ? lazy(() => import('./ui/OnlineLayer.tsx')) : null;
+if (import.meta.env.VITE_MP_URL) void import('./net/session.ts').then((m) => m.startMultiplayer());
 
 // import.meta.env.DEV is false in the production build, so the dev tools are dropped from it entirely.
 const DEV = import.meta.env.DEV && devMode();
@@ -103,6 +108,11 @@ export function App() {
           <Dialogue />
           {screen === 'play' && <Panels />}
         </div>
+        {OnlineLayer && screen === 'play' && kind === 'room' && (
+          <Suspense fallback={null}>
+            <OnlineLayer stage={stage} />
+          </Suspense>
+        )}
         <Floats stage={stage} />
         {screen === 'play' && kind === 'battle' && <BattleUI stage={stage} />}
       </div>

@@ -665,3 +665,38 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
 - **Not yet:** WebSockets and seeing classmates (Phase 2). Nothing is deployed; the live site is
   unchanged until `VITE_MP_URL` is set in Phase 6.
 
+### Multiplayer Phase 2 — class presence (done 2026-11-07)
+- **Server:** a `ClassRoom` Durable Object per class (SQLite class, WebSocket hibernation API;
+  pings answered automatically without waking it). `/ws/class/<code>` checks the origin allowlist
+  and the class, then hands the socket to the class's room. The student proves membership in the
+  first message (`hello` with the token), within 5 seconds; tokens never go in URLs.
+  - Room logic is plain, tested code (`server/src/hub.ts`): only players on the same screen see
+    each other; positions go out in batches about 5 times a second; screen changes send a
+    leave/join and a snapshot.
+  - Checks: real screen names only (`SCREENS`, kept equal to the room files by a test),
+    0–640 × 0–360, walking speed (120 px/s with 50% slack), rate limits per connection (moves 6/s,
+    other messages 2/s, kept in the socket attachment so they survive hibernation), 512-byte
+    messages, strict validation; too many bad messages close the connection.
+  - One connection per student (a new tab or device replaces the old one).
+- **Game:**
+  - `src/net/bridge.ts` connects the scene and the network code without any network code of its
+    own.
+  - Classmates appear as the same wizard with their hat and pet, smoothly interpolated (drawn
+    250 ms behind) and depth-sorted with the scenery, with a gold name label (real text) and ⚔
+    while in a battle.
+  - The client sends position only while moving (4 times a second, plus when stopping),
+    reconnects quietly with backoff (1–30 s), and forgets the class if the server says the
+    membership is gone.
+  - Settings shows the connection status. With no `VITE_MP_URL`, none of this is in the game
+    bundle.
+- **Local development** loosens the server's rate limits 50× (`ENVIRONMENT=development` only), so
+  repeated test runs don't lock you out; staging and production use the real limits (tested).
+- **Tests:**
+  - 124 game unit tests and 22 server tests (room logic, wire format, movement and rate limits).
+  - Playwright on the production build: 8 tests (zero foreign requests, zero CSP violations).
+  - Against the local server: 3 tests.
+    - Join and leave.
+    - Two classmates on one screen see each other move while a third screen sees nobody; the
+      battle icon shows; leaving removes the player; nicknames never travel.
+    - The game plays on quietly when every connection drops.
+

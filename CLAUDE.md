@@ -24,7 +24,10 @@ npm run server:typecheck   # the server package (game/server/), separate from th
 npm run server:test        # server tests (Node SQLite with the real D1 migrations)
 ```
 
-Multiplayer server: `server/README.md` (settings, secrets, Vercel variables). The game's `npm run
+Multiplayer server: `server/README.md` (settings, secrets, Vercel variables). In the game, multiplayer
+code loads only behind `import.meta.env.VITE_MP_URL ? … : …` (see `App.tsx`, `Hud.tsx`);
+`src/net/bridge.ts` is the network-free meeting point between the scenes and that code, and
+`src/net/protocol.ts` is the wire format both sides validate with. The game's `npm run
 build` never builds or type-checks `server/`; `.vercelignore` keeps it out of Vercel uploads.
 
 Node 26 runs `tools/*.ts` directly (type stripping): use `import type`, explicit `.ts` extensions,

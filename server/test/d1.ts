@@ -65,5 +65,5 @@ export function testDb(): D1Database {
 export const ORIGIN = 'http://localhost:5173';
 
 export function testEnv(over: Partial<Env> = {}): Env {
-  return { DB: testDb(), ENVIRONMENT: 'test', ALLOWED_ORIGINS: 'https://nhsqa.org,http://localhost:5173', PREVIEW_ORIGIN_PATTERN: '', ADMIN_EMAIL: 'admin@nhsqa.org', PEPPER: 'test-pepper', ...over };
+  return { DB: testDb(), CLASSROOM: undefined as unknown as DurableObjectNamespace, ENVIRONMENT: 'test', ALLOWED_ORIGINS: 'https://nhsqa.org,http://localhost:5173', PREVIEW_ORIGIN_PATTERN: '', ADMIN_EMAIL: 'admin@nhsqa.org', PEPPER: 'test-pepper', ...over };
 }

@@ -11,6 +11,11 @@ export const LIMITS = {
   join: { max: 20, windowMs: 10 * 60_000, lockMs: 10 * 60_000 },
 } satisfies Record<string, Limit>;
 
+/** Local development (wrangler dev) only: limits 50× looser so test runs don't lock you out. */
+export function limitFor(env: { ENVIRONMENT: string }, l: Limit): Limit {
+  return env.ENVIRONMENT === 'development' ? { ...l, max: l.max * 50 } : l;
+}
+
 interface Row { count: number; window_start: number; locked_until: number }
 
 /** Milliseconds until the key unlocks, or 0 if it isn't locked. */

@@ -3,7 +3,7 @@
 import { hashPassword, newSalt, newToken, PBKDF2_ITERATIONS, sameString, sha256 } from './crypto.ts';
 import type { Env } from './env.ts';
 import { bearer, clientIp, HttpError, readJson, str } from './http.ts';
-import { clear, hit, LIMITS, lockedFor } from './limits.ts';
+import { clear, hit, limitFor, LIMITS, lockedFor } from './limits.ts';
 
 export const SESSION_MS = 12 * 60 * 60_000;
 
@@ -29,7 +29,7 @@ export async function signup(req: Request, env: Env, now: number) {
   const password = str(body, 'password', 200);
   if (!validEmail(email)) throw new HttpError(400, 'bad-email', 'Please enter a valid email address.');
   if (!validPassword(password)) throw new HttpError(400, 'bad-password', 'Passwords need at least 10 characters.');
-  if (!(await hit(env.DB, `signup:${clientIp(req)}`, now, LIMITS.signup))) throw new HttpError(429, 'slow-down', 'Too many sign-ups from here. Try again later.');
+  if (!(await hit(env.DB, `signup:${clientIp(req)}`, now, limitFor(env, LIMITS.signup)))) throw new HttpError(429, 'slow-down', 'Too many sign-ups from here. Try again later.');
   const salt = newSalt();
   const id = crypto.randomUUID();
   const hash = await hashPassword(password, salt, PBKDF2_ITERATIONS, env.PEPPER);
@@ -51,7 +51,7 @@ export async function login(req: Request, env: Env, now: number) {
   // Hash even when there's no such account, so timing doesn't reveal which emails exist.
   const hash = await hashPassword(password, t?.salt ?? 'AAAAAAAAAAAAAAAAAAAAAA', t?.iterations ?? PBKDF2_ITERATIONS, env.PEPPER);
   if (!t || !sameString(hash, t.pass_hash)) {
-    for (const k of keys) await hit(env.DB, k, now, LIMITS.login);
+    for (const k of keys) await hit(env.DB, k, now, limitFor(env, LIMITS.login));
     throw new HttpError(401, 'wrong-login', 'That email and password don’t match.');
   }
   await clear(env.DB, keys[0]!);

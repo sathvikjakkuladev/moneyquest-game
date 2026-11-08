@@ -3,6 +3,7 @@ import type * as Phaser from 'phaser';
 import type { RoomScene } from './game/scenes/RoomScene.ts';
 import { useSave } from './state/save.ts';
 import { useSession } from './state/session.ts';
+import { bridge, useNet } from './net/bridge.ts';
 
 export function installTestHooks(game: Phaser.Game): void {
   if (!new URLSearchParams(location.search).has('e2e')) return;
@@ -13,6 +14,8 @@ export function installTestHooks(game: Phaser.Game): void {
     correct: () => useSession.getState().battle?.q.correct ?? -1,
     where: () => room()?.where() ?? { screen: useSession.getState().scene?.kind ?? null, at: null },
     teleport: (x: number, y: number) => room()?.teleport(x, y),
+    /** Multiplayer: connection status and the classmates on this screen (where they're drawn). */
+    net: () => ({ on: bridge.on, status: useNet.getState().status, people: useNet.getState().people, remotes: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, x: r.x, y: r.y, busy: r.b })), labels: [...bridge.labels.entries()] }),
     /** Draw order: the fronts (scenery cut-outs) and every sprite, with their depth and box. */
     layers: () =>
       (room()?.children.list ?? []).flatMap((o) => {

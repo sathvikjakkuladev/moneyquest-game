@@ -63,6 +63,16 @@ The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhs
   - The first message must be `hello` with the membership token, within 5 seconds.
   - Every message is validated (`src/net/protocol.ts`, shared with the game): at most 512 bytes, real screens only, in bounds, walking speed, rate-limited.
   - Local `wrangler dev` (`ENVIRONMENT=development`) loosens the HTTP rate limits 50×.
+- **Emotes and phrases (`src/net/says.ts`):**
+  - They travel as numbers into lists built into the game; anything else is refused. One every
+    3 seconds per player.
+  - The server keeps each player's last 10, so a report carries what the reported player really said.
+  - Reports: 3 a minute per player.
+- **Teacher actions:**
+  - Mute, remove and class deletion update D1 first. Then the Worker posts to the class room's
+    `/admin` path so they apply live (it mutes, or closes the student's socket with 4003).
+  - Only the Worker can reach `/admin`: it forwards nothing to a room except `/ws/class/<code>` upgrades.
+  - If the room can't be reached, the action still holds, because every connect checks D1.
 - **Students:**
   - A class membership with a random token (D1 stores only its hash) and a public name from the generator or the teacher's list. Free text is refused.
   - Class-code guesses are limited to 20 per IP per 10 minutes.

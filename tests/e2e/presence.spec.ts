@@ -3,64 +3,11 @@
 // two classmates on the same screen see each other (name labels, smooth movement), a third on
 // another screen sees nobody, the battle icon shows, and an unreachable server changes nothing.
 import { expect, test } from '@playwright/test';
-import type { Browser, Page } from '@playwright/test';
+import { makeClass as newClass, net, player, saveWith } from './mp.ts';
+
+const makeClass = async (n: number) => (await newClass(n)).members;
 
 test.skip(!process.env.MP_E2E, 'needs the local multiplayer server (npm run dev:all) and MP_E2E=1');
-
-const MP = 'http://localhost:8787';
-const ORIGIN = 'http://localhost:5173';
-type Net = { on: boolean; status: string; people: { id: number; name: string; busy: boolean }[]; remotes: { id: number; name: string; x: number; y: number; busy: boolean }[] };
-
-async function api(path: string, body: object, token?: string) {
-  const r = await fetch(MP + path, { method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
-  expect(r.status, path).toBe(200);
-  return r.json() as Promise<Record<string, unknown>>;
-}
-
-/** A class with `n` students; returns their memberships. */
-async function makeClass(n: number) {
-  const t = await api('/api/teacher/signup', { email: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}@school.test`, password: 'correct horse battery' });
-  const c = (await api('/api/teacher/classes', { name: 'Room 7' }, t.token as string)).class as { code: string };
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const o = await api('/api/join', { code: c.code });
-    const j = await api('/api/join/confirm', { code: c.code, name: (o.choices as string[])[0] });
-    out.push({ url: MP, classCode: c.code, className: 'Room 7', token: j.token as string, publicName: j.publicName as string });
-  }
-  return out;
-}
-
-function saveWith(nickname: string, online: object | null) {
-  return JSON.stringify({
-    version: 3,
-    state: {
-      version: 3, active: 0, slots: [{
-        nickname, band: 'K-5', createdAt: '2026-11-07T00:00:00Z',
-        progress: { level: 2, xp: 120, coins: 50, coinsEarned: 50, defeated: [], zonesCleared: ['piggybank_village'], spells: ['budget_beam'], spell: 'budget_beam', tamed: [] },
-        inventory: { owned: ['hat-wizard'], hat: 'hat-wizard', pet: null }, questions: { bags: {}, last: {}, drawn: {}, misses: [], accuracy: {} },
-        moneyCheck: { firstForm: 'A', pre: null, post: null }, redeemed: [], settings: { readAloud: false, reducedMotion: true, playOffline: false }, online,
-      }, null, null],
-    },
-  });
-}
-
-const net = (p: Page) => p.evaluate(() => (window as unknown as { __mq: { net: () => Net } }).__mq.net());
-
-async function player(browser: Browser, nickname: string, online: object | null, screen: string, at: [number, number]) {
-  const ctx = await browser.newContext();
-  const page = await ctx.newPage();
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  await page.addInitScript((s) => localStorage.getItem('moneyquest-save') || localStorage.setItem('moneyquest-save', s), saveWith(nickname, online));
-  await page.goto('./?e2e');
-  await page.getByRole('button', { name: 'Play' }).click();
-  await page.evaluate(([screen, at]) => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'piggybank_village', screen, at }), [screen, at] as const);
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { where: () => { at: unknown } } }).__mq.where().at !== null)).toBe(true);
-  const d = page.getByRole('dialog', { name: /says/ });
-  await page.waitForTimeout(600);
-  while (await d.isVisible()) await d.getByRole('button', { name: /Next|OK/ }).click();
-  return { ctx, page, errors };
-}
 
 test('classmates on the same screen see each other move; other screens see nobody', async ({ browser }) => {
   const [ma, mb, mc] = await makeClass(3);

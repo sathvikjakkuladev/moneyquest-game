@@ -95,6 +95,12 @@ export function App() {
               <Onboarding slotIndex={newSlot} onCancel={() => (useSession.getState().setScreen('title'), setNewSlot(null))} />
             </div>
           )}
+          {/* Classmates' name tags and bubbles sit under the HUD, Settings, dialogue and panels. */}
+          {OnlineLayer && screen === 'play' && kind === 'room' && (
+            <Suspense fallback={null}>
+              <OnlineLayer stage={stage} />
+            </Suspense>
+          )}
           {screen === 'play' && kind === 'room' && (
             <>
               <Hud />
@@ -108,11 +114,6 @@ export function App() {
           <Dialogue />
           {screen === 'play' && <Panels />}
         </div>
-        {OnlineLayer && screen === 'play' && kind === 'room' && (
-          <Suspense fallback={null}>
-            <OnlineLayer stage={stage} />
-          </Suspense>
-        )}
         <Floats stage={stage} />
         {screen === 'play' && kind === 'battle' && <BattleUI stage={stage} />}
       </div>

@@ -12,6 +12,9 @@ type Step = { kind: 'idle' } | { kind: 'code' } | { kind: 'names'; code: string;
 export default function ClassJoin() {
   const s = useSlot()!;
   const status = useNet((n) => n.status);
+  const removed = useNet((n) => n.removed);
+  const offline = s.settings.playOffline;
+  const setOffline = (playOffline: boolean) => useSave.getState().edit((x) => ({ ...x, settings: { ...x.settings, playOffline } }));
   const [step, setStep] = useState<Step>({ kind: 'idle' });
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,6 +46,7 @@ export default function ClassJoin() {
     run(async () => {
       const r = await api<{ token: string; publicName: string; className: string; classCode: string }>('/api/join/confirm', { body: { code, name } });
       setOnline({ url: MP_URL, classCode: r.classCode, className: r.className, token: r.token, publicName: r.publicName });
+      useNet.setState({ removed: false });
       setStep({ kind: 'idle' });
       setCode('');
     });
@@ -67,13 +71,18 @@ export default function ClassJoin() {
           <p className="text-lg">
             You’re in <strong>{s.online.className}</strong>. Classmates see you as <strong>{s.online.publicName}</strong>.
           </p>
+          <label className="flex min-h-12 items-center gap-3 text-xl">
+            <input type="checkbox" className="h-7 w-7" checked={offline} onChange={(e) => setOffline(e.target.checked)} />
+            Play offline (classmates can’t see you, and you don’t see them)
+          </label>
           <p className="text-lg" role="status">
-            {status === 'online' ? '🟢 Connected: classmates on your screen can see you.' : status === 'connecting' ? 'Connecting…' : status === 'offline' ? 'Offline right now. The game works as usual and reconnects by itself.' : ''}
+            {offline ? 'Playing offline. Your class stays saved: untick the box to see classmates again.' : status === 'online' ? '🟢 Connected: classmates on your screen can see you.' : status === 'connecting' ? 'Connecting…' : status === 'offline' ? 'Offline right now. The game works as usual and reconnects by itself.' : ''}
           </p>
           <button className="btn btn-quiet self-start" disabled={busy} onClick={leave}>Leave class</button>
         </>
       ) : step.kind === 'idle' ? (
         <>
+          {removed && <p className="text-lg" role="status">You’re not in a class any more: your teacher removed you, or the class was deleted. Ask your teacher for a code to join again.</p>}
           <p className="text-lg">Got a class code from your teacher? Join to see your classmates in the game.</p>
           <button className="btn btn-quiet self-start" onClick={() => setStep({ kind: 'code' })}>Join a class</button>
         </>

@@ -172,6 +172,78 @@ describe('classes and joining', () => {
   });
 });
 
+describe('teacher controls', () => {
+  /** A stand-in for the class rooms: records what the Worker tells them. */
+  function rooms() {
+    const calls: { classId: string; body: unknown }[] = [];
+    const ns = {
+      idFromName: (n: string) => n,
+      get: (id: string) => ({ fetch: async (_u: string, init: { body: string }) => (calls.push({ classId: id, body: JSON.parse(init.body) }), new Response(null, { status: 204 })) }),
+    };
+    return { ns: ns as unknown as DurableObjectNamespace, calls };
+  }
+  async function classWithStudent() {
+    const r = rooms();
+    const env = testEnv({ CLASSROOM: r.ns });
+    const { token, cls } = await teacherWithClass(env);
+    const opts = await call(env, 'POST', '/api/join', { code: cls.code });
+    const name = (opts.body.choices as string[])[0]!;
+    const j = await call(env, 'POST', '/api/join/confirm', { code: cls.code, name });
+    const d = await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token);
+    const member = (d.body.members as { id: string; name: string; muted: boolean }[])[0]!;
+    return { env, token, cls, name, member, studentToken: j.body.token as string, calls: r.calls };
+  }
+
+  it('the class view lists students by public name only', async () => {
+    const { name, member, env, token, cls } = await classWithStudent();
+    expect(member).toMatchObject({ name, muted: false });
+    expect(Object.keys(member).sort()).toEqual(['id', 'joined', 'lastSeen', 'muted', 'name']);
+    expect((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body.reports).toEqual([]);
+  });
+  it('mute is saved and sent to the live room at once', async () => {
+    const { env, token, cls, member, calls } = await classWithStudent();
+    const r = await call(env, 'POST', `/api/teacher/classes/${cls.id}/members/${member.id}/mute`, { muted: true }, token);
+    expect(r.body).toEqual({ ok: true, muted: true });
+    expect(calls).toEqual([{ classId: cls.id, body: { kind: 'mute', memberId: member.id, on: true } }]);
+    expect(await env.DB.prepare('SELECT muted FROM members WHERE id = ?').bind(member.id).first()).toEqual({ muted: 1 });
+    expect((await call(env, 'POST', `/api/teacher/classes/${cls.id}/members/${member.id}/mute`, { muted: 'yes' }, token)).status).toBe(400);
+  });
+  it('removing a student deletes the membership and disconnects them', async () => {
+    const { env, token, cls, member, calls, studentToken } = await classWithStudent();
+    expect((await call(env, 'DELETE', `/api/teacher/classes/${cls.id}/members/${member.id}`, undefined, token)).status).toBe(200);
+    expect(calls).toEqual([{ classId: cls.id, body: { kind: 'kick', memberId: member.id } }]);
+    expect((await call(env, 'GET', '/api/me', undefined, studentToken)).status).toBe(401);
+    expect((await call(env, 'DELETE', `/api/teacher/classes/${cls.id}/members/${member.id}`, undefined, token)).status).toBe(404);
+  });
+  it('another teacher can’t see, mute or remove your students', async () => {
+    const { env, cls, member } = await classWithStudent();
+    const other = (await call(env, 'POST', '/api/teacher/signup', { email: 'other@school.org', password: 'correct horse battery' }, undefined, T0, { 'CF-Connecting-IP': '192.0.2.4' })).body.token as string;
+    expect((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, other)).status).toBe(404);
+    expect((await call(env, 'POST', `/api/teacher/classes/${cls.id}/members/${member.id}/mute`, { muted: true }, other)).status).toBe(404);
+    expect((await call(env, 'DELETE', `/api/teacher/classes/${cls.id}/members/${member.id}`, undefined, other)).status).toBe(404);
+    // A student id from another class doesn't work through your own class either.
+    const theirs = (await call(env, 'POST', '/api/teacher/classes', { name: 'Room 9' }, other)).body.class as { id: string };
+    expect((await call(env, 'POST', `/api/teacher/classes/${theirs.id}/members/${member.id}/mute`, { muted: true }, other)).status).toBe(404);
+    expect((await call(env, 'DELETE', `/api/teacher/classes/${theirs.id}/members/${member.id}`, undefined, other)).status).toBe(404);
+    expect(await env.DB.prepare('SELECT muted FROM members WHERE id = ?').bind(member.id).first()).toEqual({ muted: 0 });
+  });
+  it('reports show up for the teacher with the phrase numbers, and can be closed', async () => {
+    const { env, token, cls, member, name } = await classWithStudent();
+    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'piggybank_village/plaza' }];
+    await env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, history, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind('0b5c6a2e-0000-4000-8000-000000000001', member.id, cls.id, member.id, cls.id, JSON.stringify(history), T0).run();
+    const d = await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token);
+    expect(d.body.reports).toEqual([{ id: '0b5c6a2e-0000-4000-8000-000000000001', at: T0, targetId: member.id, target: name, reporter: name, history }]);
+    expect((await call(env, 'POST', `/api/teacher/classes/${cls.id}/reports/0b5c6a2e-0000-4000-8000-000000000001/resolve`, {}, token)).status).toBe(200);
+    expect((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body.reports).toEqual([]);
+  });
+  it('deleting a class disconnects everyone in it', async () => {
+    const { env, token, cls, calls } = await classWithStudent();
+    await call(env, 'DELETE', `/api/teacher/classes/${cls.id}`, undefined, token);
+    expect(calls).toEqual([{ classId: cls.id, body: { kind: 'kick', memberId: null } }]);
+  });
+});
+
 describe('retention', () => {
   it('deletes classes idle for 12 months (with their members), reports after 90 days, expired sessions', async () => {
     const env = testEnv();

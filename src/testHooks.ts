@@ -15,7 +15,7 @@ export function installTestHooks(game: Phaser.Game): void {
     where: () => room()?.where() ?? { screen: useSession.getState().scene?.kind ?? null, at: null },
     teleport: (x: number, y: number) => room()?.teleport(x, y),
     /** Multiplayer: connection status and the classmates on this screen (where they're drawn). */
-    net: () => ({ on: bridge.on, status: useNet.getState().status, people: useNet.getState().people, remotes: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, x: r.x, y: r.y, busy: r.b })), labels: [...bridge.labels.entries()] }),
+    net: () => ({ on: bridge.on, status: useNet.getState().status, muted: useNet.getState().muted, says: useNet.getState().says, people: useNet.getState().people, remotes: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, x: r.x, y: r.y, busy: r.b })), labels: [...bridge.labels.entries()] }),
     /** Draw order: the fronts (scenery cut-outs) and every sprite, with their depth and box. */
     layers: () =>
       (room()?.children.list ?? []).flatMap((o) => {

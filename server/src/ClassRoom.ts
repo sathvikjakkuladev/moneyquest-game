@@ -10,6 +10,9 @@ import { Hub } from './hub.ts';
 
 interface Attachment { pid: number; classId: string; opened: number; conn: Conn | null }
 
+/** Teacher actions, sent by the Worker after it updates D1 (see roomAdmin in classes.ts). */
+export type RoomAdmin = { kind: 'mute'; memberId: string; on: boolean } | { kind: 'kick'; memberId: string | null };
+
 const HELLO_TIMEOUT_MS = 5000;
 
 export class ClassRoom extends DurableObject<Env> {
@@ -27,6 +30,8 @@ export class ClassRoom extends DurableObject<Env> {
   }
 
   override async fetch(req: Request): Promise<Response> {
+    // Teacher actions. Only the Worker can send these: it forwards nothing but /ws/class/<code> upgrades.
+    if (new URL(req.url).pathname === '/admin' && req.method === 'POST' && req.headers.get('Upgrade') === null) return this.admin((await req.json()) as RoomAdmin);
     if (req.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
     const classId = req.headers.get('X-Class-Id') ?? '';
     const { 0: client, 1: server } = new WebSocketPair();
@@ -71,6 +76,11 @@ export class ClassRoom extends DurableObject<Env> {
     ws.serializeAttachment(a);
     this.send(r.out);
     if (r.close) return this.close(ws, CLOSE.policy, 'Too many bad messages');
+    if (r.report && a.conn) {
+      await this.env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, world, history, created_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)')
+        .bind(crypto.randomUUID(), a.conn.memberId, a.classId, r.report.targetMemberId, a.classId, JSON.stringify(r.report.history), now)
+        .run();
+    }
     if (this.hub.dirty.size && !this.timer) this.timer = setTimeout(() => this.flush(), BATCH_MS);
   }
 
@@ -81,6 +91,28 @@ export class ClassRoom extends DurableObject<Env> {
 
   override async webSocketError(ws: WebSocket): Promise<void> {
     this.drop(ws);
+  }
+
+  /** A teacher muted, unmuted or removed a student (or deleted the class): apply it now. */
+  private admin(cmd: RoomAdmin): Response {
+    if (cmd.kind === 'mute') {
+      const { out, pids } = this.hub.setMuted(cmd.memberId, !!cmd.on);
+      for (const pid of pids) this.saveConn(pid);
+      this.send(out);
+    } else {
+      for (const pid of this.hub.pidsOf(cmd.memberId)) {
+        const ws = this.ctx.getWebSockets(String(pid))[0];
+        this.send(this.hub.leave(pid));
+        if (ws) this.close(ws, CLOSE.notMember, 'Removed from the class');
+      }
+    }
+    return new Response(null, { status: 204 });
+  }
+
+  private saveConn(pid: number): void {
+    const ws = this.ctx.getWebSockets(String(pid))[0];
+    const a = ws?.deserializeAttachment() as Attachment | null;
+    if (ws && a) ws.serializeAttachment({ ...a, conn: this.hub.conns.get(pid) ?? null });
   }
 
   private drop(ws: WebSocket): void {

@@ -60,9 +60,16 @@ export class RemotePlayers {
         if (knownPet(r.p)) this.loadPet(id, r.p!);
       }
       v.pet?.update([at.x, at.y], moving, dtMs);
-      bridge.labels.set(id, { x: at.x, y: at.y - v.sprite.displayHeight * v.sprite.originY });
+      bridge.labels.set(id, { x: at.x, y: at.y - v.sprite.displayHeight * v.sprite.originY - (v.hat ? 10 : 0) }); // above the hat
     }
     for (const [id, v] of this.views) if (!bridge.remotes.has(id)) this.remove(id, v);
+  }
+
+  /** The classmate drawn at (x, y), the front-most one if they overlap. */
+  hit(x: number, y: number): number | undefined {
+    let best: [number, number] | undefined;
+    for (const [id, v] of this.views) if (v.sprite.getBounds().contains(x, y) && (!best || v.sprite.depth > best[1])) best = [id, v.sprite.depth];
+    return best?.[0];
   }
 
   /** Pet art loads on demand (only the player's own pet is preloaded). */

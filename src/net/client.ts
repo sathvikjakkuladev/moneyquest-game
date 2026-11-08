@@ -3,11 +3,13 @@
 // classmates on the same screen up to date, and reconnects quietly with backoff if the network drops.
 // Only loaded when VITE_MP_URL is set.
 import type { Membership } from '../core/save.ts';
-import { bridge, publishPeople, useNet } from './bridge.ts';
+import { bridge, ME, publishPeople, useNet } from './bridge.ts';
 import type { Remote, Report } from './bridge.ts';
 import { addSample } from './interp.ts';
 import type { Face, Look, PlayerView, ServerMsg } from './protocol.ts';
 import { CLOSE, MOVE_INTERVAL_MS, parseServer } from './protocol.ts';
+import type { SayKind } from './says.ts';
+import { SAY_COOLDOWN_MS, sayValid } from './says.ts';
 
 const PING_MS = 25_000;
 const JUMP = 64; // a bigger step than this between reports is a jump (back from a battle), not a walk
@@ -26,6 +28,7 @@ export class ClassConnection {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private me: { s: string; x: number; y: number; f: Face } & Look = { s: '', x: 0, y: 0, f: 0, h: null, p: null, b: false };
   private sent = { s: '', x: -1, y: -1, f: 0 as Face, at: 0 };
+  private lastSay = -Infinity;
 
   constructor(m: Membership, events: ConnEvents) {
     this.url = `${m.url.replace(/^http/, 'ws')}/ws/class/${encodeURIComponent(m.classCode)}`;
@@ -75,6 +78,7 @@ export class ClassConnection {
     this.pingTimer = null;
     this.ws = null;
     bridge.remotes.clear();
+    useNet.setState({ says: {}, open: null });
     publishPeople();
   }
 
@@ -121,6 +125,22 @@ export class ClassConnection {
     if (this.ready) this.send({ t: 'look', ...l });
   }
 
+  /** An emote or phrase, at most one every SAY_COOLDOWN_MS (the server enforces it too). Shown over
+   *  your own head at once; muted players' says are never sent. */
+  say(k: SayKind, i: number): boolean {
+    const now = performance.now();
+    if (!this.ready || !this.me.s || useNet.getState().muted || !sayValid(k, i) || now - this.lastSay < SAY_COOLDOWN_MS) return false;
+    this.lastSay = now;
+    this.send({ t: 'say', k, i });
+    useNet.setState((n) => ({ says: { ...n.says, [ME]: { k, i, at: Date.now() } } }));
+    return true;
+  }
+
+  /** Report a player to the teacher. The server attaches what that player said recently. */
+  flag(id: number): void {
+    this.send({ t: 'report', id });
+  }
+
   private remote(p: PlayerView, now: number): Remote {
     return { id: p.id, name: p.n, s: p.s, x: p.x, y: p.y, f: p.f, h: p.h, p: p.p, b: p.b, samples: [{ t: now, x: p.x, y: p.y }] };
   }
@@ -132,7 +152,9 @@ export class ClassConnection {
     switch (msg.t) {
       case 'welcome':
       case 'here':
+        if (msg.t === 'welcome') useNet.setState({ muted: false }); // a 'muted' message follows if the teacher muted you
         R.clear();
+        useNet.setState({ says: {} });
         for (const p of msg.players) R.set(p.id, this.remote(p, now));
         break;
       case 'join':
@@ -140,6 +162,10 @@ export class ClassConnection {
         break;
       case 'leave':
         R.delete(msg.id);
+        useNet.setState((n) => {
+          const { [msg.id]: _gone, ...says } = n.says;
+          return { says, open: n.open === msg.id ? null : n.open };
+        });
         break;
       case 'state':
         for (const [id, x, y, f] of msg.m) {
@@ -154,6 +180,15 @@ export class ClassConnection {
         if (r) Object.assign(r, { h: msg.h, p: msg.p, b: msg.b });
         break;
       }
+      case 'say':
+        if (R.has(msg.id)) useNet.setState((n) => ({ says: { ...n.says, [msg.id]: { k: msg.k, i: msg.i, at: Date.now() } } }));
+        return;
+      case 'muted':
+        useNet.setState({ muted: msg.on });
+        return;
+      case 'reported':
+        useNet.setState((n) => ({ reported: [...n.reported, msg.id] }));
+        return;
     }
     publishPeople();
   }

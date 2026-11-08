@@ -28,11 +28,11 @@ function check(): void {
     bridge.on = !!k;
     bridge.remotes.clear();
     publishPeople();
-    if (!k) useNet.setState({ status: 'off' });
+    if (!k) useNet.setState({ status: 'off', says: {}, open: null, muted: false });
     else
       conn = new ClassConnection(m!, {
         // The teacher removed this student (or reset their token, or deleted the class).
-        notMember: () => useSave.getState().edit((x) => ({ ...x, online: null })),
+        notMember: () => (useNet.setState({ removed: true }), useSave.getState().edit((x) => ({ ...x, online: null }))),
       });
   }
   if (!conn || !s) return;
@@ -43,6 +43,8 @@ function check(): void {
 
 export function startMultiplayer(): void {
   bridge.report = (r) => conn?.report(r);
+  bridge.say = (k, i) => void conn?.say(k, i);
+  bridge.flag = (id) => conn?.flag(id);
   useSave.subscribe(check);
   useSession.subscribe(check);
   check();

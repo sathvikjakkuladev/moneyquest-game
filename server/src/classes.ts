@@ -6,6 +6,7 @@ import { cryptoRandom, newToken, randomBytes, sha256 } from './crypto.ts';
 import type { Env } from './env.ts';
 import { bearer, clientIp, HttpError, readJson, str } from './http.ts';
 import { hit, limitFor, LIMITS } from './limits.ts';
+import type { RoomAdmin } from './ClassRoom.ts';
 
 export const MAX_LIST_NAMES = 60;
 export const MAX_MEMBERS = 60;
@@ -79,11 +80,92 @@ export async function setNames(req: Request, env: Env, now: number, classId: str
   return { ok: true, namesMode: names.length ? 'list' : 'generated' };
 }
 
-/** Delete a class and everything in it (members, progress, goals, reports). */
+/** Delete a class and everything in it (members, progress, goals, reports). Anyone playing is disconnected. */
 export async function deleteClass(req: Request, env: Env, now: number, classId: string) {
   const t = await requireTeacher(req, env, now);
   await ownClass(env, t.id, classId);
   await env.DB.prepare('DELETE FROM classes WHERE id = ?').bind(classId).run();
+  await roomAdmin(env, classId, { kind: 'kick', memberId: null });
+  return { ok: true };
+}
+
+/**
+ * Tell the class's live room about a teacher action, so it applies at once. D1 is already updated,
+ * so if the room can't be reached the action still holds: it's checked again on every connect.
+ */
+export async function roomAdmin(env: Env, classId: string, cmd: RoomAdmin): Promise<void> {
+  if (!env.CLASSROOM) return;
+  try {
+    await env.CLASSROOM.get(env.CLASSROOM.idFromName(classId)).fetch('https://room/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
+  } catch (e) {
+    console.error('room admin', e);
+  }
+}
+
+interface ReportRow { id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; reporter_name: string | null }
+
+/** One class: its students (public names only) and the reports about them that are still open. */
+export async function classDetail(req: Request, env: Env, now: number, classId: string) {
+  const t = await requireTeacher(req, env, now);
+  const c = await ownClass(env, t.id, classId);
+  const [members, reports] = await Promise.all([
+    env.DB.prepare('SELECT id, public_name, muted, created_at, last_seen FROM members WHERE class_id = ? ORDER BY public_name')
+      .bind(classId).all<{ id: string; public_name: string; muted: number; created_at: number; last_seen: number }>(),
+    env.DB.prepare(
+      `SELECT r.id, r.created_at, r.history, r.target_id, t.public_name AS target_name, m.public_name AS reporter_name
+       FROM reports r LEFT JOIN members t ON t.id = r.target_id LEFT JOIN members m ON m.id = r.reporter_id
+       WHERE r.target_class = ? AND r.resolved = 0 ORDER BY r.created_at DESC LIMIT 100`,
+    ).bind(classId).all<ReportRow>(),
+  ]);
+  return {
+    class: { id: c.id, code: c.code, name: c.name, namesMode: c.names_mode, worldMode: !!c.world_mode },
+    members: members.results.map((m) => ({ id: m.id, name: m.public_name, muted: !!m.muted, joined: m.created_at, lastSeen: m.last_seen })),
+    reports: reports.results.map((r) => ({ id: r.id, at: r.created_at, targetId: r.target_id, target: r.target_name, reporter: r.reporter_name, history: safeHistory(r.history) })),
+  };
+}
+
+function safeHistory(s: string): unknown[] {
+  try {
+    const v: unknown = JSON.parse(s);
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+async function ownMember(env: Env, classId: string, memberId: string): Promise<void> {
+  const m = await env.DB.prepare('SELECT 1 AS ok FROM members WHERE id = ? AND class_id = ?').bind(memberId, classId).first();
+  if (!m) throw new HttpError(404, 'no-member', 'That student isn’t in this class any more.');
+}
+
+/** Teacher mute: the student's emotes and phrases stop reaching anyone. They can still play and move. */
+export async function muteMember(req: Request, env: Env, now: number, classId: string, memberId: string) {
+  const t = await requireTeacher(req, env, now);
+  await ownClass(env, t.id, classId);
+  await ownMember(env, classId, memberId);
+  const body = await readJson(req);
+  if (typeof body.muted !== 'boolean') throw new HttpError(400, 'bad-request', 'Bad request.');
+  await env.DB.prepare('UPDATE members SET muted = ? WHERE id = ?').bind(body.muted ? 1 : 0, memberId).run();
+  await roomAdmin(env, classId, { kind: 'mute', memberId, on: body.muted });
+  return { ok: true, muted: body.muted };
+}
+
+/** Remove a student from the class: their membership and progress are deleted, and they're disconnected now. */
+export async function removeMember(req: Request, env: Env, now: number, classId: string, memberId: string) {
+  const t = await requireTeacher(req, env, now);
+  await ownClass(env, t.id, classId);
+  await ownMember(env, classId, memberId);
+  await env.DB.prepare('DELETE FROM members WHERE id = ?').bind(memberId).run();
+  await roomAdmin(env, classId, { kind: 'kick', memberId });
+  return { ok: true };
+}
+
+/** Close a report (it's deleted with the rest after 90 days). */
+export async function resolveReport(req: Request, env: Env, now: number, classId: string, reportId: string) {
+  const t = await requireTeacher(req, env, now);
+  await ownClass(env, t.id, classId);
+  const r = await env.DB.prepare('UPDATE reports SET resolved = 1 WHERE id = ? AND target_class = ?').bind(reportId, classId).run();
+  if (!r.meta.changes) throw new HttpError(404, 'no-report', 'Report not found.');
   return { ok: true };
 }
 

@@ -1,7 +1,10 @@
 // The multiplayer wire format, shared by the game and the server (no browser or Workers APIs here).
 // Everything is validated strictly on both sides: unknown types, extra-large messages, bad numbers
 // or unknown screens are dropped. No free text exists in it: names come from the server's records
-// (generated or teacher-listed), and hats/pets are item ids the game checks against its own list.
+// (generated or teacher-listed), hats/pets are item ids the game checks against its own list, and
+// emotes and phrases are numbers into the lists in says.ts.
+import type { SayKind } from './says.ts';
+import { sayValid } from './says.ts';
 
 /** Every screen a player can be on ('' = not on a screen: world map, title, loading). */
 export const SCREENS = [
@@ -38,7 +41,9 @@ export type ClientMsg =
   | ({ t: 'hello'; token: string } & Pose & Look)
   | { t: 'move'; x: number; y: number; f: Face }
   | ({ t: 'screen' } & Pose)
-  | ({ t: 'look' } & Look);
+  | ({ t: 'look' } & Look)
+  | { t: 'say'; k: SayKind; i: number }
+  | { t: 'report'; id: number };
 
 /** A player as other players see them. `id` is a small number the server hands out per connection. */
 export interface PlayerView extends Pose, Look { id: number; n: string }
@@ -49,7 +54,12 @@ export type ServerMsg =
   | { t: 'join'; p: PlayerView }
   | { t: 'leave'; id: number }
   | { t: 'state'; m: [id: number, x: number, y: number, f: Face][] }
-  | ({ t: 'look'; id: number } & Look);
+  | ({ t: 'look'; id: number } & Look)
+  | { t: 'say'; id: number; k: SayKind; i: number }
+  /** Your teacher turned your emotes and phrases off (or back on). */
+  | { t: 'muted'; on: boolean }
+  /** Your report about player `id` reached your teacher. */
+  | { t: 'reported'; id: number };
 
 /** WebSocket close codes the server uses (the client stops reconnecting on 4001 and 4003). */
 export const CLOSE = { badHello: 4000, replaced: 4001, notMember: 4003, policy: 4008 } as const;
@@ -102,10 +112,16 @@ export function parseClient(raw: unknown): ClientMsg | null {
       const l = look(o);
       return l ? { t: 'look', ...l } : null;
     }
+    case 'say':
+      return sayValid(o.k, o.i) ? { t: 'say', k: o.k as SayKind, i: o.i as number } : null;
+    case 'report':
+      return pid(o.id) ? { t: 'report', id: o.id as number } : null;
     default:
       return null;
   }
 }
+
+const pid = (v: unknown): boolean => typeof v === 'number' && Number.isInteger(v) && v > 0 && v < 2 ** 31;
 
 function player(v: unknown): PlayerView | null {
   if (!isObj(v) || typeof v.id !== 'number' || !Number.isInteger(v.id) || typeof v.n !== 'string' || v.n.length > 24) return null;
@@ -153,6 +169,12 @@ export function parseServer(raw: unknown): ServerMsg | null {
       const l = look(o);
       return l && typeof o.id === 'number' ? { t: 'look', id: o.id, ...l } : null;
     }
+    case 'say':
+      return pid(o.id) && sayValid(o.k, o.i) ? { t: 'say', id: o.id as number, k: o.k as SayKind, i: o.i as number } : null;
+    case 'muted':
+      return typeof o.on === 'boolean' ? { t: 'muted', on: o.on } : null;
+    case 'reported':
+      return pid(o.id) ? { t: 'reported', id: o.id as number } : null;
     default:
       return null;
   }

@@ -69,16 +69,62 @@ describe('class room presence', () => {
   });
 });
 
+describe('emotes, phrases, mute and reports', () => {
+  it('says go to the screen only (not back to the sayer), one every 3 s with a burst of 2', () => {
+    const { hub, a, b } = room();
+    expect(hub.handle(a, { t: 'say', k: 'e', i: 0 }, 0).out).toEqual([{ to: b, msg: { t: 'say', id: a, k: 'e', i: 0 } }]);
+    expect(hub.handle(a, { t: 'say', k: 'p', i: 3 }, 100).out).toHaveLength(1);
+    expect(hub.handle(a, { t: 'say', k: 'p', i: 4 }, 200).out).toEqual([]); // over the limit
+    expect(hub.handle(a, { t: 'say', k: 'p', i: 4 }, 3300).out).toHaveLength(1); // a new token after 3 s
+  });
+  it('a teacher-muted player still moves, but their says reach nobody; they are told', () => {
+    const { hub, a, b } = room();
+    expect(hub.setMuted('A', true)).toEqual({ out: [{ to: a, msg: { t: 'muted', on: true } }], pids: [a] });
+    expect(hub.handle(a, { t: 'say', k: 'e', i: 1 }, 0).out).toEqual([]);
+    hub.handle(a, { t: 'move', x: 310, y: 200, f: 2 }, 250);
+    expect(hub.flush()).toEqual([{ to: b, msg: { t: 'state', m: [[a, 310, 200, 2]] } }]);
+    hub.setMuted('A', false);
+    expect(hub.handle(a, { t: 'say', k: 'e', i: 1 }, 5000).out).toHaveLength(1);
+  });
+  it('a member muted before connecting hears so in their welcome', () => {
+    const hub = new Hub();
+    const out = hub.hello(hub.newPid(), { id: 'M', public_name: 'QuietOwl1', muted: 1 }, hello(PLAZA), 0);
+    expect(out[1]).toEqual({ to: 1, msg: { t: 'muted', on: true } });
+  });
+  it('reports carry the reported player’s last 10 says as the server saw them', () => {
+    const { hub, a, b } = room();
+    for (let i = 0; i < 12; i++) hub.handle(a, { t: 'say', k: 'p', i }, i * 3000);
+    const r = hub.handle(b, { t: 'report', id: a }, 40_000);
+    expect(r.out).toEqual([{ to: b, msg: { t: 'reported', id: a } }]);
+    expect(r.report!.targetMemberId).toBe('A');
+    expect(r.report!.history).toHaveLength(10);
+    expect(r.report!.history[0]).toEqual({ kind: 'phrase', i: 2, at: 6000, screen: PLAZA });
+    expect(hub.handle(b, { t: 'report', id: b }, 40_000).report).toBeUndefined(); // not yourself
+    expect(hub.handle(b, { t: 'report', id: 99 }, 40_000).report).toBeUndefined(); // not here
+    hub.handle(b, { t: 'report', id: a }, 40_000);
+    expect(hub.handle(b, { t: 'report', id: a }, 40_000).report).toBeUndefined(); // 3 a minute
+  });
+  it('finds the connections to close when a student is removed or the class is deleted', () => {
+    const { hub, a, b, c } = room();
+    expect(hub.pidsOf('A')).toEqual([a]);
+    expect(hub.pidsOf(null)).toEqual([a, b, c]);
+  });
+});
+
 describe('wire format', () => {
   it('accepts well-formed client messages only', () => {
     expect(parseClient(JSON.stringify(hello(PLAZA)))).toMatchObject({ t: 'hello', s: PLAZA });
     expect(parseClient(JSON.stringify({ t: 'move', x: 10.4, y: 20, f: 1 }))).toEqual({ t: 'move', x: 10, y: 20, f: 1 });
+    expect(parseClient(JSON.stringify({ t: 'say', k: 'e', i: 7, extra: 'dropped' }))).toEqual({ t: 'say', k: 'e', i: 7 });
+    expect(parseClient(JSON.stringify({ t: 'report', id: 3 }))).toEqual({ t: 'report', id: 3 });
     for (const bad of [
       '{', '[]', 'null', JSON.stringify({ t: 'chat', text: 'hi' }),
       JSON.stringify({ t: 'move', x: -1, y: 20, f: 1 }), JSON.stringify({ t: 'move', x: 700, y: 20, f: 1 }), JSON.stringify({ t: 'move', x: 1, y: 2, f: 4 }),
       JSON.stringify({ t: 'move', x: 'NaN', y: 2, f: 1 }), JSON.stringify({ ...hello(PLAZA), s: 'secret/room' }), JSON.stringify({ ...hello(PLAZA), token: 't_' + 'a'.repeat(43) }),
       JSON.stringify({ ...hello(PLAZA), h: '<img src=x>' }), JSON.stringify({ t: 'look', h: null, p: null, b: 'yes' }),
       JSON.stringify({ t: 'move', x: 1, y: 2, f: 1, pad: 'x'.repeat(MAX_MESSAGE) }),
+      JSON.stringify({ t: 'say', k: 'p', i: 999 }), JSON.stringify({ t: 'say', k: 'p', i: 1.5 }), JSON.stringify({ t: 'say', k: 'x', i: 0 }),
+      JSON.stringify({ t: 'say', k: 'p', text: 'hello' }), JSON.stringify({ t: 'report', id: 0 }), JSON.stringify({ t: 'report', id: 'a' }),
     ]) expect(parseClient(bad), bad.slice(0, 60)).toBeNull();
   });
   it('the game drops malformed server messages and bad rows', () => {

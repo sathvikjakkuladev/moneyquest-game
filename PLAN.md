@@ -700,3 +700,51 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
       battle icon shows; leaving removes the player; nicknames never travel.
     - The game plays on quietly when every connection drops.
 
+
+### Cosmetics show up when equipped (2026-11-07)
+- **Bug:** a hat or pet bought in the Shop (which equips it) or switched in the Bag didn't appear
+  until the player changed screens, because the room read the equipped items only when it loaded.
+- **Fix:** `RoomScene.syncLook()` compares the equipped hat and pet with what's drawn every frame
+  and swaps them at once. A pet whose art wasn't preloaded loads on demand, then appears beside the
+  player and follows from there. Battles already read the equipped items when they start.
+- **Test:** `tests/e2e/cosmetics.spec.ts` buys a hat and a pet in the Shop, checks both appear
+  without leaving the screen, walks to check the pet trails behind, then swaps them in the Bag. It
+  fails on the old code.
+
+### Multiplayer Phase 3 — emotes, phrases and safety (done 2026-11-07)
+- **Emotes and phrases** (`src/net/says.ts`, **draft for review**): 8 emotes and 26 preset phrases
+  in four groups (Hello, Play, Answers, Money).
+  - Picked from the 💬 button and shown in a speech bubble over the player for 4 seconds.
+  - They travel as numbers. Students still can't type anything others see.
+  - One every 3 seconds: the picker asks you to wait, and the server enforces it.
+  - The lists only grow (reports store the numbers); a test pins the first entries.
+- **Tap a classmate** (their name tag, or their sprite) for a menu:
+  - **Mute:** hides their bubbles on this device until the game is closed. Decided small: it isn't
+    saved, so the save schema didn't change.
+  - **Report to your teacher** (with a confirm step). It also mutes them.
+  - The server attaches the reported player's last 10 says as it saw them (kind, number, time,
+    screen), so a report can't be faked.
+  - Reports are limited to 3 a minute.
+- **Teacher controls** (/teacher → Open a class):
+  - Students by public name, with Mute and Remove.
+  - Open reports, decoded ("“Hi!” · Piggybank Village · Plaza · time"), with Mute, Remove and
+    Close report.
+  - Mute, remove and class deletion apply live, through the class room's `/admin` path. A muted
+    student's picker says their teacher turned it off; they still play and move. Removed students
+    are disconnected and the game forgets the class.
+  - New routes:
+    - `GET /api/teacher/classes/:id`
+    - `POST …/members/:mid/mute`
+    - `DELETE …/members/:mid`
+    - `POST …/reports/:rid/resolve`
+- **Play offline** switch in Settings → Class: disconnects and keeps the class saved; untick to
+  reconnect.
+- The online layer (name tags, bubbles, 💬) now sits under the HUD, Settings, dialogue and panels.
+  The player can't move while the picker or a player menu is open.
+- **Tests:**
+  - 128 game unit tests (phrase lists) and 33 server tests (says, rate limits, mute, reports,
+    removal, teacher routes, other teachers locked out).
+  - Production build: 9 Playwright tests, with multiplayer code still absent from the bundle.
+  - Against the local server: 4 tests. The new one covers say, the wait, the bubble, mute,
+    report, the teacher page showing it, teacher mute live, Play offline and reconnect, and
+    teacher remove live.

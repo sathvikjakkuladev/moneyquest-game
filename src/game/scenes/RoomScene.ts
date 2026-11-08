@@ -10,9 +10,11 @@ import { canEnter } from '../../core/unlocks.ts';
 import { zoneById } from '../../data/zones.ts';
 import { Follower, petArt, queuePet } from '../pet.ts';
 import { Hat } from '../hats.ts';
+import { HAT_ART } from '../../data/hats.ts';
+import { item } from '../../data/items.ts';
 import { addFronts } from '../fronts.ts';
 import { RemotePlayers } from '../remote.ts';
-import { bridge } from '../../net/bridge.ts';
+import { bridge, useNet } from '../../net/bridge.ts';
 import { FACES } from '../../net/protocol.ts';
 import type { Face } from '../../net/protocol.ts';
 import { MONSTER_FACES_RIGHT } from '../../data/monsterFacing.ts';
@@ -58,6 +60,7 @@ export class RoomScene extends Phaser.Scene {
   private leaving = false;
   private pet: Follower | null = null;
   private hat: Hat | null = null;
+  private look = { hat: null as string | null, pet: null as string | null }; // what's drawn now (see syncLook)
   private atPortal: string | null = null;
   private remotes: RemotePlayers | null = null; // classmates on this screen (multiplayer)
 
@@ -71,7 +74,7 @@ export class RoomScene extends Phaser.Scene {
     const rooms = ROOMS[req.zone]!;
     this.screenName = req.screen && rooms.screens[req.screen] ? req.screen : rooms.start;
     this.screen = rooms.screens[this.screenName]!;
-    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, hat: null, atPortal: null, remotes: null });
+    Object.assign(this, { player: null, things: [], target: null, pending: null, near: null, face: 'north', wasBlocked: true, pressed: false, leaving: false, touching: new Set(), pet: null, hat: null, look: { hat: null, pet: null }, atPortal: null, remotes: null });
   }
 
   preload(): void {
@@ -101,10 +104,7 @@ export class RoomScene extends Phaser.Scene {
       this.inExit = exitAt(this.screen, at) !== null;
       for (const t of this.things) if (t.kind === 'monster' && this.dist(at, t) < t.range) this.touching.add(t.id);
       this.atPortal = this.portalNear(at);
-      const petId = slot().inventory.pet;
-      if (petId && petArt(petId)) this.pet = new Follower(this, petId, at);
-      const hatId = slot().inventory.hat;
-      if (hatId) this.hat = new Hat(this, this.player, hatId);
+      this.syncLook();
     }
 
     const kb = this.input.keyboard!;
@@ -122,6 +122,7 @@ export class RoomScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.remotes?.destroy();
       this.remotes = null;
+      bridge.me = null;
       roomActions.interact = () => {};
       useSession.getState().setPrompt(null);
     });
@@ -197,11 +198,13 @@ export class RoomScene extends Phaser.Scene {
 
   private blocked(): boolean {
     const s = useSession.getState();
-    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null || s.editing || s.panel !== null || s.celebrate !== null;
+    return !this.player || this.leaving || s.screen !== 'play' || s.dialogue !== null || s.battle !== null || s.editing || s.panel !== null || s.celebrate !== null || useNet.getState().open !== null;
   }
 
   private tap(x: number, y: number): void {
     if (this.blocked()) return;
+    const who = this.remotes?.hit(x, y); // a classmate: open their menu (Mute, Report)
+    if (who !== undefined) return void useNet.setState({ open: who });
     const hit = this.things.find((t) => t.sprite.getBounds().contains(x, y));
     this.pending = hit ?? null;
     this.target = hit ? [hit.x, hit.y + 6] : [x, y];
@@ -252,12 +255,41 @@ export class RoomScene extends Phaser.Scene {
     this.cameras.main.once('camerafadeoutcomplete', () => useSession.getState().go(to));
   }
 
+  /** Wear the equipped hat and bring the equipped pet, including after equipping one in the Shop or Bag
+   *  while standing here. A pet that wasn't preloaded loads on demand. */
+  private syncLook(): void {
+    const p = this.player;
+    if (!p) return;
+    const { hat, pet } = slot().inventory;
+    if (hat !== this.look.hat) {
+      this.look.hat = hat;
+      this.hat?.destroy();
+      this.hat = hat && item(hat)?.kind === 'hat' && HAT_ART[item(hat)!.art] ? new Hat(this, p, hat) : null;
+    }
+    if (pet !== this.look.pet) {
+      this.look.pet = pet;
+      this.pet?.destroy();
+      this.pet = null;
+      const art = pet ? petArt(pet) : null;
+      if (!pet || !art) return;
+      const make = () => {
+        if (this.look.pet === pet && !this.pet && this.player && this.sys.isActive() && this.textures.exists(art.key)) this.pet = new Follower(this, pet, [this.player.x, this.player.y]);
+      };
+      if (this.textures.exists(art.key)) return make();
+      queuePet(this, pet);
+      this.load.once('complete', make);
+      this.load.start();
+    }
+  }
+
   /** Multiplayer: draw classmates on this screen, and tell the network code where we are. */
   private syncRemotes(dtMs: number): void {
     if (this.req.attract) return;
     if (bridge.on && !this.remotes) this.remotes = new RemotePlayers(this, PLAYER);
     if (!bridge.on && this.remotes) (this.remotes.destroy(), (this.remotes = null));
     this.remotes?.update(dtMs);
+    const p = this.player;
+    bridge.me = bridge.on && p ? { x: p.x, y: p.y - p.displayHeight * p.originY } : null;
   }
 
   private tell(moving: boolean): void {
@@ -277,6 +309,7 @@ export class RoomScene extends Phaser.Scene {
   override update(_t: number, dtMs: number): void {
     const pressed = this.pressed;
     this.pressed = false;
+    this.syncLook();
     this.hat?.update();
     this.syncRemotes(dtMs);
     if (this.blocked()) {

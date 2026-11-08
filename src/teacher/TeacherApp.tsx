@@ -1,12 +1,16 @@
-// /teacher: sign up or log in, make classes and share their codes (Phase 1). The dashboard (roster,
-// progress, Money Check CSV, mute/remove, world mode, goals) arrives in Phase 4.
+// /teacher: sign up or log in, make classes and share their codes (Phase 1); open a class to see its
+// students, mute or remove them, and read reports (Phase 3). The rest of the dashboard (progress,
+// Money Check CSV, world mode, goals) arrives in Phase 4.
 // Sessions are bearer tokens kept in sessionStorage for this tab only (PLAN.md §10).
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../net/api.ts';
 import { MP_URL } from '../net/config.ts';
+import { EMOTES, PHRASES } from '../net/says.ts';
 
 interface TeacherInfo { email: string; admin: boolean; mustChange: boolean }
 interface ClassInfo { id: string; code: string; name: string; namesMode: 'generated' | 'list'; worldMode: boolean; members: number }
+interface MemberInfo { id: string; name: string; muted: boolean; joined: number; lastSeen: number }
+interface ReportInfo { id: string; at: number; targetId: string | null; target: string | null; reporter: string | null; history: { kind: 'emote' | 'phrase'; i: number; at: number; screen: string }[] }
 
 const KEY = 'mq-teacher-session';
 const store = {
@@ -128,6 +132,7 @@ function Classes({ token, email, onSignedOut }: { token: string; email: string; 
   const [name, setName] = useState('');
   const [names, setNames] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const call = async <T,>(f: () => Promise<T>): Promise<T | undefined> => {
     setMsg(null);
     try {
@@ -154,6 +159,8 @@ function Classes({ token, email, onSignedOut }: { token: string; email: string; 
     if (await call(() => api(`/api/teacher/classes/${c.id}`, { method: 'DELETE', token }))) setClasses((classes ?? []).filter((x) => x.id !== c.id));
   };
 
+  if (openId) return <ClassView token={token} classId={openId} onBack={() => (setOpenId(null), void load())} onSignedOut={onSignedOut} />;
+
   return (
     <section className="flex flex-col gap-4">
       <p className="text-lg">Logged in as <strong>{email}</strong>.</p>
@@ -168,6 +175,7 @@ function Classes({ token, email, onSignedOut }: { token: string; email: string; 
               </div>
               <div className="flex items-center gap-3">
                 <p className="text-3xl font-bold tracking-[0.25em]" aria-label={`Class code ${[...c.code].join(' ')}`}>{c.code}</p>
+                <button className="btn" onClick={() => setOpenId(c.id)} aria-label={`Open ${c.name}`}>Open</button>
                 <button className="btn btn-danger" onClick={() => void remove(c)}>Delete</button>
               </div>
             </li>
@@ -184,6 +192,100 @@ function Classes({ token, email, onSignedOut }: { token: string; email: string; 
         <button className="btn self-start" disabled={!name.trim()}>Create class</button>
       </form>
       <p className="text-base">Students join in the game: Settings (⚙) → Join a class → type the code → pick a name. They never type their real name.</p>
+      {msg && <p className="text-lg font-semibold text-[#9b2c1c]" role="alert">{msg}</p>}
+    </section>
+  );
+}
+
+const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const place = (screen: string) => screen.split('/').map((w) => w.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(' · ');
+const said = (h: ReportInfo['history'][number]) => (h.kind === 'emote' ? `${EMOTES[h.i]?.e ?? '?'} (${EMOTES[h.i]?.label ?? 'unknown emote'})` : `“${PHRASES[h.i] ?? 'unknown phrase'}”`);
+
+/** One class: its students (mute, remove) and the reports about them. */
+function ClassView({ token, classId, onBack, onSignedOut }: { token: string; classId: string; onBack: () => void; onSignedOut: () => void }) {
+  const [data, setData] = useState<{ class: ClassInfo; members: MemberInfo[]; reports: ReportInfo[] } | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const call = async <T,>(f: () => Promise<T>): Promise<T | undefined> => {
+    setMsg(null);
+    try {
+      return await f();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) onSignedOut();
+      setMsg(e instanceof ApiError ? e.message : 'Something went wrong.');
+    }
+  };
+  const load = () => call(() => api<{ class: ClassInfo; members: MemberInfo[]; reports: ReportInfo[] }>(`/api/teacher/classes/${classId}`, { token })).then((r) => r && setData(r));
+  useEffect(() => void load(), [classId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mute = async (m: { id: string; name: string }, muted: boolean) => {
+    if (await call(() => api(`/api/teacher/classes/${classId}/members/${m.id}/mute`, { body: { muted }, token }))) await load();
+  };
+  const removeStudent = async (m: { id: string; name: string }) => {
+    if (!confirm(`Remove ${m.name} from the class? Their class membership and progress summary are deleted, and they're disconnected now. They can join again with the class code.`)) return;
+    if (await call(() => api(`/api/teacher/classes/${classId}/members/${m.id}`, { method: 'DELETE', token }))) await load();
+  };
+  const resolve = async (r: ReportInfo) => {
+    if (await call(() => api(`/api/teacher/classes/${classId}/reports/${r.id}/resolve`, { body: {}, token }))) await load();
+  };
+
+  if (!data) return <p className="text-lg">{msg ?? 'Loading…'}</p>;
+  const byId = new Map(data.members.map((m) => [m.id, m]));
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <button className="btn btn-quiet" onClick={onBack}>← All classes</button>
+        <button className="btn btn-quiet" onClick={() => void load()}>↻ Refresh</button>
+      </div>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-2xl font-bold">{data.class.name}</h2>
+        <p className="text-3xl font-bold tracking-[0.25em]" aria-label={`Class code ${[...data.class.code].join(' ')}`}>{data.class.code}</p>
+      </div>
+
+      <h3 className="text-xl font-bold">Reports {data.reports.length > 0 && `(${data.reports.length})`}</h3>
+      {data.reports.length === 0 ? <p className="text-lg">No open reports.</p> : (
+        <ul className="flex flex-col gap-2" aria-label="Reports">
+          {data.reports.map((r) => {
+            const m = r.targetId ? byId.get(r.targetId) : undefined;
+            return (
+              <li key={r.id} className="flex flex-col gap-2 rounded-md border-[3px] border-[#9b2c1c] bg-white p-3">
+                <p className="text-lg"><strong>{r.target ?? 'A student who has left'}</strong> was reported by <strong>{r.reporter ?? 'a student who has left'}</strong> · {when(r.at)}</p>
+                {r.history.length === 0 ? <p className="text-lg">They hadn’t said anything recently.</p> : (
+                  <>
+                    <p className="text-lg">What they said recently (newest last):</p>
+                    <ol className="ml-6 list-decimal text-lg">
+                      {r.history.map((h, i) => <li key={i}>{said(h)} · {place(h.screen)} · {when(h.at)}</li>)}
+                    </ol>
+                  </>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {m && <button className="btn" onClick={() => void mute(m, !m.muted)}>{m.muted ? 'Unmute' : 'Mute'} {m.name}</button>}
+                  {m && <button className="btn btn-danger" onClick={() => void removeStudent(m)}>Remove {m.name}</button>}
+                  <button className="btn btn-quiet" onClick={() => void resolve(r)}>Close report</button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <h3 className="text-xl font-bold">Students ({data.members.length})</h3>
+      {data.members.length === 0 ? <p className="text-lg">Nobody has joined yet. Students join in the game: Settings (⚙) → Join a class → type the code.</p> : (
+        <ul className="flex flex-col gap-2" aria-label="Students">
+          {data.members.map((m) => (
+            <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border-[3px] border-frame bg-white p-3">
+              <div>
+                <p className="text-xl font-semibold">{m.name}{m.muted && ' 🔇'}</p>
+                <p className="text-lg">Joined {when(m.joined)} · last played {when(m.lastSeen)}{m.muted ? ' · emotes and phrases off' : ''}</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="btn" onClick={() => void mute(m, !m.muted)} aria-label={`${m.muted ? 'Unmute' : 'Mute'} ${m.name}`}>{m.muted ? 'Unmute' : 'Mute'}</button>
+                <button className="btn btn-danger" onClick={() => void removeStudent(m)} aria-label={`Remove ${m.name}`}>Remove</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-lg">Mute turns off a student’s emotes and phrases for everyone; they can still play. Remove takes them out of the class straight away. Both happen live, even mid-game.</p>
       {msg && <p className="text-lg font-semibold text-[#9b2c1c]" role="alert">{msg}</p>}
     </section>
   );

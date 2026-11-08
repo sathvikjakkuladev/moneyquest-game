@@ -17,6 +17,7 @@ updated at the end of every build phase.
 | Scenery layering: the outlines and footprints in `src/data/rooms/*.json` (which parts of each screen draw over the player) | **Claude Code**, traced by checking each screen | Reported the problem; playtests the result |
 | Multiplayer server (`server/`), the /teacher page and the class-join flow | **Claude Code**, from the student's multiplayer brief (`MULTIPLAYER_PROMPT.md`) and decisions | Wrote the brief, made the decisions (server address, sign-in, world-mode default, leaderboards, retention, names, reports), tests each phase |
 | Public-name word lists (`src/net/names.ts`) | **Claude Code**, drafted for student review | Reviews the words |
+| Emotes and preset phrases (`src/net/says.ts`) | **Claude Code**, drafted for student review | Reviews the wording |
 | Game code, build tools, tests, documentation (`game/`) | **Claude Code** (Anthropic) | Wrote the design brief, made the gameplay decisions, playtests each phase |
 | Reward-card codes (`src/rewards/rewardCodes.ts`, `rewardSecret.ts`) | Copied unchanged from the student's earlier MakeBank project (also built with Claude Code) | Printed and handed out the 110 cards |
 

@@ -7,11 +7,16 @@ import { sha256 } from './crypto.ts';
 import type { Env } from './env.ts';
 import type { Conn, Member, Out } from './hub.ts';
 import { Hub } from './hub.ts';
+import { goalFor } from './progress.ts';
 
 interface Attachment { pid: number; classId: string; opened: number; conn: Conn | null }
 
 /** Teacher actions, sent by the Worker after it updates D1 (see roomAdmin in classes.ts). */
-export type RoomAdmin = { kind: 'mute'; memberId: string; on: boolean } | { kind: 'kick'; memberId: string | null };
+export type RoomAdmin =
+  | { kind: 'mute'; memberId: string; on: boolean }
+  | { kind: 'kick'; memberId: string | null }
+  | { kind: 'goal'; n: number; of: number } // the weekly goal changed: tell everyone connected
+  | { kind: 'roster' }; // who's online and where, for the teacher dashboard
 
 const HELLO_TIMEOUT_MS = 5000;
 
@@ -66,7 +71,8 @@ export class ClassRoom extends DurableObject<Env> {
       const out = this.hub.hello(a.pid, m, msg, now);
       a.conn = this.hub.conns.get(a.pid)!;
       ws.serializeAttachment(a);
-      this.send(out);
+      const goal = await goalFor(this.env, a.classId, now);
+      this.send([...out, { to: a.pid, msg: { t: 'goal', n: goal.n, of: goal.of } }]);
       await this.env.DB.prepare('UPDATE members SET last_seen = ? WHERE id = ?').bind(now, m.id).run();
       return;
     }
@@ -95,7 +101,10 @@ export class ClassRoom extends DurableObject<Env> {
 
   /** A teacher muted, unmuted or removed a student (or deleted the class): apply it now. */
   private admin(cmd: RoomAdmin): Response {
-    if (cmd.kind === 'mute') {
+    if (cmd.kind === 'roster') return Response.json({ online: this.hub.roster() });
+    if (cmd.kind === 'goal') {
+      this.send([...this.hub.conns.keys()].map((to) => ({ to, msg: { t: 'goal' as const, n: cmd.n, of: cmd.of } })));
+    } else if (cmd.kind === 'mute') {
       const { out, pids } = this.hub.setMuted(cmd.memberId, !!cmd.on);
       for (const pid of pids) this.saveConn(pid);
       this.send(out);

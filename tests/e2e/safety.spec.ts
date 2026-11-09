@@ -92,7 +92,7 @@ test('emotes and phrases, mute, report, teacher mute and remove, play offline', 
   await expect.poll(async () => (await net(A.page)).people.length).toBe(0);
   expect(await B.page.evaluate(() => (window as unknown as { __mq: { save: () => { slots: { online: unknown }[] } } }).__mq.save().slots[0]!.online)).toBeNull();
   await B.page.getByRole('button', { name: 'Settings' }).click();
-  await expect(B.page.getByText('You’re not in a class any more')).toBeVisible();
+  await expect(B.page.getByText('You’re not in this class on this device any more')).toBeVisible();
 
   for (const p of [A, B]) expect(p.errors).toEqual([]);
   for (const c of [A.ctx, B.ctx, T]) await c.close();

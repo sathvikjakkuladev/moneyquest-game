@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { resultsCsv } from '../core/csv.ts';
 import { improvement, postCheckReady } from '../core/moneyCheck.ts';
 import { MONSTERS } from '../core/monsters.ts';
@@ -5,6 +6,9 @@ import { TOPIC_ZONE_ORDER } from '../core/progression.ts';
 import { TOPICS } from '../core/types.ts';
 import { useSave, useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
+
+// Only built when VITE_MP_URL is set (see Hud.tsx).
+const ClassBoard = import.meta.env.VITE_MP_URL ? lazy(() => import('./ClassBoard.tsx')) : null;
 
 /** Save a file on this device (no network). */
 function download(name: string, text: string) {
@@ -70,6 +74,7 @@ export function Progress({ onClose }: { onClose: () => void }) {
           )}
           {!post && <p className="mt-1 text-lg">{ready ? 'You’ve beaten all six bosses: Money Check 2 is ready!' : 'Money Check 2 opens after you beat all six zone bosses.'}</p>}
         </section>
+        {ClassBoard && s.online && <Suspense fallback={null}><ClassBoard /></Suspense>}
         <div className="flex flex-wrap gap-2">
           {ready && <button className="btn" onClick={() => useSession.getState().setPanel('check')}>Take Money Check 2</button>}
           <button className="btn btn-quiet" onClick={exportAll}>⬇ Export results (CSV)</button>

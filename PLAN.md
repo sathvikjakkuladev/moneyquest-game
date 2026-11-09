@@ -748,3 +748,34 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
   - Against the local server: 4 tests. The new one covers say, the wait, the bubble, mute,
     report, the teacher page showing it, teacher mute live, Play offline and reconnect, and
     teacher remove live.
+
+### Multiplayer Phase 4 — teacher dashboard and progress sync (done 2026-11-09)
+- **Progress sync** (`src/net/sync.ts`, `src/net/progress.ts`): a few seconds after a battle or
+  Money Check, the game uploads a strictly validated summary (level, XP, coins earned, zones,
+  accuracy by topic, Money Check scores). It retries with backoff.
+  - **Decided small:** no saved upload queue. Each upload is the whole summary, so a late or
+    retried one loses and double-counts nothing, and the save schema didn't change.
+  - **Decided small:** Play offline pauses uploads too ("turns off all social features"); they
+    catch up when it's switched off.
+- **Weekly class goal:** correct answers, week starting Monday UTC, target set by the teacher
+  (10–100,000). Counts increases in all-time correct answers, at most 100 per upload; the first
+  upload is only a baseline. Goal bar in the HUD, live for the whole class, with a celebration.
+- **Class leaderboard:** coins earned, all-time, top 10 plus your own rank, in the Progress panel.
+  The teacher can hide it.
+- **Dashboard** (/teacher → Open): who's online and where, level, coins earned, zones, accuracy by
+  topic, Money Check scores with class averages (the change compares only students who took both),
+  and the CSV (one row per test, public names, the same columns as the game's own export). Refreshes
+  every 30 seconds. Settings: weekly goal, hide leaderboard, name list.
+- **Device codes** are the brief's "reset token": 8 characters, one use, 24 hours. The old device is
+  signed out, and the new one keeps the student's name and progress.
+- **Admin:** the `ADMIN_EMAIL` account lists teachers and resets passwords (a one-time temporary
+  password; the teacher must change it). World reports and the world-mode switch arrive with
+  Phase 5, where they do something.
+- **Privacy policy and teacher notice** drafts at `/privacy/` and `/teacher-notice/`, marked as
+  drafts. **NHSQA must add a contact address.**
+- **Bug fixed from Phase 1:** the 20-tries limit counted every join, so a class on one school IP
+  would have been locked out at about the 10th student. Now only wrong codes count.
+- Migration `0002`: `progress.correct_total`, `members.rejoin_hash`, `members.rejoin_expires`.
+- **Open question for Phase 6:** on 2026-11-09 `nhsqa.org` was serving the National High School
+  Quant Association's Next.js site, not this game (no `/teacher`, none of `vercel.json`'s headers).
+  Confirm where the game is hosted before any DNS or `ALLOWED_ORIGINS` change.

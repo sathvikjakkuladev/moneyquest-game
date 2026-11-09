@@ -28,6 +28,7 @@ export const bridge = {
 /** id 0 is the player themself (the server's ids start at 1). */
 export const ME = 0;
 export interface Said { k: SayKind; i: number; at: number }
+export interface Goal { n: number; of: number }
 
 export type NetStatus = 'off' | 'connecting' | 'online' | 'offline';
 
@@ -47,9 +48,18 @@ export interface NetState {
   reported: number[];
   /** The server said this save is no longer in the class (the teacher removed it, or deleted the class). */
   removed: boolean;
+  /** This week's class goal: correct answers so far, of the teacher's target. */
+  goal: Goal | null;
+  /** The class just reached its goal (cleared once the celebration has shown). */
+  goalHit: boolean;
 }
 
-export const useNet = create<NetState>(() => ({ status: 'off', people: [], says: {}, muted: false, hidden: [], open: null, reported: [], removed: false }));
+export const useNet = create<NetState>(() => ({ status: 'off', people: [], says: {}, muted: false, hidden: [], open: null, reported: [], removed: false, goal: null, goalHit: false }));
+
+/** A new goal figure, from the server. Crossing the target sets off the celebration. */
+export function publishGoal(goal: Goal): void {
+  useNet.setState((n) => ({ goal, goalHit: n.goalHit || (!!n.goal && n.goal.n < n.goal.of && goal.n >= goal.of) }));
+}
 
 export function publishPeople(): void {
   useNet.setState({ people: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, busy: r.b })) });

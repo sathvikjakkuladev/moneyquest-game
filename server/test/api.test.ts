@@ -160,6 +160,15 @@ describe('classes and joining', () => {
     for (let i = 0; i < 20; i++) expect((await call(env, 'POST', '/api/join', { code: 'ZZZZZZ' })).status).toBe(404);
     expect((await call(env, 'POST', '/api/join', { code: 'ZZZZZZ' })).status).toBe(429);
   });
+  it('a whole class can join at once from one school IP address', async () => {
+    const env = testEnv();
+    const { cls } = await teacherWithClass(env);
+    for (let i = 0; i < 30; i++) {
+      const o = await call(env, 'POST', '/api/join', { code: cls.code });
+      expect(o.status, `student ${i}`).toBe(200);
+      expect((await call(env, 'POST', '/api/join/confirm', { code: cls.code, name: (o.body.choices as string[])[0] })).status).toBe(200);
+    }
+  });
   it('deleting a class deletes its members; other teachers can’t touch it', async () => {
     const env = testEnv();
     const { token, cls } = await teacherWithClass(env);
@@ -172,16 +181,25 @@ describe('classes and joining', () => {
   });
 });
 
+/** A stand-in for the class rooms: records what the Worker tells them, and answers "who's online". */
+function rooms(online: { memberId: string; screen: string; busy: boolean }[] = []) {
+  const calls: { classId: string; body: unknown }[] = [];
+  const ns = {
+    idFromName: (n: string) => n,
+    get: (id: string) => ({
+      fetch: async (_u: string, init: { body: string }) => {
+        const body = JSON.parse(init.body) as { kind: string };
+        if (body.kind === 'roster') return Response.json({ online });
+        calls.push({ classId: id, body });
+        return new Response(null, { status: 204 });
+      },
+    }),
+  };
+  return { ns: ns as unknown as DurableObjectNamespace, calls, online };
+}
+
 describe('teacher controls', () => {
   /** A stand-in for the class rooms: records what the Worker tells them. */
-  function rooms() {
-    const calls: { classId: string; body: unknown }[] = [];
-    const ns = {
-      idFromName: (n: string) => n,
-      get: (id: string) => ({ fetch: async (_u: string, init: { body: string }) => (calls.push({ classId: id, body: JSON.parse(init.body) }), new Response(null, { status: 204 })) }),
-    };
-    return { ns: ns as unknown as DurableObjectNamespace, calls };
-  }
   async function classWithStudent() {
     const r = rooms();
     const env = testEnv({ CLASSROOM: r.ns });
@@ -197,7 +215,7 @@ describe('teacher controls', () => {
   it('the class view lists students by public name only', async () => {
     const { name, member, env, token, cls } = await classWithStudent();
     expect(member).toMatchObject({ name, muted: false });
-    expect(Object.keys(member).sort()).toEqual(['id', 'joined', 'lastSeen', 'muted', 'name']);
+    expect(Object.keys(member).sort()).toEqual(['deviceCodeWaiting', 'id', 'joined', 'lastSeen', 'muted', 'name', 'online', 'progress']);
     expect((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body.reports).toEqual([]);
   });
   it('mute is saved and sent to the live room at once', async () => {
@@ -241,6 +259,148 @@ describe('teacher controls', () => {
     const { env, token, cls, calls } = await classWithStudent();
     await call(env, 'DELETE', `/api/teacher/classes/${cls.id}`, undefined, token);
     expect(calls).toEqual([{ classId: cls.id, body: { kind: 'kick', memberId: null } }]);
+  });
+});
+
+describe('progress, class goal and leaderboard', () => {
+  const summary = (correct: number, over: Body = {}) => ({
+    level: 3, xp: 200, coinsEarned: 40, zones: ['piggybank_village'], mcForm: 'A', mcPre: null, mcPost: null,
+    accuracy: { 'Spending and Saving': { answered: correct + 2, correct } }, ...over,
+  });
+  async function setup(n = 1) {
+    const r = rooms();
+    const env = testEnv({ CLASSROOM: r.ns });
+    const { token, cls } = await teacherWithClass(env);
+    const students: { token: string; name: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      const opts = await call(env, 'POST', '/api/join', { code: cls.code });
+      const name = (opts.body.choices as string[])[0]!;
+      const j = await call(env, 'POST', '/api/join/confirm', { code: cls.code, name });
+      students.push({ token: j.body.token as string, name });
+    }
+    return { env, token, cls, students, calls: r.calls, online: r.online };
+  }
+  const upload = (env: Env, t: string, s: unknown, now = T0) => call(env, 'POST', '/api/progress', { summary: s } as Body, t, now);
+
+  it('the first upload only sets a baseline; later ones count the increase; a retry counts nothing', async () => {
+    const { env, students: [a], calls } = await setup();
+    expect((await upload(env, a!.token, summary(50))).body).toEqual({ goal: { n: 0, of: 300 }, counted: 0 });
+    expect(calls).toEqual([]);
+    expect((await upload(env, a!.token, summary(53))).body).toEqual({ goal: { n: 3, of: 300 }, counted: 3 });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.body).toEqual({ kind: 'goal', n: 3, of: 300 });
+    expect((await upload(env, a!.token, summary(53))).body).toEqual({ goal: { n: 3, of: 300 }, counted: 0 }); // the same upload again
+    expect((await upload(env, a!.token, summary(10))).body).toMatchObject({ counted: 0 }); // a lower total (another save) subtracts nothing
+    expect((await upload(env, a!.token, summary(12))).body).toEqual({ goal: { n: 5, of: 300 }, counted: 2 });
+  });
+  it('one upload adds at most 100 to the goal, and each week starts again', async () => {
+    const { env, students: [a] } = await setup();
+    await upload(env, a!.token, summary(0));
+    expect((await upload(env, a!.token, summary(5000))).body.counted).toBe(100);
+    const nextWeek = T0 + 7 * 24 * 60 * 60_000;
+    expect((await upload(env, a!.token, summary(5001), nextWeek)).body).toEqual({ goal: { n: 1, of: 300 }, counted: 1 });
+  });
+  it('bad summaries are refused, and only members can upload', async () => {
+    const { env, students: [a], token } = await setup();
+    for (const bad of [
+      null, { ...summary(1), level: 0 }, { ...summary(1), zones: ['nowhere'] }, { ...summary(1), xp: -1 }, { ...summary(1), coinsEarned: 1.5 },
+      { ...summary(1), accuracy: { 'Made Up': { answered: 1, correct: 1 } } }, { ...summary(1), accuracy: { Investing: { answered: 1, correct: 2 } } },
+      { ...summary(1), mcPre: { date: '2026-11-07', band: 'K-5', form: 'A', perTopic: {}, total: 0 } },
+    ]) expect((await upload(env, a!.token, bad)).status, JSON.stringify(bad)).toBe(400);
+    expect((await upload(env, token, summary(1))).status).toBe(401);
+    expect((await upload(env, 'm_nope', summary(1))).status).toBe(401);
+  });
+  it('leaderboard: coins earned, top 10 and your own rank; the teacher can hide it', async () => {
+    const { env, token, cls, students } = await setup(12);
+    await Promise.all(students.map((s, i) => upload(env, s.token, summary(1, { coinsEarned: i * 10 }))));
+    const last = students[0]!, best = students[11]!;
+    const b = (await call(env, 'GET', '/api/class', undefined, last.token)).body.board as { top: { name: string; coins: number }[]; me: { rank: number; coins: number } };
+    expect(b.top).toHaveLength(10);
+    expect(b.top[0]).toEqual({ name: best.name, coins: 110 });
+    expect(b.me).toEqual({ rank: 12, coins: 0 });
+    expect(await call(env, 'PATCH', `/api/teacher/classes/${cls.id}`, { leaderboardHidden: true }, token).then((r) => r.status)).toBe(200);
+    expect((await call(env, 'GET', '/api/class', undefined, last.token)).body.board).toBeNull();
+  });
+  it('the dashboard shows progress, who is online and the goal; settings are checked', async () => {
+    const { env, token, cls, students: [a], online, calls } = await setup();
+    const mc = { date: '2026-11-07T10:00:00Z', band: 'K-5', form: 'A', total: 7, perTopic: { 'Spending and Saving': 2, 'Credit and Debt': 1, 'Employment and Income': 1, Investing: 1, 'Risk and Insurance': 1, 'Financial Decision Making': 1 } };
+    await upload(env, a!.token, summary(4, { mcPre: mc }));
+    let d = (await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body as { goal: unknown; onlineKnown: boolean; members: { id: string; online: unknown; progress: Record<string, unknown> }[] };
+    expect(d.onlineKnown).toBe(true);
+    expect(d.members[0]!.progress).toMatchObject({ level: 3, coinsEarned: 40, zones: ['piggybank_village'], mcPre: mc, mcPost: null });
+    expect(d.members[0]!.online).toBeNull();
+    online.push({ memberId: d.members[0]!.id, screen: 'piggybank_village/plaza', busy: true });
+    d = (await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body as typeof d;
+    expect(d.members[0]!.online).toEqual({ screen: 'piggybank_village/plaza', busy: true });
+    expect((await call(env, 'PATCH', `/api/teacher/classes/${cls.id}`, { goalTarget: 5 }, token)).status).toBe(400);
+    expect((await call(env, 'PATCH', `/api/teacher/classes/${cls.id}`, { goalTarget: 50 }, token)).status).toBe(200);
+    expect(calls.at(-1)!.body).toEqual({ kind: 'goal', n: 0, of: 50 });
+  });
+});
+
+describe('device codes', () => {
+  async function setup() {
+    const r = rooms();
+    const env = testEnv({ CLASSROOM: r.ns });
+    const { token, cls } = await teacherWithClass(env);
+    const opts = await call(env, 'POST', '/api/join', { code: cls.code });
+    const name = (opts.body.choices as string[])[0]!;
+    const j = await call(env, 'POST', '/api/join/confirm', { code: cls.code, name });
+    const d = await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token);
+    const id = (d.body.members as { id: string }[])[0]!.id;
+    return { env, token, cls, name, id, old: j.body.token as string, calls: r.calls };
+  }
+  const make = (env: Env, token: string, c: string, m: string) => call(env, 'POST', `/api/teacher/classes/${c}/members/${m}/device-code`, {}, token);
+
+  it('the old device stops working and is disconnected; the code gives the new device the same name, once', async () => {
+    const { env, token, cls, id, name, old, calls } = await setup();
+    const code = (await make(env, token, cls.id, id)).body.code as string;
+    expect(code).toHaveLength(8);
+    expect(calls).toEqual([{ classId: cls.id, body: { kind: 'kick', memberId: id } }]);
+    expect((await call(env, 'GET', '/api/me', undefined, old)).status).toBe(401);
+    const r = await call(env, 'POST', '/api/rejoin', { code: code.toLowerCase() });
+    expect(r.body).toMatchObject({ publicName: name, classCode: cls.code });
+    expect((await call(env, 'GET', '/api/me', undefined, r.body.token as string)).status).toBe(200);
+    expect((await call(env, 'POST', '/api/rejoin', { code })).status).toBe(404); // one use
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM members WHERE rejoin_hash IS NOT NULL').first()).toEqual({ n: 0 });
+  });
+  it('codes expire after a day, are stored only as hashes, and only the teacher of the class can make one', async () => {
+    const { env, token, cls, id } = await setup();
+    const code = (await make(env, token, cls.id, id)).body.code as string;
+    const row = await env.DB.prepare('SELECT rejoin_hash FROM members WHERE id = ?').bind(id).first<{ rejoin_hash: string }>();
+    expect(row!.rejoin_hash).not.toContain(code);
+    expect((await call(env, 'POST', '/api/rejoin', { code }, undefined, T0 + 24 * 60 * 60_000 + 1)).status).toBe(404);
+    const other = (await call(env, 'POST', '/api/teacher/signup', { email: 'other@school.org', password: 'correct horse battery' }, undefined, T0, { 'CF-Connecting-IP': '192.0.2.4' })).body.token as string;
+    expect((await make(env, other, cls.id, id)).status).toBe(404);
+  });
+});
+
+describe('admin', () => {
+  const signup = (env: Env, email: string, ip: string) => call(env, 'POST', '/api/teacher/signup', { email, password: 'correct horse battery' }, undefined, T0, { 'CF-Connecting-IP': ip });
+
+  it('only the admin account can list teachers or reset passwords, and others can’t tell it exists', async () => {
+    const env = testEnv();
+    const t = (await signup(env, 'teacher@school.org', '192.0.2.1')).body.token as string;
+    expect((await call(env, 'GET', '/api/admin/teachers', undefined, t)).status).toBe(404);
+    expect((await call(env, 'GET', '/api/admin/teachers')).status).toBe(401);
+  });
+  it('a reset ends the teacher’s sessions, and the temporary password forces a new one', async () => {
+    const env = testEnv();
+    const t = (await signup(env, 'teacher@school.org', '192.0.2.1')).body.token as string;
+    const a = (await signup(env, 'ADMIN@nhsqa.org', '192.0.2.2')).body.token as string;
+    const list = (await call(env, 'GET', '/api/admin/teachers', undefined, a)).body.teachers as { id: string; email: string }[];
+    const id = list.find((x) => x.email === 'teacher@school.org')!.id;
+    const temp = (await call(env, 'POST', `/api/admin/teachers/${id}/reset`, {}, a)).body.tempPassword as string;
+    expect(temp).toHaveLength(16);
+    expect((await call(env, 'GET', '/api/teacher/me', undefined, t)).status).toBe(401);
+    const login = await call(env, 'POST', '/api/teacher/login', { email: 'teacher@school.org', password: temp });
+    expect(login.body.teacher).toMatchObject({ mustChange: true });
+    expect((await call(env, 'POST', '/api/teacher/login', { email: 'teacher@school.org', password: 'correct horse battery' })).status).toBe(401);
+  });
+  it('with no ADMIN_EMAIL set, nobody is the admin', async () => {
+    const env = testEnv({ ADMIN_EMAIL: undefined });
+    const a = (await signup(env, 'admin@nhsqa.org', '192.0.2.2')).body.token as string;
+    expect((await call(env, 'GET', '/api/admin/teachers', undefined, a)).status).toBe(404);
   });
 });
 

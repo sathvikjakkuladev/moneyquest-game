@@ -3,12 +3,14 @@
 
 export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789';
 export const CODE_LENGTH = 6;
+/** Device codes move one student's membership to a new device: longer, one use, valid for a day. */
+export const DEVICE_CODE_LENGTH = 8;
 
 /** A class code from random bytes (rejection sampling keeps every character equally likely). */
-export function makeClassCode(randomBytes: (n: number) => Uint8Array): string {
+export function makeClassCode(randomBytes: (n: number) => Uint8Array, length = CODE_LENGTH): string {
   const limit = 256 - (256 % CODE_ALPHABET.length);
   let out = '';
-  while (out.length < CODE_LENGTH) for (const b of randomBytes(16)) if (b < limit && out.length < CODE_LENGTH) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  while (out.length < length) for (const b of randomBytes(16)) if (b < limit && out.length < length) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
   return out;
 }
 
@@ -16,3 +18,4 @@ export function makeClassCode(randomBytes: (n: number) => Uint8Array): string {
 export const normalizeCode = (s: string) => s.toUpperCase().replace(/[\s-]/g, '');
 
 export const isClassCode = (s: string) => s.length === CODE_LENGTH && [...s].every((c) => CODE_ALPHABET.includes(c));
+export const isDeviceCode = (s: string) => s.length === DEVICE_CODE_LENGTH && [...s].every((c) => CODE_ALPHABET.includes(c));

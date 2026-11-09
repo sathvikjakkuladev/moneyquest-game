@@ -64,7 +64,7 @@ export async function player(browser: Browser, nickname: string, online: object 
   await page.evaluate(([screen, at]) => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'piggybank_village', screen, at }), [screen, at] as const);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { where: () => { at: unknown } } }).__mq.where().at !== null)).toBe(true);
   const d = page.getByRole('dialog', { name: /says/ });
-  await page.waitForTimeout(600);
+  await d.waitFor({ timeout: 4000 }).catch(() => {}); // the mentor's hello runs on the game's clock, so it can be late
   while (await d.isVisible()) await d.getByRole('button', { name: /Next|OK/ }).click();
   return { ctx, page, errors };
 }

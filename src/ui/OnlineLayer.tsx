@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { bridge, ME, useNet } from '../net/bridge.ts';
 import type { Said } from '../net/bridge.ts';
 import { BUBBLE_MS, EMOTES, PHRASE_GROUPS, PHRASES, SAY_COOLDOWN_MS, sayText } from '../net/says.ts';
+import { sfx } from '../audio.ts';
 import { useSession } from '../state/session.ts';
 import type { Stage } from './useStage.ts';
 
@@ -69,6 +70,7 @@ export default function OnlineLayer({ stage }: { stage: Stage }) {
           );
         })}
       </div>
+      <GoalBar />
       <div ref={place(ME)} className="absolute left-0 top-0 pb-1" style={{ visibility: 'hidden' }}>
         {mine && <Bubble said={mine} who="You" />}
       </div>
@@ -79,6 +81,38 @@ export default function OnlineLayer({ stage }: { stage: Stage }) {
       {open === 'say' && !blocked && <Picker />}
       {menuFor && !blocked && <PlayerMenu id={menuFor.id} name={menuFor.name} />}
     </div>
+  );
+}
+
+const CELEBRATE_MS = 6000;
+
+/** This week's class goal under the player's stats, and a celebration when the class reaches it. */
+function GoalBar() {
+  const goal = useNet((s) => s.goal);
+  const hit = useNet((s) => s.goalHit);
+  useEffect(() => {
+    if (!hit) return;
+    sfx('victory');
+    const t = setTimeout(() => useNet.setState({ goalHit: false }), CELEBRATE_MS);
+    return () => clearTimeout(t);
+  }, [hit]);
+  if (!goal) return null;
+  const pct = Math.min(100, Math.round((goal.n / goal.of) * 100));
+  return (
+    <>
+      <div className="panel absolute left-2 top-[4.25rem] flex items-center gap-2 px-3 py-1 text-lg">
+        <span>🎯 Class goal</span>
+        <span role="progressbar" aria-label="Class goal this week" aria-valuenow={goal.n} aria-valuemin={0} aria-valuemax={goal.of} className="inline-block h-4 w-24 overflow-hidden rounded-sm border-2 border-frame bg-white">
+          <span className="block h-full bg-[#2f9e44]" style={{ width: `${pct}%` }} />
+        </span>
+        <span className="font-semibold">{goal.n}/{goal.of}</span>
+      </div>
+      {hit && (
+        <div className="panel absolute inset-x-0 top-24 mx-auto w-fit max-w-[90%] px-5 py-3 text-center text-2xl font-bold" role="status">
+          🎉 Your class reached this week’s goal! 🎉
+        </div>
+      )}
+    </>
   );
 }
 

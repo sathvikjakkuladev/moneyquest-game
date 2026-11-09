@@ -3,7 +3,7 @@
 // classmates on the same screen up to date, and reconnects quietly with backoff if the network drops.
 // Only loaded when VITE_MP_URL is set.
 import type { Membership } from '../core/save.ts';
-import { bridge, ME, publishPeople, useNet } from './bridge.ts';
+import { bridge, ME, publishGoal, publishPeople, useNet } from './bridge.ts';
 import type { Remote, Report } from './bridge.ts';
 import { addSample } from './interp.ts';
 import type { Face, Look, PlayerView, ServerMsg } from './protocol.ts';
@@ -188,6 +188,9 @@ export class ClassConnection {
         return;
       case 'reported':
         useNet.setState((n) => ({ reported: [...n.reported, msg.id] }));
+        return;
+      case 'goal':
+        publishGoal({ n: msg.n, of: msg.of });
         return;
     }
     publishPeople();

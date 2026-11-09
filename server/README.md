@@ -75,5 +75,13 @@ The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhs
   - If the room can't be reached, the action still holds, because every connect checks D1.
 - **Students:**
   - A class membership with a random token (D1 stores only its hash) and a public name from the generator or the teacher's list. Free text is refused.
-  - Class-code guesses are limited to 20 per IP per 10 minutes.
+  - Wrong class or device codes are limited to 20 per IP per 10 minutes. Correct codes don't count, so a whole class can join at once from one school IP.
+- **Admin account:**
+  - Whoever holds the `ADMIN_EMAIL` account gets password resets in /teacher. There's no email verification, so **create that account first on a new database, and only then set the secret.** If sign-up says the email is taken, someone got there first: stop and pick another address.
+  - Admin routes answer 404 to everyone else.
+- **Progress uploads (`src/net/progress.ts`):**
+  - Summaries only, strictly validated; the save itself stays on the device.
+  - The class goal counts increases in a student's all-time correct answers, at most 100 per upload. The first upload only sets a baseline.
+  - Scores come from the student's own device, so a determined student could inflate them; the caps limit that and the teacher can hide the leaderboard.
+- **Device codes:** 8 characters, one use, 24 hours, stored only as hashes. Making one signs the student's old device out.
 - **Retention (daily cron):** classes idle for 12 months are deleted with all their data; reports go after 90 days, along with expired sessions and old rate-limit rows.

@@ -1,15 +1,19 @@
 // Classes, class codes, and students joining with a public name (never free text).
-import { isClassCode, makeClassCode, normalizeCode } from '../../src/net/codes.ts';
+import { DEVICE_CODE_LENGTH, isClassCode, isDeviceCode, makeClassCode, normalizeCode } from '../../src/net/codes.ts';
 import { isGeneratedName, isListName, nameChoices } from '../../src/net/names.ts';
 import { requireTeacher } from './auth.ts';
 import { cryptoRandom, newToken, randomBytes, sha256 } from './crypto.ts';
 import type { Env } from './env.ts';
 import { bearer, clientIp, HttpError, readJson, str } from './http.ts';
-import { hit, limitFor, LIMITS } from './limits.ts';
+import { hit, limitFor, LIMITS, lockedFor } from './limits.ts';
 import type { RoomAdmin } from './ClassRoom.ts';
+import { goalFor } from './progress.ts';
 
 export const MAX_LIST_NAMES = 60;
 export const MAX_MEMBERS = 60;
+export const MIN_GOAL = 10;
+export const MAX_GOAL = 100_000;
+export const DEVICE_CODE_MS = 24 * 60 * 60_000;
 
 interface ClassRow { id: string; code: string; name: string; names_mode: 'generated' | 'list'; world_mode: number; teacher_id: string }
 
@@ -93,35 +97,113 @@ export async function deleteClass(req: Request, env: Env, now: number, classId: 
  * Tell the class's live room about a teacher action, so it applies at once. D1 is already updated,
  * so if the room can't be reached the action still holds: it's checked again on every connect.
  */
-export async function roomAdmin(env: Env, classId: string, cmd: RoomAdmin): Promise<void> {
-  if (!env.CLASSROOM) return;
+export async function roomAdmin(env: Env, classId: string, cmd: RoomAdmin): Promise<unknown> {
+  if (!env.CLASSROOM) return null;
   try {
-    await env.CLASSROOM.get(env.CLASSROOM.idFromName(classId)).fetch('https://room/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
+    const r = await env.CLASSROOM.get(env.CLASSROOM.idFromName(classId)).fetch('https://room/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
+    return r.status === 200 ? await r.json() : null;
   } catch (e) {
     console.error('room admin', e);
+    return null;
   }
 }
 
 interface ReportRow { id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; reporter_name: string | null }
 
-/** One class: its students (public names only) and the reports about them that are still open. */
+interface MemberRow {
+  id: string; public_name: string; muted: number; created_at: number; last_seen: number; rejoin_expires: number | null;
+  level: number | null; xp: number; coins_earned: number; zones: string | null; accuracy: string | null; mc_form: string | null; mc_pre: string | null; mc_post: string | null; updated_at: number | null;
+}
+
+/** One class for the dashboard: settings, the goal, students (public names only) with progress and who's online, and open reports. */
 export async function classDetail(req: Request, env: Env, now: number, classId: string) {
   const t = await requireTeacher(req, env, now);
   const c = await ownClass(env, t.id, classId);
-  const [members, reports] = await Promise.all([
-    env.DB.prepare('SELECT id, public_name, muted, created_at, last_seen FROM members WHERE class_id = ? ORDER BY public_name')
-      .bind(classId).all<{ id: string; public_name: string; muted: number; created_at: number; last_seen: number }>(),
+  const [settings, names, members, reports, goal, roster] = await Promise.all([
+    env.DB.prepare('SELECT goal_target, leaderboard_hidden FROM classes WHERE id = ?').bind(classId).first<{ goal_target: number; leaderboard_hidden: number }>(),
+    env.DB.prepare('SELECT name FROM class_names WHERE class_id = ? ORDER BY name').bind(classId).all<{ name: string }>(),
+    env.DB.prepare(
+      `SELECT m.id, m.public_name, m.muted, m.created_at, m.last_seen, m.rejoin_expires, p.level, p.xp, COALESCE(p.coins_earned, 0) AS coins_earned, p.zones, p.accuracy, p.mc_form, p.mc_pre, p.mc_post, p.updated_at
+       FROM members m LEFT JOIN progress p ON p.member_id = m.id WHERE m.class_id = ? ORDER BY m.public_name`,
+    ).bind(classId).all<MemberRow>(),
     env.DB.prepare(
       `SELECT r.id, r.created_at, r.history, r.target_id, t.public_name AS target_name, m.public_name AS reporter_name
        FROM reports r LEFT JOIN members t ON t.id = r.target_id LEFT JOIN members m ON m.id = r.reporter_id
        WHERE r.target_class = ? AND r.resolved = 0 ORDER BY r.created_at DESC LIMIT 100`,
     ).bind(classId).all<ReportRow>(),
+    goalFor(env, classId, now),
+    roomAdmin(env, classId, { kind: 'roster' }) as Promise<{ online: { memberId: string; screen: string; busy: boolean }[] } | null>,
   ]);
+  const online = new Map((roster?.online ?? []).map((o) => [o.memberId, { screen: o.screen, busy: o.busy }]));
+  const parse = <T,>(s: string | null, fallback: T): T => {
+    try {
+      return s === null ? fallback : (JSON.parse(s) as T);
+    } catch {
+      return fallback;
+    }
+  };
   return {
-    class: { id: c.id, code: c.code, name: c.name, namesMode: c.names_mode, worldMode: !!c.world_mode },
-    members: members.results.map((m) => ({ id: m.id, name: m.public_name, muted: !!m.muted, joined: m.created_at, lastSeen: m.last_seen })),
+    class: { id: c.id, code: c.code, name: c.name, namesMode: c.names_mode, worldMode: !!c.world_mode, goalTarget: settings?.goal_target ?? 300, leaderboardHidden: !!settings?.leaderboard_hidden, names: names.results.map((n) => n.name) },
+    goal,
+    onlineKnown: roster !== null,
+    members: members.results.map((m) => ({
+      id: m.id, name: m.public_name, muted: !!m.muted, joined: m.created_at, lastSeen: m.last_seen,
+      deviceCodeWaiting: m.rejoin_expires !== null && m.rejoin_expires > now,
+      online: online.get(m.id) ?? null,
+      progress: m.updated_at === null ? null : {
+        level: m.level, xp: m.xp, coinsEarned: m.coins_earned, zones: parse<string[]>(m.zones, []), accuracy: parse<Record<string, { answered: number; correct: number }>>(m.accuracy, {}),
+        mcForm: m.mc_form, mcPre: parse<unknown>(m.mc_pre, null), mcPost: parse<unknown>(m.mc_post, null), updatedAt: m.updated_at,
+      },
+    })),
     reports: reports.results.map((r) => ({ id: r.id, at: r.created_at, targetId: r.target_id, target: r.target_name, reporter: r.reporter_name, history: safeHistory(r.history) })),
   };
+}
+
+/** Class settings: the weekly goal (correct answers) and whether students see the leaderboard. */
+export async function updateClass(req: Request, env: Env, now: number, classId: string) {
+  const t = await requireTeacher(req, env, now);
+  await ownClass(env, t.id, classId);
+  const body = await readJson(req);
+  const { goalTarget, leaderboardHidden } = body;
+  if (goalTarget !== undefined && !(typeof goalTarget === 'number' && Number.isInteger(goalTarget) && goalTarget >= MIN_GOAL && goalTarget <= MAX_GOAL)) throw new HttpError(400, 'bad-goal', `The weekly goal can be ${MIN_GOAL} to ${MAX_GOAL} correct answers.`);
+  if (leaderboardHidden !== undefined && typeof leaderboardHidden !== 'boolean') throw new HttpError(400, 'bad-request', 'Bad request.');
+  if (typeof goalTarget === 'number') await env.DB.prepare('UPDATE classes SET goal_target = ? WHERE id = ?').bind(goalTarget, classId).run();
+  if (typeof leaderboardHidden === 'boolean') await env.DB.prepare('UPDATE classes SET leaderboard_hidden = ? WHERE id = ?').bind(leaderboardHidden ? 1 : 0, classId).run();
+  if (typeof goalTarget === 'number') await roomAdmin(env, classId, { kind: 'goal', ...(await goalFor(env, classId, now)) });
+  return { ok: true };
+}
+
+/**
+ * Move a student to a new device: their old device stops working now, and the one-time code (shown
+ * once, valid for 24 hours, stored only as a hash) gives the new device the same name and progress.
+ */
+export async function deviceCode(req: Request, env: Env, now: number, classId: string, memberId: string) {
+  const t = await requireTeacher(req, env, now);
+  await ownClass(env, t.id, classId);
+  await ownMember(env, classId, memberId);
+  const code = makeClassCode(randomBytes, DEVICE_CODE_LENGTH);
+  const expires = now + DEVICE_CODE_MS;
+  await env.DB.prepare('UPDATE members SET token_hash = ?, rejoin_hash = ?, rejoin_expires = ? WHERE id = ?').bind(await sha256(newToken('m')), await sha256(code), expires, memberId).run();
+  await roomAdmin(env, classId, { kind: 'kick', memberId });
+  return { code, expires };
+}
+
+/** A student types a device code: this device takes over their membership. */
+export async function rejoin(req: Request, env: Env, now: number) {
+  await refuseIfGuessing(req, env, now);
+  const code = normalizeCode(str(await readJson(req), 'code', 20));
+  const m = isDeviceCode(code)
+    ? await env.DB.prepare('SELECT m.id, m.class_id, m.public_name, c.name AS class_name, c.code AS class_code FROM members m JOIN classes c ON c.id = m.class_id WHERE m.rejoin_hash = ? AND m.rejoin_expires > ?')
+        .bind(await sha256(code), now).first<{ id: string; class_id: string; public_name: string; class_name: string; class_code: string }>()
+    : null;
+  if (!m) await countWrongCode(req, env, now);
+  if (!m) throw new HttpError(404, 'no-code', 'That device code didn’t work. Codes work once, for one day. Ask your teacher for a new one.');
+  const token = newToken('m');
+  await env.DB.batch([
+    env.DB.prepare('UPDATE members SET token_hash = ?, rejoin_hash = NULL, rejoin_expires = NULL, last_seen = ? WHERE id = ?').bind(await sha256(token), now, m.id),
+    env.DB.prepare('UPDATE classes SET last_active = ? WHERE id = ?').bind(now, m.class_id),
+  ]);
+  return { token, publicName: m.public_name, className: m.class_name, classCode: m.class_code };
 }
 
 function safeHistory(s: string): unknown[] {
@@ -171,11 +253,23 @@ export async function resolveReport(req: Request, env: Env, now: number, classId
 
 // ---------- Student side ----------
 
+// Only wrong codes count toward the limit: a whole class joins at once from one school IP address.
+const wrongCodeKey = (req: Request) => `join:${clientIp(req)}`;
+async function refuseIfGuessing(req: Request, env: Env, now: number): Promise<void> {
+  if (await lockedFor(env.DB, wrongCodeKey(req), now)) throw new HttpError(429, 'slow-down', 'Too many tries. Wait a few minutes and try again.');
+}
+async function countWrongCode(req: Request, env: Env, now: number): Promise<void> {
+  await hit(env.DB, wrongCodeKey(req), now, limitFor(env, LIMITS.join));
+}
+
 async function classByCode(req: Request, env: Env, now: number, raw: string): Promise<ClassRow> {
   const code = normalizeCode(raw);
-  if (!(await hit(env.DB, `join:${clientIp(req)}`, now, limitFor(env, LIMITS.join)))) throw new HttpError(429, 'slow-down', 'Too many tries. Wait a few minutes and try again.');
+  await refuseIfGuessing(req, env, now);
   const c = isClassCode(code) ? await env.DB.prepare('SELECT id, code, name, names_mode, world_mode, teacher_id FROM classes WHERE code = ?').bind(code).first<ClassRow>() : null;
-  if (!c) throw new HttpError(404, 'no-class', 'There’s no class with that code. Check it with your teacher.');
+  if (!c) {
+    await countWrongCode(req, env, now);
+    throw new HttpError(404, 'no-class', 'There’s no class with that code. Check it with your teacher.');
+  }
   return c;
 }
 

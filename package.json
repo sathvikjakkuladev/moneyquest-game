@@ -12,7 +12,7 @@
     "e2e": "playwright test",
     "import:questions": "node tools/import-questions.ts",
     "import:assets": "node tools/import-assets.ts",
-    "dev:all": "concurrently -k -n server,game -c blue,green \"npm --prefix server run dev -- --var PEPPER:dev-pepper\" \"VITE_MP_URL=http://localhost:8787 vite\"",
+    "dev:all": "concurrently -k -n server,game -c blue,green \"npm --prefix server run dev -- --var PEPPER:dev-pepper --var ADMIN_EMAIL:admin@moneyquest.test\" \"VITE_MP_URL=http://localhost:8787 vite\"",
     "server:typecheck": "npm --prefix server run typecheck",
     "server:test": "npm --prefix server test"
   },

@@ -59,7 +59,9 @@ export type ServerMsg =
   /** Your teacher turned your emotes and phrases off (or back on). */
   | { t: 'muted'; on: boolean }
   /** Your report about player `id` reached your teacher. */
-  | { t: 'reported'; id: number };
+  | { t: 'reported'; id: number }
+  /** This week's class goal: `n` correct answers of `of`. */
+  | { t: 'goal'; n: number; of: number };
 
 /** WebSocket close codes the server uses (the client stops reconnecting on 4001 and 4003). */
 export const CLOSE = { badHello: 4000, replaced: 4001, notMember: 4003, policy: 4008 } as const;
@@ -121,6 +123,7 @@ export function parseClient(raw: unknown): ClientMsg | null {
   }
 }
 
+const count = (v: unknown): boolean => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1e9;
 const pid = (v: unknown): boolean => typeof v === 'number' && Number.isInteger(v) && v > 0 && v < 2 ** 31;
 
 function player(v: unknown): PlayerView | null {
@@ -175,6 +178,8 @@ export function parseServer(raw: unknown): ServerMsg | null {
       return typeof o.on === 'boolean' ? { t: 'muted', on: o.on } : null;
     case 'reported':
       return pid(o.id) ? { t: 'reported', id: o.id as number } : null;
+    case 'goal':
+      return count(o.n) && count(o.of) && (o.of as number) > 0 ? { t: 'goal', n: o.n as number, of: o.of as number } : null;
     default:
       return null;
   }

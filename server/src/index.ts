@@ -2,9 +2,11 @@
 // Every request is checked against the origin allowlist; see PLAN.md §10. The Worker entry point
 // (with the Durable Object classes) is worker.ts, so tests can import this without Cloudflare APIs.
 import { changePassword, login, logout, me, signup } from './auth.ts';
-import { classDetail, createClass, deleteClass, joinConfirm, joinOptions, leave, listClasses, memberMe, muteMember, removeMember, resolveReport, setNames } from './classes.ts';
+import { resetPassword, teachers } from './admin.ts';
+import { classDetail, createClass, deleteClass, deviceCode, joinConfirm, joinOptions, leave, listClasses, memberMe, muteMember, rejoin, removeMember, resolveReport, setNames, updateClass } from './classes.ts';
 import type { Env } from './env.ts';
 import { corsHeaders, HttpError, json, originAllowed } from './http.ts';
+import { classInfo, uploadProgress } from './progress.ts';
 import { purge } from './retention.ts';
 
 type Handler = (req: Request, env: Env, now: number, ...params: string[]) => Promise<unknown>;
@@ -23,6 +25,13 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['POST', /^\/api\/teacher\/classes\/([0-9a-f-]{36})\/members\/([0-9a-f-]{36})\/mute$/, muteMember],
   ['DELETE', /^\/api\/teacher\/classes\/([0-9a-f-]{36})\/members\/([0-9a-f-]{36})$/, removeMember],
   ['POST', /^\/api\/teacher\/classes\/([0-9a-f-]{36})\/reports\/([0-9a-f-]{36})\/resolve$/, resolveReport],
+  ['PATCH', /^\/api\/teacher\/classes\/([0-9a-f-]{36})$/, updateClass],
+  ['POST', /^\/api\/teacher\/classes\/([0-9a-f-]{36})\/members\/([0-9a-f-]{36})\/device-code$/, deviceCode],
+  ['GET', /^\/api\/admin\/teachers$/, teachers],
+  ['POST', /^\/api\/admin\/teachers\/([0-9a-f-]{36})\/reset$/, resetPassword],
+  ['POST', /^\/api\/progress$/, uploadProgress],
+  ['GET', /^\/api\/class$/, classInfo],
+  ['POST', /^\/api\/rejoin$/, rejoin],
   ['POST', /^\/api\/join$/, joinOptions],
   ['POST', /^\/api\/join\/confirm$/, joinConfirm],
   ['GET', /^\/api\/me$/, memberMe],
@@ -58,7 +67,7 @@ export async function handle(req: Request, env: Env, now = Date.now()): Promise<
   if (url.pathname.startsWith('/ws/')) return socket(req, env, url, cors);
 
   // CSRF defence in depth: state changes must be JSON (a plain HTML form can't send that).
-  if ((req.method === 'POST' || req.method === 'PUT') && !(req.headers.get('Content-Type') ?? '').startsWith('application/json'))
+  if ((req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') && !(req.headers.get('Content-Type') ?? '').startsWith('application/json'))
     return json({ error: 'content-type', message: 'Bad request.' }, 415, cors);
 
   for (const [method, re, fn] of ROUTES) {

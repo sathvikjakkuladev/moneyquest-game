@@ -7,8 +7,10 @@ export const LIMITS = {
   login: { max: 5, windowMs: 15 * 60_000, lockMs: 15 * 60_000 },
   /** 5 teacher sign-ups per IP per hour. */
   signup: { max: 5, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
-  /** 20 class-code tries per IP per 10 minutes (codes have 729 million combinations). */
+  /** 20 wrong class or device codes per IP per 10 minutes (class codes have 729 million combinations). */
   join: { max: 20, windowMs: 10 * 60_000, lockMs: 10 * 60_000 },
+  /** 240 progress uploads per student per hour (the game sends one per battle, a few seconds apart at most). */
+  progress: { max: 240, windowMs: 60 * 60_000, lockMs: 10 * 60_000 },
 } satisfies Record<string, Limit>;
 
 /** Local development (wrangler dev) only: limits 50× looser so test runs don't lock you out. */

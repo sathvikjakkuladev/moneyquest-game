@@ -56,3 +56,14 @@ test('no requests to other sites, no class features, no CSP violations', async (
   expect(w.foreign).toEqual([]);
   expect(w.csp).toEqual([]);
 });
+
+test('the privacy pages are served, marked as drafts, with no CSP violations', async ({ page, baseURL }) => {
+  const w = watch(page, new URL(baseURL!).origin);
+  for (const [path, heading] of [['./privacy/', 'MoneyQuest privacy policy'], ['./teacher-notice/', 'Notice for teachers']] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+    await expect(page.getByText('DRAFT for NHSQA to review')).toBeVisible();
+  }
+  expect(w.foreign).toEqual([]);
+  expect(w.csp).toEqual([]);
+});

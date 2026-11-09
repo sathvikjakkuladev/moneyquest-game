@@ -6,9 +6,13 @@ import { useSession } from '../state/session.ts';
 import { bridge, publishPeople, useNet } from './bridge.ts';
 import { ClassConnection } from './client.ts';
 import { MP_URL } from './config.ts';
+import { startSync } from './sync.ts';
 
 let conn: ClassConnection | null = null;
 let key = '';
+
+/** The teacher removed this student (or moved them to another device, or deleted the class). */
+const notMember = () => (useNet.setState({ removed: true }), useSave.getState().edit((x) => ({ ...x, online: null })));
 
 const openSlot = () => {
   const st = useSave.getState();
@@ -28,12 +32,8 @@ function check(): void {
     bridge.on = !!k;
     bridge.remotes.clear();
     publishPeople();
-    if (!k) useNet.setState({ status: 'off', says: {}, open: null, muted: false });
-    else
-      conn = new ClassConnection(m!, {
-        // The teacher removed this student (or reset their token, or deleted the class).
-        notMember: () => (useNet.setState({ removed: true }), useSave.getState().edit((x) => ({ ...x, online: null }))),
-      });
+    if (!k) useNet.setState({ status: 'off', says: {}, open: null, muted: false, goal: null });
+    else conn = new ClassConnection(m!, { notMember });
   }
   if (!conn || !s) return;
   const kind = ss.scene?.kind;
@@ -48,4 +48,5 @@ export function startMultiplayer(): void {
   useSave.subscribe(check);
   useSession.subscribe(check);
   check();
+  startSync(notMember);
 }

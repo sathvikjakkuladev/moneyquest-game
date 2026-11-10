@@ -783,3 +783,38 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
   site, not this game. **Decided the same day:** the game moves to `https://play.nhsqa.org`. The
   production `ALLOWED_ORIGINS` was updated, and the Phase 6 DNS move must keep the root site
   working. Privacy contact: nhsqa01@gmail.com.
+
+### Multiplayer Phase 5 — world mode and the once-only reward check (done 2026-11-10)
+- **World mode** (off by default; the teacher's switch is in plain view on the class page, with a
+  confirmation when turning it on):
+  - Each screen has `WorldScreen` Durable Objects, one per shard (4 shards of 40 players). A full
+    shard sends the game on to the next. If all four are full, the student sees only their class
+    there, and Settings says so.
+  - Each player sees at most the **15 nearest** players from other classes. Classmates come from
+    their class room, so nobody shows twice. Who-sees-whom updates as people move.
+  - World players have **blue name tags with 🌍** (classmates stay gold).
+  - Emotes and phrases work the same way, with the same limits. A teacher's mute applies in world
+    mode too.
+  - **Decided small:** names from a teacher's list could be real first names, so other classes see
+    a steady generated name instead (`worldName`). The world leaderboard and reports use it too.
+- **World reports** go to the NHSQA admin view and to both students' teachers. Another class's
+  student appears by world name only, and can't be muted or removed from your page. The admin can
+  **block a student from world mode** (they keep playing with their class) and close reports.
+- **Switching off or blocking applies live:** the class room tells the games, and the Worker closes
+  their world sockets on the screens they're on. Every world connect re-checks D1.
+- **World leaderboard:** top 10 by coins earned across all classes with world mode on, plus your
+  rank, in the Progress panel.
+- **Reward cards once across all devices:** `POST /api/redeem` checks the code with the unchanged
+  checker (imported from `src/rewards/`; those files are untouched) and stores it once. With class
+  features built in, the Redeem panel asks the server after the on-device check. If the server
+  can't be reached, the device check decides, as the brief asks. Builds without `VITE_MP_URL` never
+  ask.
+  - **Known gap:** a card redeemed offline isn't reported to the server later.
+- Privacy policy and teacher notice now cover world mode and card redemptions.
+- **Tests:**
+  - 53 server tests: world visibility (nearest 15, classmates left out, swaps as people move),
+    says and reports, world names, routing, switch, leaderboard, admin block, redeem once.
+  - Against the local server, 2 new tests:
+    - Two classes see each other.
+    - A wave, a report the admin sees, an admin block, and the teacher switching off, all live.
+    - A card that works once across two devices.

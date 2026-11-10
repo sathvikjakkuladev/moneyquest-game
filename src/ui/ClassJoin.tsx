@@ -13,6 +13,8 @@ export default function ClassJoin() {
   const s = useSlot()!;
   const status = useNet((n) => n.status);
   const removed = useNet((n) => n.removed);
+  const world = useNet((n) => n.world);
+  const worldStatus = useNet((n) => n.worldStatus);
   const offline = s.settings.playOffline;
   const setOffline = (playOffline: boolean) => useSave.getState().edit((x) => ({ ...x, settings: { ...x.settings, playOffline } }));
   const [step, setStep] = useState<Step>({ kind: 'idle' });
@@ -87,6 +89,11 @@ export default function ClassJoin() {
           <p className="text-lg" role="status">
             {offline ? 'Playing offline. Your class stays saved: untick the box to see classmates and send your progress.' : status === 'online' ? '🟢 Connected: classmates on your screen can see you.' : status === 'connecting' ? 'Connecting…' : status === 'offline' ? 'Offline right now. The game works as usual and reconnects by itself.' : ''}
           </p>
+          {!offline && status === 'online' && world && (
+            <p className="text-lg" role="status">
+              🌍 World mode is on: you can also meet players from other classes (their names are blue).{worldStatus === 'full' ? ' This screen is very busy right now, so you only see your class here.' : ''}
+            </p>
+          )}
           <button className="btn btn-quiet self-start" disabled={busy} onClick={leave}>Leave class</button>
           <a className="text-lg underline" href="/privacy/" target="_blank" rel="noreferrer">What your class can see (privacy)</a>
         </>

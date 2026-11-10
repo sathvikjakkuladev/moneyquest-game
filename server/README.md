@@ -76,6 +76,18 @@ The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhs
 - **Students:**
   - A class membership with a random token (D1 stores only its hash) and a public name from the generator or the teacher's list. Free text is refused.
   - Wrong class or device codes are limited to 20 per IP per 10 minutes. Correct codes don't count, so a whole class can join at once from one school IP.
+- **World mode (`/ws/world/<zone>/<screen>/<shard>`):**
+  - One `WorldScreen` Durable Object per screen shard (up to 4 shards of 40 players).
+  - Every connect checks D1: the class must have world mode on, and the student mustn't be blocked by the admin.
+  - Each player sees at most the 15 nearest players from other classes; classmates come from the class room.
+  - Names from a teacher's list are replaced by a steady generated name outside the class (`src/net/world.ts`).
+  - Switching world mode off, or an admin block, tells the games through the class room and closes their world sockets on the screens they're on.
+  - World reports go to the admin view and to both teachers.
+- **Reward cards (`POST /api/redeem`):**
+  - Checked with the same unchanged checker as the game, so made-up codes are refused.
+  - Each code is stored once (only the code and the time), so a card works once across all devices.
+  - Wrong codes count toward the per-IP wrong-code limit.
+  - If the server can't be reached, the game's on-device check decides.
 - **Admin account:**
   - Whoever holds the `ADMIN_EMAIL` account gets password resets in /teacher. There's no email verification, so **create that account first on a new database, and only then set the secret.** If sign-up says the email is taken, someone got there first: stop and pick another address.
   - Admin routes answer 404 to everyone else.

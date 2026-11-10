@@ -5,7 +5,7 @@ import type { Sample } from './interp.ts';
 import type { Face } from './protocol.ts';
 import type { SayKind } from './says.ts';
 
-export interface Remote { id: number; name: string; s: string; x: number; y: number; f: Face; h: string | null; p: string | null; b: boolean; samples: Sample[] }
+export interface Remote { id: number; name: string; world: boolean; s: string; x: number; y: number; f: Face; h: string | null; p: string | null; b: boolean; samples: Sample[] }
 export interface Report { s: string; x: number; y: number; f: Face; moving: boolean }
 
 export const bridge = {
@@ -34,8 +34,8 @@ export type NetStatus = 'off' | 'connecting' | 'online' | 'offline';
 
 export interface NetState {
   status: NetStatus;
-  /** Who's on this screen (re-renders only when that list changes). */
-  people: { id: number; name: string; busy: boolean }[];
+  /** Who's on this screen (re-renders only when that list changes). World players have negative ids. */
+  people: { id: number; name: string; busy: boolean; world: boolean }[];
   /** The latest thing each player said (ME for yourself); bubbles show it for BUBBLE_MS. */
   says: Record<number, Said>;
   /** The teacher turned this player's emotes and phrases off. */
@@ -52,9 +52,13 @@ export interface NetState {
   goal: Goal | null;
   /** The class just reached its goal (cleared once the celebration has shown). */
   goalHit: boolean;
+  /** World mode is on for this student (their class's switch, unless the admin blocked them). */
+  world: boolean;
+  /** The world-screen connection, while world mode is on. 'full': every shard of this screen is busy. */
+  worldStatus: 'off' | 'connecting' | 'online' | 'full';
 }
 
-export const useNet = create<NetState>(() => ({ status: 'off', people: [], says: {}, muted: false, hidden: [], open: null, reported: [], removed: false, goal: null, goalHit: false }));
+export const useNet = create<NetState>(() => ({ status: 'off', people: [], says: {}, muted: false, hidden: [], open: null, reported: [], removed: false, goal: null, goalHit: false, world: false, worldStatus: 'off' }));
 
 /** A new goal figure, from the server. Crossing the target sets off the celebration. */
 export function publishGoal(goal: Goal): void {
@@ -62,5 +66,5 @@ export function publishGoal(goal: Goal): void {
 }
 
 export function publishPeople(): void {
-  useNet.setState({ people: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, busy: r.b })) });
+  useNet.setState({ people: [...bridge.remotes.values()].map((r) => ({ id: r.id, name: r.name, busy: r.b, world: r.world })) });
 }

@@ -57,11 +57,12 @@ export default function OnlineLayer({ stage }: { stage: Stage }) {
             <div key={p.id} ref={place(p.id)} role="listitem" className="absolute left-0 top-0 flex flex-col items-center" style={{ visibility: 'hidden' }}>
               {said && <Bubble said={said} who={p.name} />}
               <button
-                className={`${blocked || open !== null ? '' : 'pointer-events-auto'} whitespace-nowrap rounded-md border-2 border-[#5a3620] bg-[#f2c14e] px-2 text-lg font-semibold leading-tight text-[#2a1c12] shadow-[0_2px_0_#1b1410] focus-visible:outline-4 focus-visible:outline-[#1d5fd1]`}
-                aria-label={`${p.name}${p.busy ? ', in a battle' : ''}: open menu`}
+                className={`${blocked || open !== null ? '' : 'pointer-events-auto'} whitespace-nowrap rounded-md border-2 px-2 text-lg font-semibold leading-tight shadow-[0_2px_0_#1b1410] focus-visible:outline-4 focus-visible:outline-[#1d5fd1] ${p.world ? 'border-[#1d3f73] bg-[#a9d1ff] text-[#0f2340]' : 'border-[#5a3620] bg-[#f2c14e] text-[#2a1c12]'}`}
+                aria-label={`${p.name}${p.world ? ', from another class' : ''}${p.busy ? ', in a battle' : ''}: open menu`}
                 tabIndex={blocked ? -1 : 0}
                 onClick={() => useNet.setState({ open: p.id })}
               >
+                {p.world && <span aria-hidden>🌍 </span>}
                 {p.busy && <span aria-hidden>⚔️ </span>}
                 {hidden.includes(p.name) && <span aria-hidden>🔇 </span>}
                 {p.name}
@@ -79,7 +80,7 @@ export default function OnlineLayer({ stage }: { stage: Stage }) {
         <button className="btn pointer-events-auto absolute bottom-3 right-3" onClick={() => useNet.setState({ open: 'say' })} aria-label="Say something to classmates"><span className="text-3xl leading-none">💬</span></button>
       )}
       {open === 'say' && !blocked && <Picker />}
-      {menuFor && !blocked && <PlayerMenu id={menuFor.id} name={menuFor.name} />}
+      {menuFor && !blocked && <PlayerMenu id={menuFor.id} name={menuFor.name} world={menuFor.world} />}
     </div>
   );
 }
@@ -194,7 +195,7 @@ function Picker() {
 }
 
 /** Tap a classmate: mute them on this device, or report them to the teacher. */
-function PlayerMenu({ id, name }: { id: number; name: string }) {
+function PlayerMenu({ id, name, world }: { id: number; name: string; world: boolean }) {
   const hidden = useNet((s) => s.hidden.includes(name));
   const reported = useNet((s) => s.reported.includes(id));
   const [confirm, setConfirm] = useState(false);
@@ -213,10 +214,10 @@ function PlayerMenu({ id, name }: { id: number; name: string }) {
           <button className="btn btn-quiet" onClick={close} aria-label="Close">✕</button>
         </div>
         {reported ? (
-          <p className="text-lg" role="status">Thanks for telling us. Your teacher will see your report. You won’t see {name}’s emotes or phrases any more.</p>
+          <p className="text-lg" role="status">Thanks for telling us. {world ? 'Your teacher and the safety team' : 'Your teacher'} will see your report. You won’t see {name}’s emotes or phrases any more.</p>
         ) : confirm ? (
           <>
-            <p className="text-lg">Report {name} to your teacher? Your teacher will see what {name} said recently.</p>
+            <p className="text-lg">{world ? `Report ${name}? ${name} is from another class. Your teacher, their teacher and the MoneyQuest safety team will see what ${name} said recently.` : `Report ${name} to your teacher? Your teacher will see what ${name} said recently.`}</p>
             <div className="flex flex-wrap gap-2">
               <button className="btn btn-danger" onClick={report}>Report</button>
               <button className="btn btn-quiet" onClick={() => setConfirm(false)}>Cancel</button>
@@ -228,7 +229,8 @@ function PlayerMenu({ id, name }: { id: number; name: string }) {
               {hidden ? `🔈 Unmute ${name}` : `🔇 Mute ${name}`}
             </button>
             <p className="text-lg">Muting hides {name}’s emotes and phrases on this device until you close the game.</p>
-            <button className="btn btn-danger" onClick={() => setConfirm(true)}>🚩 Report to your teacher</button>
+            {world && <p className="text-lg">🌍 {name} is from another class.</p>}
+            <button className="btn btn-danger" onClick={() => setConfirm(true)}>🚩 {world ? 'Report' : 'Report to your teacher'}</button>
           </>
         )}
       </div>

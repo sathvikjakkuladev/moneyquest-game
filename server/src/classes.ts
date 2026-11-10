@@ -8,6 +8,8 @@ import { bearer, clientIp, HttpError, readJson, str } from './http.ts';
 import { hit, limitFor, LIMITS, lockedFor } from './limits.ts';
 import type { RoomAdmin } from './ClassRoom.ts';
 import { goalFor } from './progress.ts';
+import { setWorld } from './world.ts';
+import { worldName } from '../../src/net/world.ts';
 
 export const MAX_LIST_NAMES = 60;
 export const MAX_MEMBERS = 60;
@@ -108,7 +110,7 @@ export async function roomAdmin(env: Env, classId: string, cmd: RoomAdmin): Prom
   }
 }
 
-interface ReportRow { id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; reporter_name: string | null }
+interface ReportRow { id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; reporter_name: string | null; world: number; target_class: string | null; reporter_id: string | null; reporter_class: string | null }
 
 interface MemberRow {
   id: string; public_name: string; muted: number; created_at: number; last_seen: number; rejoin_expires: number | null;
@@ -127,10 +129,10 @@ export async function classDetail(req: Request, env: Env, now: number, classId: 
        FROM members m LEFT JOIN progress p ON p.member_id = m.id WHERE m.class_id = ? ORDER BY m.public_name`,
     ).bind(classId).all<MemberRow>(),
     env.DB.prepare(
-      `SELECT r.id, r.created_at, r.history, r.target_id, t.public_name AS target_name, m.public_name AS reporter_name
+      `SELECT r.id, r.created_at, r.history, r.target_id, r.world, r.target_class, r.reporter_id, r.reporter_class, t.public_name AS target_name, m.public_name AS reporter_name
        FROM reports r LEFT JOIN members t ON t.id = r.target_id LEFT JOIN members m ON m.id = r.reporter_id
-       WHERE r.target_class = ? AND r.resolved = 0 ORDER BY r.created_at DESC LIMIT 100`,
-    ).bind(classId).all<ReportRow>(),
+       WHERE (r.target_class = ? OR (r.world = 1 AND r.reporter_class = ?)) AND r.resolved = 0 ORDER BY r.created_at DESC LIMIT 100`,
+    ).bind(classId, classId).all<ReportRow>(),
     goalFor(env, classId, now),
     roomAdmin(env, classId, { kind: 'roster' }) as Promise<{ online: { memberId: string; screen: string; busy: boolean }[] } | null>,
   ]);
@@ -155,7 +157,21 @@ export async function classDetail(req: Request, env: Env, now: number, classId: 
         mcForm: m.mc_form, mcPre: parse<unknown>(m.mc_pre, null), mcPost: parse<unknown>(m.mc_post, null), updatedAt: m.updated_at,
       },
     })),
-    reports: reports.results.map((r) => ({ id: r.id, at: r.created_at, targetId: r.target_id, target: r.target_name, reporter: r.reporter_name, history: safeHistory(r.history) })),
+    reports: reports.results.map((r) => reportView(r, classId)),
+  };
+}
+
+/**
+ * A report as a teacher sees it. In world reports a student from another class appears by their
+ * world name only, and only students in your own class can be muted or removed from here.
+ */
+function reportView(r: ReportRow, classId: string) {
+  const name = (id: string | null, cls: string | null, n: string | null) => (n === null || id === null ? null : cls === classId ? n : worldName(id, n));
+  return {
+    id: r.id, at: r.created_at, world: !!r.world, history: safeHistory(r.history),
+    targetId: r.target_class === classId ? r.target_id : null,
+    target: name(r.target_id, r.target_class, r.target_name),
+    reporter: name(r.reporter_id, r.reporter_class, r.reporter_name),
   };
 }
 
@@ -164,12 +180,17 @@ export async function updateClass(req: Request, env: Env, now: number, classId: 
   const t = await requireTeacher(req, env, now);
   await ownClass(env, t.id, classId);
   const body = await readJson(req);
-  const { goalTarget, leaderboardHidden } = body;
+  const { goalTarget, leaderboardHidden, worldMode } = body;
+  if (worldMode !== undefined && typeof worldMode !== 'boolean') throw new HttpError(400, 'bad-request', 'Bad request.');
   if (goalTarget !== undefined && !(typeof goalTarget === 'number' && Number.isInteger(goalTarget) && goalTarget >= MIN_GOAL && goalTarget <= MAX_GOAL)) throw new HttpError(400, 'bad-goal', `The weekly goal can be ${MIN_GOAL} to ${MAX_GOAL} correct answers.`);
   if (leaderboardHidden !== undefined && typeof leaderboardHidden !== 'boolean') throw new HttpError(400, 'bad-request', 'Bad request.');
   if (typeof goalTarget === 'number') await env.DB.prepare('UPDATE classes SET goal_target = ? WHERE id = ?').bind(goalTarget, classId).run();
   if (typeof leaderboardHidden === 'boolean') await env.DB.prepare('UPDATE classes SET leaderboard_hidden = ? WHERE id = ?').bind(leaderboardHidden ? 1 : 0, classId).run();
   if (typeof goalTarget === 'number') await roomAdmin(env, classId, { kind: 'goal', ...(await goalFor(env, classId, now)) });
+  if (typeof worldMode === 'boolean') {
+    await env.DB.prepare('UPDATE classes SET world_mode = ? WHERE id = ?').bind(worldMode ? 1 : 0, classId).run();
+    await setWorld(env, classId, null, worldMode);
+  }
   return { ok: true };
 }
 
@@ -246,7 +267,7 @@ export async function removeMember(req: Request, env: Env, now: number, classId:
 export async function resolveReport(req: Request, env: Env, now: number, classId: string, reportId: string) {
   const t = await requireTeacher(req, env, now);
   await ownClass(env, t.id, classId);
-  const r = await env.DB.prepare('UPDATE reports SET resolved = 1 WHERE id = ? AND target_class = ?').bind(reportId, classId).run();
+  const r = await env.DB.prepare('UPDATE reports SET resolved = 1 WHERE id = ? AND (target_class = ? OR (world = 1 AND reporter_class = ?))').bind(reportId, classId, classId).run();
   if (!r.meta.changes) throw new HttpError(404, 'no-report', 'Report not found.');
   return { ok: true };
 }

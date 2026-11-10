@@ -7,6 +7,7 @@ import { requireMember, roomAdmin } from './classes.ts';
 import type { Env } from './env.ts';
 import { HttpError, readJson } from './http.ts';
 import { hit, limitFor, LIMITS } from './limits.ts';
+import { worldBoardFor } from './world.ts';
 
 export interface Goal { n: number; of: number }
 export interface Board { top: { name: string; coins: number }[]; me: { rank: number; coins: number } | null }
@@ -67,6 +68,6 @@ function upsert(env: Env, m: Member, s: Summary, total: number, now: number) {
 /** The class's leaderboard and goal, for the game (GET /api/class). */
 export async function classInfo(req: Request, env: Env, now: number) {
   const m = await requireMember(req, env);
-  const [goal, board] = await Promise.all([goalFor(env, m.class_id, now), boardFor(env, m.class_id, m.id)]);
-  return { goal, board };
+  const [goal, board, world] = await Promise.all([goalFor(env, m.class_id, now), boardFor(env, m.class_id, m.id), worldBoardFor(env, m)]);
+  return { goal, board, worldBoard: world };
 }

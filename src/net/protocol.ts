@@ -61,10 +61,13 @@ export type ServerMsg =
   /** Your report about player `id` reached your teacher. */
   | { t: 'reported'; id: number }
   /** This week's class goal: `n` correct answers of `of`. */
-  | { t: 'goal'; n: number; of: number };
+  | { t: 'goal'; n: number; of: number }
+  /** World mode is on (or off) for you: your class's setting, unless the admin blocked you. */
+  | { t: 'world'; on: boolean };
 
-/** WebSocket close codes the server uses (the client stops reconnecting on 4001 and 4003). */
-export const CLOSE = { badHello: 4000, replaced: 4001, notMember: 4003, policy: 4008 } as const;
+/** WebSocket close codes the server uses. The client stops reconnecting on 4001 and 4003; on a world
+ *  screen, 4009 means "this shard is full, try the next" and 4010 means "world mode isn't on for you". */
+export const CLOSE = { badHello: 4000, replaced: 4001, notMember: 4003, policy: 4008, full: 4009, noWorld: 4010 } as const;
 
 // ---------- validation ----------
 
@@ -178,6 +181,8 @@ export function parseServer(raw: unknown): ServerMsg | null {
       return typeof o.on === 'boolean' ? { t: 'muted', on: o.on } : null;
     case 'reported':
       return pid(o.id) ? { t: 'reported', id: o.id as number } : null;
+    case 'world':
+      return typeof o.on === 'boolean' ? { t: 'world', on: o.on } : null;
     case 'goal':
       return count(o.n) && count(o.of) && (o.of as number) > 0 ? { t: 'goal', n: o.n as number, of: o.of as number } : null;
     default:

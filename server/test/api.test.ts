@@ -8,6 +8,8 @@ import { handle } from '../src/index.ts';
 import { CLASS_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
 import { ORIGIN, testEnv } from './d1.ts';
 import type { Env } from '../src/env.ts';
+import { makeCode, MAX_SERIAL } from '../../src/rewards/rewardCodes.ts';
+import { worldName } from '../../src/net/world.ts';
 
 const T0 = Date.UTC(2026, 10, 7);
 type Body = Record<string, unknown>;
@@ -251,7 +253,7 @@ describe('teacher controls', () => {
     await env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, history, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind('0b5c6a2e-0000-4000-8000-000000000001', member.id, cls.id, member.id, cls.id, JSON.stringify(history), T0).run();
     const d = await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token);
-    expect(d.body.reports).toEqual([{ id: '0b5c6a2e-0000-4000-8000-000000000001', at: T0, targetId: member.id, target: name, reporter: name, history }]);
+    expect(d.body.reports).toEqual([{ id: '0b5c6a2e-0000-4000-8000-000000000001', at: T0, world: false, targetId: member.id, target: name, reporter: name, history }]);
     expect((await call(env, 'POST', `/api/teacher/classes/${cls.id}/reports/0b5c6a2e-0000-4000-8000-000000000001/resolve`, {}, token)).status).toBe(200);
     expect((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body.reports).toEqual([]);
   });
@@ -401,6 +403,108 @@ describe('admin', () => {
     const env = testEnv({ ADMIN_EMAIL: undefined });
     const a = (await signup(env, 'admin@nhsqa.org', '192.0.2.2')).body.token as string;
     expect((await call(env, 'GET', '/api/admin/teachers', undefined, a)).status).toBe(404);
+  });
+});
+
+describe('world mode', () => {
+  /** Two teachers, each with a class and one student; the rooms stand-in records world switches. */
+  async function twoClasses(listNames = false) {
+    const calls: { ns: string; name: string; body: unknown }[] = [];
+    const fake = (ns: string, reply: (b: { kind: string }) => Response) => ({
+      idFromName: (n: string) => n,
+      get: (name: string) => ({ fetch: async (_u: string, init: { body: string }) => { const b = JSON.parse(init.body); if (b.kind !== 'roster') calls.push({ ns, name, body: b }); return reply(b); } }),
+    }) as unknown as DurableObjectNamespace;
+    const env = testEnv({
+      CLASSROOM: fake('class', (b) => (b.kind === 'world' ? Response.json({ screens: ['piggybank_village/plaza'] }) : b.kind === 'roster' ? Response.json({ online: [] }) : new Response(null, { status: 204 }))),
+      WORLD: fake('world', () => new Response(null, { status: 204 })),
+    });
+    const out = [];
+    for (const [i, email] of ['a@school.org', 'b@school.org'].entries()) {
+      const ip = { 'CF-Connecting-IP': `192.0.2.${10 + i}` };
+      const t = (await call(env, 'POST', '/api/teacher/signup', { email, password: 'correct horse battery' }, undefined, T0, ip)).body.token as string;
+      const cls = (await call(env, 'POST', '/api/teacher/classes', { name: `Room ${i}`, ...(listNames && i === 1 ? { names: ['Sam Lee'] } : {}) }, t)).body.class as { id: string; code: string };
+      const o = await call(env, 'POST', '/api/join', { code: cls.code });
+      const name = (o.body.choices as string[])[0]!;
+      const j = await call(env, 'POST', '/api/join/confirm', { code: cls.code, name });
+      const id = ((await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, t)).body.members as { id: string }[])[0]!.id;
+      out.push({ teacher: t, cls, name, token: j.body.token as string, id });
+    }
+    return { env, calls, a: out[0]!, b: out[1]! };
+  }
+
+  it('is off by default; the teacher’s switch tells the class live, and switching off closes world sockets', async () => {
+    const { env, calls, a } = await twoClasses();
+    const d = await call(env, 'GET', `/api/teacher/classes/${a.cls.id}`, undefined, a.teacher);
+    expect((d.body.class as { worldMode: boolean }).worldMode).toBe(false);
+    expect((await call(env, 'PATCH', `/api/teacher/classes/${a.cls.id}`, { worldMode: 'on' }, a.teacher)).status).toBe(400);
+    await call(env, 'PATCH', `/api/teacher/classes/${a.cls.id}`, { worldMode: true }, a.teacher);
+    expect(calls).toEqual([{ ns: 'class', name: a.cls.id, body: { kind: 'world', memberId: null, on: true } }]);
+    calls.length = 0;
+    await call(env, 'PATCH', `/api/teacher/classes/${a.cls.id}`, { worldMode: false }, a.teacher);
+    expect(calls[0]).toEqual({ ns: 'class', name: a.cls.id, body: { kind: 'world', memberId: null, on: false } });
+    expect(calls.slice(1).map((c) => c.name)).toEqual([0, 1, 2, 3].map((i) => `piggybank_village/plaza#${i}`));
+    expect(calls[1]!.body).toEqual({ kind: 'kick', classId: a.cls.id });
+  });
+  it('the world leaderboard only includes classes with world mode on, by world name', async () => {
+    const { env, a, b } = await twoClasses(true);
+    const summary = (coins: number) => ({ summary: { level: 1, xp: 0, coinsEarned: coins, zones: [], mcForm: 'A', mcPre: null, mcPost: null, accuracy: {} } });
+    await call(env, 'POST', '/api/progress', summary(30), a.token);
+    await call(env, 'POST', '/api/progress', summary(90), b.token);
+    expect((await call(env, 'GET', '/api/class', undefined, a.token)).body.worldBoard).toBeNull(); // off
+    await call(env, 'PATCH', `/api/teacher/classes/${a.cls.id}`, { worldMode: true }, a.teacher);
+    let w = (await call(env, 'GET', '/api/class', undefined, a.token)).body.worldBoard as { top: { name: string }[]; me: { rank: number } };
+    expect(w.top.map((t) => t.name)).toEqual([a.name]); // class B hasn't switched it on
+    await call(env, 'PATCH', `/api/teacher/classes/${b.cls.id}`, { worldMode: true }, b.teacher);
+    w = (await call(env, 'GET', '/api/class', undefined, a.token)).body.worldBoard as typeof w;
+    expect(w.top.map((t) => t.name)).toEqual([worldName(b.id, 'Sam Lee'), a.name]);
+    expect(w.top[0]!.name).not.toBe('Sam Lee'); // a teacher's list name never shows outside the class
+    expect(w.me.rank).toBe(2);
+  });
+  it('world reports reach both teachers (other class by world name only) and the admin, who can block', async () => {
+    const { env, a, b, calls } = await twoClasses(true);
+    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'piggybank_village/plaza' }];
+    await env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, world, history, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)')
+      .bind('0b5c6a2e-0000-4000-8000-0000000000aa', a.id, a.cls.id, b.id, b.cls.id, JSON.stringify(history), T0).run();
+    const forA = (await call(env, 'GET', `/api/teacher/classes/${a.cls.id}`, undefined, a.teacher)).body.reports as { target: string; targetId: string | null; world: boolean }[];
+    expect(forA).toEqual([expect.objectContaining({ world: true, target: worldName(b.id, 'Sam Lee'), targetId: null, reporter: a.name })]);
+    const forB = (await call(env, 'GET', `/api/teacher/classes/${b.cls.id}`, undefined, b.teacher)).body.reports as { target: string; targetId: string }[];
+    expect(forB[0]).toMatchObject({ target: 'Sam Lee', targetId: b.id, reporter: a.name });
+    const admin = (await call(env, 'POST', '/api/teacher/signup', { email: 'admin@nhsqa.org', password: 'correct horse battery' }, undefined, T0, { 'CF-Connecting-IP': '192.0.2.99' })).body.token as string;
+    expect((await call(env, 'GET', '/api/admin/reports', undefined, a.teacher)).status).toBe(404);
+    const list = (await call(env, 'GET', '/api/admin/reports', undefined, admin)).body.reports as { id: string; target: { id: string; name: string; teacher: string; blocked: boolean } }[];
+    expect(list[0]!.target).toMatchObject({ id: b.id, name: worldName(b.id, 'Sam Lee'), teacher: 'b@school.org', blocked: false });
+    calls.length = 0;
+    expect((await call(env, 'POST', `/api/admin/members/${b.id}/world`, { blocked: true }, admin)).status).toBe(200);
+    expect(calls[0]).toEqual({ ns: 'class', name: b.cls.id, body: { kind: 'world', memberId: b.id, on: false } });
+    expect(calls[1]!.body).toEqual({ kind: 'kick', memberId: b.id });
+    await call(env, 'PATCH', `/api/teacher/classes/${b.cls.id}`, { worldMode: true }, b.teacher);
+    expect((await call(env, 'GET', '/api/class', undefined, b.token)).body.worldBoard).toBeNull(); // still blocked
+    expect((await call(env, 'POST', `/api/admin/reports/${list[0]!.id}/resolve`, {}, admin)).status).toBe(200);
+    expect((await call(env, 'GET', '/api/admin/reports', undefined, admin)).body.reports).toEqual([]);
+  });
+});
+
+describe('world sockets', () => {
+  it('only real screens and shards 0–3 are routed; other origins are refused', async () => {
+    const seen: string[] = [];
+    const env = testEnv({ WORLD: { idFromName: (n: string) => n, get: (n: string) => ({ fetch: async () => (seen.push(n), new Response(null, { status: 204 })) }) } as unknown as DurableObjectNamespace });
+    const ws = (path: string, origin = ORIGIN) => handle(new Request(`https://mp.nhsqa.org${path}`, { headers: { Origin: origin, Upgrade: 'websocket' } }), env, T0);
+    expect((await ws('/ws/world/piggybank_village/plaza/0')).status).toBe(204);
+    expect(seen).toEqual(['piggybank_village/plaza#0']);
+    for (const bad of ['/ws/world/piggybank_village/secret/0', '/ws/world/piggybank_village/plaza/4', '/ws/world/../plaza/0', '/ws/world/piggybank_village/plaza']) expect((await ws(bad)).status, bad).toBe(404);
+    expect((await ws('/ws/world/piggybank_village/plaza/0', 'https://evil.org')).status).toBe(403);
+  });
+});
+
+describe('reward cards, once across all devices', () => {
+  it('a valid card works once; made-up codes are refused and rate-limited', async () => {
+    const env = testEnv();
+    const code = makeCode('W', MAX_SERIAL); // a serial that was never printed
+    expect((await call(env, 'POST', '/api/redeem', { code })).body).toMatchObject({ ok: true, reward: 'W' });
+    expect((await call(env, 'POST', '/api/redeem', { code: code.toLowerCase() })).status).toBe(409); // another device
+    for (let i = 0; i < 20; i++) expect((await call(env, 'POST', '/api/redeem', { code: 'MB-W1234-ABCDE' })).status).toBe(400);
+    expect((await call(env, 'POST', '/api/redeem', { code: makeCode('C', MAX_SERIAL) })).status).toBe(429);
+    expect(await env.DB.prepare('SELECT code FROM redemptions').all()).toMatchObject({ results: [{ code }] });
   });
 });
 

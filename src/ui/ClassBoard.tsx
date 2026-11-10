@@ -12,12 +12,12 @@ export default function ClassBoard() {
   const s = useSlot()!;
   const m = s.online;
   const offline = s.settings.playOffline;
-  const [data, setData] = useState<{ goal: Goal; board: Board | null } | 'error' | null>(null);
+  const [data, setData] = useState<{ goal: Goal; board: Board | null; worldBoard: Board | null } | 'error' | null>(null);
   const token = m?.url === MP_URL && !offline ? m.token : null;
   useEffect(() => {
     if (!token) return;
     let live = true;
-    api<{ goal: Goal; board: Board | null }>('/api/class', { token }).then((r) => live && setData(r)).catch(() => live && setData('error'));
+    api<{ goal: Goal; board: Board | null; worldBoard: Board | null }>('/api/class', { token }).then((r) => live && setData(r)).catch(() => live && setData('error'));
     return () => void (live = false);
   }, [token]);
   if (!m || m.url !== MP_URL) return null;
@@ -44,8 +44,24 @@ export default function ClassBoard() {
                 <p className="text-lg">Coins you spend still count here: it ranks what you’ve earned.</p>
               </>
             )}
+            {data.worldBoard && <WorldBoard board={data.worldBoard} />}
           </>
         )}
     </section>
+  );
+}
+
+/** World mode: the top 10 across every class with world mode on, by the names other classes see. */
+function WorldBoard({ board }: { board: Board }) {
+  return (
+    <>
+      <h4 className="mt-2 text-xl font-bold">🌍 World: most coins earned</h4>
+      <ol className="flex flex-col gap-0.5 text-lg">
+        {board.top.map((r, i) => (
+          <li key={`${i}-${r.name}`} className="flex justify-between px-2"><span>{i + 1}. {r.name}</span><span>🪙 {r.coins}</span></li>
+        ))}
+      </ol>
+      {board.me && <p className="mt-1 px-2 text-lg font-bold">You’re number {board.me.rank} in the world (🪙 {board.me.coins}).</p>}
+    </>
   );
 }

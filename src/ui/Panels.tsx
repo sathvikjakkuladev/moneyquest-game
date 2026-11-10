@@ -76,6 +76,9 @@ export function Panels() {
   );
 }
 
+// Only built when VITE_MP_URL is set: without it, cards are checked on the device only.
+const claimOnce = import.meta.env.VITE_MP_URL ? () => import('../net/redeemCheck.ts') : null;
+
 function Shop({ onClose }: { onClose: () => void }) {
   const s = useSlot()!;
   const [msg, setMsg] = useState('');
@@ -142,29 +145,37 @@ function Redeem({ onClose }: { onClose: () => void }) {
   const [msg, setMsg] = useState('');
   const [scanning, setScanning] = useState(false);
 
-  const submit = (text: string) => {
+  const [checking, setChecking] = useState(false);
+  const submit = async (text: string) => {
     const s = useSave.getState();
     const cur = s.active === null ? null : s.slots[s.active];
-    if (!cur) return;
+    if (!cur || checking) return;
     const r = redeem(text, cur.redeemed);
     if (!r.ok) return setMsg(REDEEM_MESSAGES[r.reason]);
+    if (claimOnce) {
+      // With class features on, each printed card works once across all devices.
+      setChecking(true);
+      const v = await (await claimOnce()).claimOnce(r.code);
+      setChecking(false);
+      if (v === 'used') return setMsg('This card has already been used on another device. Each card works once.');
+    }
     s.edit((x) => grantReward(x, r.code, r.items));
     useSession.getState().setRedeemCode(null);
     useSession.getState().setPanel(null);
     useSession.getState().setCelebrate([...r.items]);
   };
   useEffect(() => {
-    if (preset) submit(preset);
+    if (preset) void submit(preset);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Modal title="Redeem a card" onClose={() => (useSession.getState().setRedeemCode(null), onClose())}>
       <p className="text-lg">Won a MoneyQuest card? Type the code under the QR code, or scan it with the camera.</p>
-      <form className="flex flex-wrap gap-2" onSubmit={(e) => (e.preventDefault(), submit(code))}>
+      <form className="flex flex-wrap gap-2" onSubmit={(e) => (e.preventDefault(), void submit(code))}>
         <input autoFocus aria-label="Card code" placeholder="MB-W1234-ABCDE" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="min-h-12 flex-1 rounded-md border-4 border-frame bg-white px-3 font-mono text-2xl tracking-wider" />
-        <button type="submit" className="btn" disabled={!code.trim()}>Redeem</button>
+        <button type="submit" className="btn" disabled={!code.trim() || checking}>{checking ? 'Checking…' : 'Redeem'}</button>
       </form>
-      {scanning ? <Scanner onCode={(c) => (setScanning(false), setCode(c), submit(c))} onStop={() => setScanning(false)} /> : <button className="btn btn-quiet" onClick={() => setScanning(true)}>📷 Scan the QR code</button>}
+      {scanning ? <Scanner onCode={(c) => (setScanning(false), setCode(c), void submit(c))} onStop={() => setScanning(false)} /> : <button className="btn btn-quiet" onClick={() => setScanning(true)}>📷 Scan the QR code</button>}
       {msg && <p className="text-lg font-semibold text-[#a3271f]" role="alert">✗ {msg}</p>}
       <p className="text-lg">Each card works once per save. The camera stays on this device: nothing is sent anywhere.</p>
     </Modal>

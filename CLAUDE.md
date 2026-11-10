@@ -29,7 +29,9 @@ Multiplayer server: `server/README.md` (settings, secrets, Vercel variables). In
 code loads only behind `import.meta.env.VITE_MP_URL ? … : …` (see `App.tsx`, `Hud.tsx`);
 `src/net/bridge.ts` is the network-free meeting point between the scenes and that code, and
 `src/net/protocol.ts` is the wire format both sides validate with. Emotes and phrases
-(`src/net/says.ts`) travel as list indexes and reports store them: only append to those lists. The game's `npm run
+(`src/net/says.ts`) travel as list indexes and reports store them: only append to those lists.
+World mode (`src/net/world.ts`) reuses the same connection class for one world screen at a time;
+world players have negative ids in the game, and names from a teacher's list never leave the class. The game's `npm run
 build` never builds or type-checks `server/`; `.vercelignore` keeps it out of Vercel uploads.
 
 Node 26 runs `tools/*.ts` directly (type stripping): use `import type`, explicit `.ts` extensions,

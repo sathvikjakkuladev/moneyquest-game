@@ -16,7 +16,8 @@ export type RoomAdmin =
   | { kind: 'mute'; memberId: string; on: boolean }
   | { kind: 'kick'; memberId: string | null }
   | { kind: 'goal'; n: number; of: number } // the weekly goal changed: tell everyone connected
-  | { kind: 'roster' }; // who's online and where, for the teacher dashboard
+  | { kind: 'roster' } // who's online and where, for the teacher dashboard
+  | { kind: 'world'; memberId: string | null; on: boolean }; // world mode changed for one student or the whole class
 
 const HELLO_TIMEOUT_MS = 5000;
 
@@ -72,7 +73,8 @@ export class ClassRoom extends DurableObject<Env> {
       a.conn = this.hub.conns.get(a.pid)!;
       ws.serializeAttachment(a);
       const goal = await goalFor(this.env, a.classId, now);
-      this.send([...out, { to: a.pid, msg: { t: 'goal', n: goal.n, of: goal.of } }]);
+      const w = await this.env.DB.prepare('SELECT c.world_mode, m.world_muted FROM members m JOIN classes c ON c.id = m.class_id WHERE m.id = ?').bind(m.id).first<{ world_mode: number; world_muted: number }>();
+      this.send([...out, { to: a.pid, msg: { t: 'goal', n: goal.n, of: goal.of } }, { to: a.pid, msg: { t: 'world', on: !!w?.world_mode && !w.world_muted } }]);
       await this.env.DB.prepare('UPDATE members SET last_seen = ? WHERE id = ?').bind(now, m.id).run();
       return;
     }
@@ -102,6 +104,12 @@ export class ClassRoom extends DurableObject<Env> {
   /** A teacher muted, unmuted or removed a student (or deleted the class): apply it now. */
   private admin(cmd: RoomAdmin): Response {
     if (cmd.kind === 'roster') return Response.json({ online: this.hub.roster() });
+    if (cmd.kind === 'world') {
+      // Tell the games, and say which screens they're on so the Worker can close their world sockets.
+      const hit = [...this.hub.conns.values()].filter((c) => cmd.memberId === null || c.memberId === cmd.memberId);
+      this.send(hit.map((c) => ({ to: c.pid, msg: { t: 'world' as const, on: cmd.on } })));
+      return Response.json({ screens: [...new Set(hit.map((c) => c.s).filter(Boolean))] });
+    }
     if (cmd.kind === 'goal') {
       this.send([...this.hub.conns.keys()].map((to) => ({ to, msg: { t: 'goal' as const, n: cmd.n, of: cmd.of } })));
     } else if (cmd.kind === 'mute') {

@@ -7,7 +7,7 @@ export const MP = 'http://localhost:8787';
 export const ORIGIN = 'http://localhost:5173';
 export type Net = {
   on: boolean; status: string; muted: boolean;
-  people: { id: number; name: string; busy: boolean }[];
+  people: { id: number; name: string; busy: boolean; world: boolean }[];
   remotes: { id: number; name: string; x: number; y: number; busy: boolean }[];
   says: Record<number, { k: string; i: number; at: number }>;
 };

@@ -27,9 +27,18 @@ crons = ["17 4 * * *"] # daily retention clean-up (04:17 UTC)
 name = "CLASSROOM"
 class_name = "ClassRoom"
 
+# One WorldScreen per world screen shard (world mode), also SQLite-backed with hibernation.
+[[durable_objects.bindings]]
+name = "WORLD"
+class_name = "WorldScreen"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ClassRoom"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["WorldScreen"]
 
 # Staging: workers.dev first, later mp-staging.nhsqa.org. Vercel Preview deployments may connect.
 [env.staging]
@@ -37,7 +46,7 @@ name = "moneyquest-mp-staging"
 vars = { ENVIRONMENT = "staging", ALLOWED_ORIGINS = "https://play.nhsqa.org,http://localhost:5173,http://localhost:4173", PREVIEW_ORIGIN_PATTERN = "" }
 triggers = { crons = ["17 4 * * *"] }
 d1_databases = [{ binding = "DB", database_name = "moneyquest-staging", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]
-durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }] }
+durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }, { name = "WORLD", class_name = "WorldScreen" }] }
 
 # Production: mp.nhsqa.org. Only the live game may connect.
 [env.production]
@@ -45,4 +54,4 @@ name = "moneyquest-mp"
 vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "https://play.nhsqa.org", PREVIEW_ORIGIN_PATTERN = "" }
 triggers = { crons = ["17 4 * * *"] }
 d1_databases = [{ binding = "DB", database_name = "moneyquest", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]
-durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }] }
+durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }, { name = "WORLD", class_name = "WorldScreen" }] }

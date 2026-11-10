@@ -16,7 +16,7 @@ interface ClassInfo { id: string; code: string; name: string; namesMode: 'genera
 interface ProgressInfo { level: number; xp: number; coinsEarned: number; zones: string[]; accuracy: Record<string, { answered: number; correct: number }>; mcForm: string; mcPre: CheckSummary | null; mcPost: CheckSummary | null; updatedAt: number }
 interface MemberInfo { id: string; name: string; muted: boolean; joined: number; lastSeen: number; deviceCodeWaiting: boolean; online: { screen: string; busy: boolean } | null; progress: ProgressInfo | null }
 interface ClassDetail { class: ClassInfo & { goalTarget: number; leaderboardHidden: boolean; names: string[] }; goal: { n: number; of: number }; onlineKnown: boolean; members: MemberInfo[]; reports: ReportInfo[] }
-interface ReportInfo { id: string; at: number; targetId: string | null; target: string | null; reporter: string | null; history: { kind: 'emote' | 'phrase'; i: number; at: number; screen: string }[] }
+interface ReportInfo { world?: boolean; id: string; at: number; targetId: string | null; target: string | null; reporter: string | null; history: { kind: 'emote' | 'phrase'; i: number; at: number; screen: string }[] }
 
 const KEY = 'mq-teacher-session';
 const store = {
@@ -294,6 +294,10 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
         </span>
       </div>
 
+      <WorldSwitch on={data.class.worldMode} set={async (worldMode) => {
+        if (await call(() => api(`/api/teacher/classes/${classId}`, { method: 'PATCH', body: { worldMode }, token }))) await load();
+      }} />
+
       <h3 className="text-xl font-bold">Money Check</h3>
       <div className="flex flex-col gap-2 rounded-md border-[3px] border-frame bg-white p-3">
         {!hasChecks ? <p className="text-lg">Nobody has taken a Money Check yet.</p> : (
@@ -313,6 +317,7 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
             const m = r.targetId ? byId.get(r.targetId) : undefined;
             return (
               <li key={r.id} className="flex flex-col gap-2 rounded-md border-[3px] border-[#9b2c1c] bg-white p-3">
+                {r.world && <p className="text-lg font-semibold">🌍 World mode{r.targetId ? '' : `: ${r.target ?? 'the student'} is in another class. Their teacher and the NHSQA safety team see this report too.`}</p>}
                 <p className="text-lg"><strong>{r.target ?? 'A student who has left'}</strong> was reported by <strong>{r.reporter ?? 'a student who has left'}</strong> · {when(r.at)}</p>
                 {r.history.length === 0 ? <p className="text-lg">They hadn’t said anything recently.</p> : (
                   <>
@@ -390,6 +395,23 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
 
       <ClassSettings key={data.class.id} token={token} detail={data} call={call} reload={load} />
     </section>
+  );
+}
+
+/** World mode: off unless the teacher turns it on (decided 2026-11-07). */
+function WorldSwitch({ on, set }: { on: boolean; set: (on: boolean) => Promise<void> }) {
+  const flip = () => {
+    if (!on && !confirm('Turn on world mode? Your students will also see players from other classes that have world mode on, on the same screen. They still only use emotes and preset phrases, and players from other classes never see names from your list.')) return;
+    void set(!on);
+  };
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border-[3px] border-frame bg-white p-3">
+      <div>
+        <h3 className="text-xl font-bold">🌍 World mode: {on ? 'on' : 'off'}</h3>
+        <p className="text-lg">{on ? 'Your students can meet players from other classes with world mode on.' : 'Your students only see their own class.'} Changes apply straight away, even mid-game.</p>
+      </div>
+      <button className={`btn ${on ? 'btn-quiet' : ''}`} onClick={flip}>{on ? 'Turn world mode off' : 'Turn world mode on'}</button>
+    </div>
   );
 }
 
@@ -476,6 +498,58 @@ function Admin({ token }: { token: string }) {
         </ul>
       )}
       {msg && list !== null && <p className="text-lg font-semibold text-[#9b2c1c]" role="alert">{msg}</p>}
+      <WorldReports token={token} />
     </section>
+  );
+}
+
+interface WorldReport {
+  id: string; at: number; history: ReportInfo['history'];
+  target: { id: string; name: string; blocked: boolean; teacher: string | null; className: string | null } | null;
+  reporter: { name: string; teacher: string | null } | null;
+}
+
+/** World-mode reports for the NHSQA admin: block a student from world mode, or close the report. */
+function WorldReports({ token }: { token: string }) {
+  const [list, setList] = useState<WorldReport[] | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = () => api<{ reports: WorldReport[] }>('/api/admin/reports', { token }).then((r) => setList(r.reports)).catch(() => setMsg('Couldn’t load world reports.'));
+  useEffect(() => void load(), [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  const act = async (f: () => Promise<unknown>) => {
+    setMsg(null);
+    try {
+      await f();
+      await load();
+    } catch (e) {
+      setMsg(e instanceof ApiError ? e.message : 'Something went wrong.');
+    }
+  };
+  return (
+    <>
+      <h2 className="mt-2 text-2xl font-bold">Admin: world reports</h2>
+      {list === null ? <p className="text-lg">{msg ?? 'Loading…'}</p> : list.length === 0 ? <p className="text-lg">No open world reports.</p> : (
+        <ul className="flex flex-col gap-2" aria-label="World reports">
+          {list.map((r) => (
+            <li key={r.id} className="flex flex-col gap-2 rounded-md border-[3px] border-[#9b2c1c] p-3">
+              <p className="text-lg"><strong>{r.target?.name ?? 'A student who has left'}</strong>{r.target ? ` (${r.target.className ?? 'class'}, teacher ${r.target.teacher ?? 'unknown'})` : ''} was reported by <strong>{r.reporter?.name ?? 'a student who has left'}</strong>{r.reporter?.teacher ? ` (teacher ${r.reporter.teacher})` : ''} · {when(r.at)}</p>
+              {r.history.length > 0 && (
+                <ol className="ml-6 list-decimal text-lg">
+                  {r.history.map((h, i) => <li key={i}>{said(h)} · {place(h.screen)} · {when(h.at)}</li>)}
+                </ol>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {r.target && (
+                  <button className="btn btn-danger" onClick={() => void act(() => api(`/api/admin/members/${r.target!.id}/world`, { body: { blocked: !r.target!.blocked }, token }))}>
+                    {r.target.blocked ? `Let ${r.target.name} back into world mode` : `Block ${r.target.name} from world mode`}
+                  </button>
+                )}
+                <button className="btn btn-quiet" onClick={() => void act(() => api(`/api/admin/reports/${r.id}/resolve`, { body: {}, token }))}>Close report</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {msg && list !== null && <p className="text-lg font-semibold text-[#9b2c1c]" role="alert">{msg}</p>}
+    </>
   );
 }

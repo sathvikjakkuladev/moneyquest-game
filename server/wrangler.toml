@@ -34,7 +34,7 @@ new_sqlite_classes = ["ClassRoom"]
 # Staging: workers.dev first, later mp-staging.nhsqa.org. Vercel Preview deployments may connect.
 [env.staging]
 name = "moneyquest-mp-staging"
-vars = { ENVIRONMENT = "staging", ALLOWED_ORIGINS = "https://nhsqa.org,http://localhost:5173,http://localhost:4173", PREVIEW_ORIGIN_PATTERN = "" }
+vars = { ENVIRONMENT = "staging", ALLOWED_ORIGINS = "https://play.nhsqa.org,http://localhost:5173,http://localhost:4173", PREVIEW_ORIGIN_PATTERN = "" }
 triggers = { crons = ["17 4 * * *"] }
 d1_databases = [{ binding = "DB", database_name = "moneyquest-staging", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]
 durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }] }
@@ -42,7 +42,7 @@ durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }
 # Production: mp.nhsqa.org. Only the live game may connect.
 [env.production]
 name = "moneyquest-mp"
-vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "https://nhsqa.org", PREVIEW_ORIGIN_PATTERN = "" }
+vars = { ENVIRONMENT = "production", ALLOWED_ORIGINS = "https://play.nhsqa.org", PREVIEW_ORIGIN_PATTERN = "" }
 triggers = { crons = ["17 4 * * *"] }
 d1_databases = [{ binding = "DB", database_name = "moneyquest", database_id = "SET-IN-PHASE-6", migrations_dir = "migrations" }]
 durable_objects = { bindings = [{ name = "CLASSROOM", class_name = "ClassRoom" }] }

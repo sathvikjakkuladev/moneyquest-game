@@ -34,11 +34,11 @@ async function teacherWithClass(env: Env, opts: Body = {}) {
 }
 
 describe('origin allowlist', () => {
-  const env = { ALLOWED_ORIGINS: 'https://nhsqa.org,http://localhost:5173', PREVIEW_ORIGIN_PATTERN: '' };
+  const env = { ALLOWED_ORIGINS: 'https://play.nhsqa.org,http://localhost:5173', PREVIEW_ORIGIN_PATTERN: '' };
   it('allows exact origins only, never anything else', () => {
-    expect(originAllowed('https://nhsqa.org', env)).toBe(true);
+    expect(originAllowed('https://play.nhsqa.org', env)).toBe(true);
     expect(originAllowed('http://localhost:5173', env)).toBe(true);
-    for (const o of [null, '', 'https://evil.org', 'https://nhsqa.org.evil.org', 'http://nhsqa.org', 'https://NHSQA.org', 'null']) expect(originAllowed(o, env), String(o)).toBe(false);
+    for (const o of [null, '', 'https://evil.org', 'https://play.nhsqa.org.evil.org', 'http://play.nhsqa.org', 'https://PLAY.nhsqa.org', 'https://nhsqa.org', 'null']) expect(originAllowed(o, env), String(o)).toBe(false);
   });
   it('preview pattern (staging only) is anchored and https only', () => {
     const st = { ...env, PREVIEW_ORIGIN_PATTERN: 'https://moneyquest-game-[a-z0-9-]+-team\\.vercel\\.app' };

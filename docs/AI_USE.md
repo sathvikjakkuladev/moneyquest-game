@@ -18,7 +18,7 @@ updated at the end of every build phase.
 | Multiplayer server (`server/`), the /teacher page and the class-join flow | **Claude Code**, from the student's multiplayer brief (`MULTIPLAYER_PROMPT.md`) and decisions | Wrote the brief, made the decisions (server address, sign-in, world-mode default, leaderboards, retention, names, reports), tests each phase |
 | Public-name word lists (`src/net/names.ts`) | **Claude Code**, drafted for student review | Reviews the words |
 | Emotes and preset phrases (`src/net/says.ts`) | **Claude Code**, drafted for student review | Reviews the wording |
-| Privacy policy and teacher notice (`public/privacy/`, `public/teacher-notice/`) | **Claude Code**, drafted for NHSQA to review; not legal advice | NHSQA reviews them and adds a contact address |
+| Privacy policy and teacher notice (`public/privacy/`, `public/teacher-notice/`) | **Claude Code**, drafted for NHSQA to review; not legal advice | NHSQA reviews them (contact: nhsqa01@gmail.com) |
 | Game code, build tools, tests, documentation (`game/`) | **Claude Code** (Anthropic) | Wrote the design brief, made the gameplay decisions, playtests each phase |
 | Reward-card codes (`src/rewards/rewardCodes.ts`, `rewardSecret.ts`) | Copied unchanged from the student's earlier MakeBank project (also built with Claude Code) | Printed and handed out the 110 cards |
 

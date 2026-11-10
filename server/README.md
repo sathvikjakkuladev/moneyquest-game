@@ -29,7 +29,7 @@ MP_E2E=1 E2E_URL=http://localhost:5173 npx playwright test class-join   # with d
 
 | What | Where | Value |
 |---|---|---|
-| `ALLOWED_ORIGINS` | `wrangler.toml` vars (per environment) | Exact origins allowed to call the API: production `https://nhsqa.org`; dev `http://localhost:5173,http://localhost:4173` |
+| `ALLOWED_ORIGINS` | `wrangler.toml` vars (per environment) | Exact origins allowed to call the API: production `https://play.nhsqa.org` (the game's address; the root `nhsqa.org` is NHSQA's own site); dev `http://localhost:5173,http://localhost:4173` |
 | `PREVIEW_ORIGIN_PATTERN` | `wrangler.toml` vars (staging only) | A regex for this project's Vercel preview URLs, set in Phase 6; empty everywhere else |
 | `ADMIN_EMAIL` | **secret**: `wrangler secret put ADMIN_EMAIL --env production` | The NHSQA admin account's email |
 | `PEPPER` | **secret**: `wrangler secret put PEPPER --env production` | A long random string, for example from `openssl rand -base64 32`. Never change it after teachers sign up, or their passwords stop working. |

@@ -4,8 +4,10 @@ Status: **approved 2026-11-07.** All six decisions in §9 went with the recommen
 §7 missing-asset plan approved (ask before each PixelLab generation); bosses 2× in battle and 1× on
 the overworld; customization is hats and pets only; keep the question overrides; the empty
 top-level `.git` was deleted and the repo lives in `game/`; host on Netlify.
-**Update 2026-11-07:** the game is live on **Vercel** at `https://nhsqa.org/` (domain registered at
-**Porkbun**), not Netlify. It stays on Vercel. Multiplayer (§10) adds a Cloudflare server.
+**Update 2026-11-07:** the game is hosted on **Vercel** (domain `nhsqa.org` registered at **Porkbun**),
+not Netlify. **Update 2026-11-09:** the game's address is **`https://play.nhsqa.org`**. The root
+`nhsqa.org` is the National High School Quant Association's own site and must keep working.
+Multiplayer (§10) adds a Cloudflare server.
 Paths are relative to `DECA MoneyQuest/`.
 
 ---
@@ -210,8 +212,8 @@ From `MULTIPLAYER_PROMPT.md`. **This reverses the original rule "no accounts or 
 the user's request (2026-11-07); the privacy rules that replace it are in CLAUDE.md.
 
 ### Context
-MoneyQuest (`game/`, Phases 1–5 done) is live on Vercel at `https://nhsqa.org/`. The domain is
-registered at Porkbun. MULTIPLAYER_PROMPT.md asks for multiplayer similar to Prodigy:
+MoneyQuest (`game/`, Phases 1–5 done) is hosted on Vercel, at `https://play.nhsqa.org` (decided
+2026-11-09; the root `nhsqa.org` is NHSQA's own site). The domain is registered at Porkbun. MULTIPLAYER_PROMPT.md asks for multiplayer similar to Prodigy:
 - **Class mode:** classmates see each other and share goals.
 - **World mode:** players from other classes are visible, with tight safety limits.
 - **Teacher dashboard:** includes the Money Check CSV, which is the DECA impact data.
@@ -260,7 +262,7 @@ deploy cleanly on Vercel with multiplayer off.
   - When it's unset, `src/net/` is never imported: no requests, no UI, and the game is exactly as it is today.
   - When it's set, `src/net/` loads lazily, only for slots that have joined a class and aren't in "Play offline".
 - **Origin allowlist:**
-  - Exact matches: `https://nhsqa.org`, `http://localhost:5173` and `http://localhost:4173`.
+  - Exact matches: `https://play.nhsqa.org`, `http://localhost:5173` and `http://localhost:4173`.
   - On staging only, a regex for this project's Vercel preview URLs.
   - Used for CORS (never `*`), with credentials allowed only for those origins.
   - Checked on every WebSocket upgrade; any other origin gets a 403.
@@ -353,7 +355,8 @@ deploy cleanly on Vercel with multiplayer off.
    - The offline check stays for when there's no connection.
 6. **Deploy:** step by step, waiting for your OK at each step:
    - Cloudflare login, then a workers.dev staging server with a Vercel Preview pointed at it.
-   - Move the DNS (copy records, Vercel records set to DNS only, DNSSEC off, nameservers changed, check the game).
+   - Move the DNS (copy every record, including the root site's, Vercel records set to DNS only, DNSSEC off, nameservers changed, check both nhsqa.org and play.nhsqa.org).
+   - Add `play.nhsqa.org` to the MoneyQuest Vercel project.
    - Add `mp.nhsqa.org`, set `VITE_MP_URL` for Production, upgrade to Paid, then the alerts, the load test and the play-through.
 
 Each phase ends with:
@@ -776,6 +779,7 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
 - **Bug fixed from Phase 1:** the 20-tries limit counted every join, so a class on one school IP
   would have been locked out at about the 10th student. Now only wrong codes count.
 - Migration `0002`: `progress.correct_total`, `members.rejoin_hash`, `members.rejoin_expires`.
-- **Open question for Phase 6:** on 2026-11-09 `nhsqa.org` was serving the National High School
-  Quant Association's Next.js site, not this game (no `/teacher`, none of `vercel.json`'s headers).
-  Confirm where the game is hosted before any DNS or `ALLOWED_ORIGINS` change.
+- **Found 2026-11-09:** `nhsqa.org` serves the National High School Quant Association's own Next.js
+  site, not this game. **Decided the same day:** the game moves to `https://play.nhsqa.org`. The
+  production `ALLOWED_ORIGINS` was updated, and the Phase 6 DNS move must keep the root site
+  working. Privacy contact: nhsqa01@gmail.com.

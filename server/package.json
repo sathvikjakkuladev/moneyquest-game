@@ -8,6 +8,7 @@
     "dev": "wrangler d1 migrations apply moneyquest --local && wrangler dev --port 8787",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "load": "node scripts/load.ts",
     "deploy:staging": "wrangler deploy --env staging",
     "deploy:production": "wrangler deploy --env production"
   },

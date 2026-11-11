@@ -3,7 +3,7 @@
 import { expect } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 
-export const MP = 'http://localhost:8787';
+export const MP = process.env.MP_URL ?? 'http://localhost:8787'; // MP_URL: run against staging
 export const ORIGIN = 'http://localhost:5173';
 export type Net = {
   on: boolean; status: string; muted: boolean;

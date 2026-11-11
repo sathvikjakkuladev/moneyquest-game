@@ -6,7 +6,8 @@ multiple-choice questions. It must be accurate, demo-ready for judges, run on sc
 iPads, and deploy as a static website. **Hosting: the game is on Vercel at `https://play.nhsqa.org`
 (decided 2026-11-09); the domain `nhsqa.org` is registered at Porkbun, and the root `nhsqa.org` is
 NHSQA's own site, which must keep working.** Optional multiplayer runs on a Cloudflare
-Worker (`server/`, planned at `mp.nhsqa.org`; PLAN.md §10). Design and every decision: `PLAN.md`. Asset facts:
+Worker (`server/`): production `https://mp.nhsqa.org`, staging `https://mp-staging.nhsqa.org`; DNS
+for nhsqa.org is on Cloudflare since 2026-11-10 (PLAN.md §10). Design and every decision: `PLAN.md`. Asset facts:
 `ASSET_REPORT.md`. The old build and its archive were deleted on 2026-11-07 at the user's request;
 the only thing kept from it is the v1 art the importer still needs (`assets-src/v1/`).
 

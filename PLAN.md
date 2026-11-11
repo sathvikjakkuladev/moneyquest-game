@@ -818,3 +818,24 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
     - Two classes see each other.
     - A wave, a report the admin sees, an admin block, and the teacher switching off, all live.
     - A card that works once across two devices.
+
+### Multiplayer Phase 6 — deploy (done 2026-11-10)
+- **Cloudflare account:** nhsqa01@gmail.com.
+  - D1: `moneyquest` (production) and `moneyquest-staging`, both migrated.
+  - Secrets: `PEPPER` (generated and stored without being shown), and `ADMIN_EMAIL` = nhsqa01@gmail.com, set after that account signed up.
+- **Staging** at `moneyquest-mp-staging.nhsqa01.workers.dev` and `mp-staging.nhsqa.org`:
+  - Checks: origin allowlist, CSRF, admin routes.
+  - Load test: 30 players, about 3,700 billed requests per 30-minute session, no drops.
+  - Browser tests passed against it (presence, safety).
+- **DNS** moved from Porkbun to Cloudflare (domain still registered at Porkbun):
+  - Records copied (root A, `www` CNAME, two `_vercel` TXT), all set to DNS only.
+  - The NHSQA site at `nhsqa.org` kept working throughout.
+- **`play.nhsqa.org`** added to the MoneyQuest Vercel project (CNAME to Vercel, DNS only).
+- **Production server** at `mp.nhsqa.org`, with no workers.dev address. It accepts only `https://play.nhsqa.org`.
+- **Vercel:** `VITE_MP_URL` = `https://mp.nhsqa.org` for Production, `https://mp-staging.nhsqa.org` for Preview.
+- **Live check** (`tests/e2e/live.spec.ts`, creates nothing): only `play.nhsqa.org` and `mp.nhsqa.org` are contacted, there are no CSP violations, and a class code reaches the server.
+- **Still to do:**
+  - Staging `PREVIEW_ORIGIN_PATTERN`, which needs a preview address.
+  - Usage alerts in Cloudflare.
+  - Confirm the account is on Workers Paid.
+  - The user's play-through.

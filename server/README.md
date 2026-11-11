@@ -36,18 +36,36 @@ MP_E2E=1 E2E_URL=http://localhost:5173 npx playwright test class-join   # with d
 
 Secrets never go in the repo or in any `VITE_` variable (those end up in the public game bundle).
 
-## Vercel settings for the game (Phase 6)
+## Deployed (2026-11-10)
+
+| | Address | D1 database | Secrets |
+|---|---|---|---|
+| Production | `https://mp.nhsqa.org` (no workers.dev address) | `moneyquest` | `PEPPER`, `ADMIN_EMAIL` (nhsqa01@gmail.com) |
+| Staging | `https://mp-staging.nhsqa.org` and `https://moneyquest-mp-staging.nhsqa01.workers.dev` | `moneyquest-staging` | `PEPPER` |
+
+DNS for nhsqa.org is on Cloudflare (domain still registered at Porkbun). The root `nhsqa.org`, `www` and `play` point at Vercel and are set to **DNS only**; leave them that way.
+
+To deploy a new version (from `server/`, logged in with `npx wrangler login` as nhsqa01@gmail.com):
+
+```sh
+npx wrangler d1 migrations apply moneyquest-staging --env staging --remote   # only when there's a new migration
+npx wrangler deploy --env staging
+MP_URL=https://mp-staging.nhsqa.org MP_E2E=1 ...                             # test against staging first
+npx wrangler d1 migrations apply moneyquest --env production --remote
+npx wrangler deploy --env production
+LIVE_URL=https://play.nhsqa.org E2E_URL=https://play.nhsqa.org npx playwright test live   # from game/, creates nothing
+```
+
+## Vercel settings for the game
 
 In the Vercel project, under Settings → Environment Variables:
 
 | Variable | Environment | Value |
 |---|---|---|
 | `VITE_MP_URL` | Production | `https://mp.nhsqa.org` |
-| `VITE_MP_URL` | Preview | The staging server: first `https://moneyquest-mp-staging.<account>.workers.dev`, later `https://mp-staging.nhsqa.org` |
+| `VITE_MP_URL` | Preview | `https://mp-staging.nhsqa.org` |
 
-**Leaving it unset keeps multiplayer off.** That's the case today: the live game makes no requests to the server.
-
-The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhsqa.org`. A `workers.dev` staging address gets added there in Phase 6.
+Both are set (2026-11-10). Leaving `VITE_MP_URL` unset turns multiplayer off for that build. The game's CSP (`vercel.json`) allows `mp.nhsqa.org` and `mp-staging.nhsqa.org`. Staging's `PREVIEW_ORIGIN_PATTERN` is still empty, so preview builds can't connect to staging yet (the game works without it): set it to a pattern for this project's `*.vercel.app` preview addresses.
 
 ## Security notes
 
@@ -97,3 +115,23 @@ The game's CSP (`vercel.json`) already allows `mp.nhsqa.org` and `mp-staging.nhs
   - Scores come from the student's own device, so a determined student could inflate them; the caps limit that and the teacher can hide the leaderboard.
 - **Device codes:** 8 characters, one use, 24 hours, stored only as hashes. Making one signs the student's old device out.
 - **Retention (daily cron):** classes idle for 12 months are deleted with all their data; reports go after 90 days, along with expired sessions and old rate-limit rows.
+
+## Cost (checked 2026-11-10)
+
+**Pricing** (Workers Paid, from Cloudflare's Durable Objects pricing page):
+- Requests: 1 million a month included, then $0.15 per million. Incoming WebSocket messages count 20:1, outgoing ones are free, and each connection is 1 request.
+- Duration: 400,000 GB-s a month included, then $12.50 per million GB-s, billed on 128 MB per object. A hibernating object isn't billed.
+
+**Measured** (`npm run load`: 30 players, 30% walking at any moment, an emote or phrase every 20 s each): about **4,400 billed requests per 30-minute class session**, a third of the 13,500 target.
+
+While a class plays, its room stays awake: about 225 GB-s per 30-minute session (0.125 GB × 1,800 s). So duration, not requests, is the main cost.
+
+**Projection**, assuming each class plays twice a week (8 sessions a month), class rooms only (world mode adds a little):
+
+| Classes | Requests a month | GB-s a month | Cost a month |
+|---|---|---|---|
+| 10 | 0.35 M | 18 k | $5 (all included) |
+| 100 | 3.5 M | 180 k | about $5.40 |
+| 1,000 | 35 M | 1.8 M | about $28 |
+
+Rerun `npm run load -- --url <staging> --origin http://localhost:5173` against staging after each big change. The script refuses to run against production.

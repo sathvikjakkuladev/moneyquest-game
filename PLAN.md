@@ -839,3 +839,133 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
   - Usage alerts in Cloudflare.
   - Confirm the account is on Workers Paid.
   - The user's play-through.
+
+---
+
+## 12. The assets_v2 rebuild (started 2026-11-16)
+
+The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt
+that drives this work is `docs/ASSETS_V2_PROMPT.md`. Work happens on the `assets-v2` branch; nothing
+merges into `main` (the live site) until Sathvik says so.
+
+**How this is being run.** Sathvik asked for the build to run in one cloud session with the inputs
+copied in from his Mac, told me to **use my own recommendation for all eight decisions**, and to
+**not stop between phases**. So the answers below are my picks, not his: each one is open to change,
+and anything that is learning text or a label is a draft for his review.
+
+### Decisions (assets_v2)
+
+**1. Rendering.**
+- The game's coordinate space stays **640×360**. Every position in assets_v2 (1920×1080 screens) is
+  divided by 3 by the importer, so room layouts, collision, walking speed, the edge rules and the
+  multiplayer wire format keep their numbers.
+- The canvas is drawn at **1280×720** (camera zoom 2) with smooth filtering: `pixelArt: false`,
+  antialiasing on, no `image-rendering: pixelated`. The canvas still fills the window at 16:9.
+- Art is exported for that size: screens at 1280×720, sprites at 2× their on-screen size.
+- Clips use the **16-frame sprite sheets**, not the WebM files. WebM with alpha doesn't play on
+  iPad Safari, and sheets are smaller.
+- Sizes on the 640×360 stage: player 64 px tall on the overworld and about 110 in battle; pets 40;
+  monsters 64 on the overworld and 100 in battle; bosses 96 on the overworld and 192 in battle.
+- Text stays React in Fredoka at 18 px or more.
+- CLAUDE.md's Rendering section is rewritten to say this. The `fronts` cut-outs go away: props are
+  separate sprites sorted by their anchor y, and each screen's `overhang` layer draws above everything.
+
+**2. World and topics.**
+- **Ledgerhold** (9 screens) replaces the Coin Academy as the hub. The seven districts open in the
+  order on the world map. Travel between places is only through the world map (the HUD map button
+  or a waystone), which teleports you to the place's waystone.
+- Topics (draft mapping, by the closest theme):
+
+  | # | District | Topic | Why |
+  |---|---|---|---|
+  | 1 | Coinfall Docks | Spending and Saving | budgets and subscriptions |
+  | 2 | The Sprawl | Financial Decision Making | impulse buys against planned choices |
+  | 3 | Frostvault | Employment and Income | what you earn against what things cost (the loosest fit) |
+  | 4 | Credit Citadel | Credit and Debt | |
+  | 5 | Compound Rift | Investing | compound growth |
+  | 6 | The Exchange | Risk and Insurance | ups and downs, and protecting against them |
+  | 7 | Phish Fens | mixed, all six topics | takes the place of the four bonus zones |
+  | final | Debt Dragon, at Ledgerhold's arena gate | mixed | |
+
+- Each district has its **two monster species and its boss**. A boss waits until both are beaten.
+- Districts 1–6 open in order, each after the boss before it. **Phish Fens opens after the sixth boss
+  and Money Check 2** (the old bonus-portal rule). The **Debt Dragon opens after all seven bosses**.
+- Money Check 1 stays in the opening flow. Money Check 2 is taken with the Headmaster in Ledgerhold.
+- The four bonus zones have no new art and are retired. Their "mixed questions, weighted to your
+  weaker topics" rule moves to Phish Fens and the Debt Dragon.
+- Spells unlock in the same order as before, one per topic boss (boss 1 gives the second spell, and
+  so on). The Insurance Scroll is sold by The Exchange's guide.
+
+**3. Monster data.**
+- `src/data/monster_attacks.json` stays the only file the game reads for monster data, and stays
+  generated. A new tool, `npm run import:monsters`, builds it from two inputs:
+  - `../MoneyQuest Assets/monsters/monster_attacks.json` (read-only): the mechanics. Each new monster
+    takes the effect text, damage and effect rule of one old monster.
+  - `src/data/monster-roster.json` (in the repo, edited by hand): the new roster. For each monster:
+    its district, its art, its name, which old monster it takes its mechanics from, and new attack
+    names, descriptions and lessons. **Those texts are AI drafts for review.**
+- Ids follow the old pattern: `mon_budget_breaker`, `boss_overspend_kraken`. `effectRules.ts` is
+  re-keyed to the new ids, with the same tests.
+- CLAUDE.md's rule is reworded to match.
+
+**4. Pets.**
+- Pets and monsters are the same creatures. **The first win over any monster captures it.** You pick
+  one captured monster as your pet at the Pet Trader in Ledgerhold or in the Bag.
+- Regular monsters give +2 damage. **Bosses are legendary pets: +4.** The shop no longer sells pets.
+- Skins: a captured monster starts in its home look. Beating a district's boss unlocks that
+  district's look for every captured monster. They are cosmetic only.
+- The `fire` look is not used as a skin, except for the Bull Calf (below).
+
+**5. Bull Calf and Laurel Wreath.**
+- **Bull Calf (`pet-bull`)** is drawn as the Hype Bull in its `fire` look at a smaller size. That
+  look appears nowhere else, so the reward pet is visibly its own thing. It stays legendary,
+  reward-only, visible in the Bag as a locked prize, and `buy()` refuses it (tested).
+- **Laurel Wreath** keeps the id `hat-laurel`; its art comes from the `laurel-wreath` folder. The
+  importer maps the id, the game never renames it.
+- The reward code files are untouched.
+
+**6. Customization, economy and saves.**
+- The character creator (in the opening flow, and at the Stylist in Ledgerhold any time, free):
+  skin, eyes, hairstyle, hair colour and face.
+- **Hats:** 24 for sale at the Shopkeeper, priced by rarity (drafts): common 40, rare 80, epic 140,
+  legendary 220 coins. The Laurel Wreath is never sold. Rarity labels are drafts.
+- **Costume colour sets are earned, not bought:** Arcane Blue from the start, and one more for each
+  district boss beaten (seven bosses, seven sets). Coins are for hats.
+- Save version 4. New fields: `look` (indexes into the option lists: skin, eyes, hair, hair colour,
+  face, costume), `progress.captured`, `inventory.petLook`. `progress.tamed` goes away.
+- Migrating a version-3 save:
+  - Zones cleared carry over **by count**: someone who cleared three zones has the first three
+    districts cleared, with those districts' monsters beaten and captured. Regular monsters beaten
+    in an unfinished zone carry over by count too.
+  - Hats: `hat-top`, `hat-wizard` and `hat-crown` become the new top hat, wizard hat and crown.
+    `hat-laurel` stays.
+  - Pets: each bought or tamed pet becomes one captured monster, by a fixed table. Professor Owl
+    becomes the Volatility Roc. The Bull Calf stays the Bull Calf.
+  - Level, XP, coins, spells, question history, Money Check results, redeemed cards, settings and
+    class membership are kept as they are.
+
+**7. Multiplayer.**
+- The look travels as **numbers only**: `a: [skin, eyes, hair, hairColour, face, costume]`, each an
+  index checked against the list lengths on both sides, plus the hat and pet ids already sent and a
+  pet-look index. The lists are append-only, like emotes and phrases. No free text is added, so the
+  privacy rules hold.
+- The screen list in `protocol.ts` changes to the new screens, so **the server must be redeployed**
+  (`wrangler deploy`, which only Sathvik can do) before multiplayer works with the new art. Until
+  then the game plays single-player and carries on quietly, as the rules require.
+- The teacher dashboard's zone and monster names come from the same lists and change with them.
+
+**8. Old art.**
+- When nothing uses it (Phase 5), the game drops the old pixel art in `public/assets/`, the `fronts`
+  system, the old room layouts, the code-drawn hats, the PixelLab extras and the old importer. Git
+  history keeps all of it.
+- `../MoneyQuest Assets/` stays a read-only input (the monster importer reads it).
+  `assets-src/v1/` stays in the repo untouched: it is the only copy of the v1 art.
+- PixelLab is no longer used, so no generations are needed.
+
+### Where things run
+
+- The importers read folders that sit next to the repo: `../assets_v2`, `../MoneyQuest Assets/` and
+  `../make-bank-question-bank.csv`. They are not in the repo. Everything the game and the tests need
+  from them is exported into the repo by the importers.
+- `npm test` and `npm run typecheck` pass in a plain clone with none of those folders: tests that
+  need an input skip with a message when it is missing.

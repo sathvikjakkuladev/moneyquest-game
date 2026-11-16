@@ -22,8 +22,9 @@ describe('copied reward files', () => {
 });
 
 // The printed code lists are gitignored, so on a fresh clone these tests are skipped, not failed.
-describe.skipIf(!existsSync(W) || !existsSync(C))('all 110 printed reward cards', () => {
-  const all = [...codes(W), ...codes(C)];
+const printed = existsSync(W) && existsSync(C);
+describe.skipIf(!printed)('all 110 printed reward cards', () => {
+  const all = printed ? [...codes(W), ...codes(C)] : [];
   it('has 100 Winner and 10 Champion codes, no duplicates', () => {
     expect(all.filter((c) => c.reward === 'W')).toHaveLength(100);
     expect(all.filter((c) => c.reward === 'C')).toHaveLength(10);

@@ -33,7 +33,7 @@ describe('class Money Check data', () => {
 
 describe('progress summaries', () => {
   const slot = {
-    nickname: 'Secret', progress: { level: 3, xp: 200, coins: 5, coinsEarned: 40, zonesCleared: ['piggybank_village'], defeated: ['x'] },
+    nickname: 'Secret', progress: { level: 3, xp: 200, coins: 5, coinsEarned: 40, zonesCleared: ['coinfall-docks'], defeated: ['x'] },
     questions: { accuracy: { Investing: { answered: 5, correct: 3 }, 'Credit and Debt': { answered: 2, correct: 2 } }, bags: { a: 1 } },
     moneyCheck: { firstForm: 'A' as const, pre: check(7), post: null }, inventory: {}, redeemed: ['MB-X'], online: { token: 'm_x' },
   };

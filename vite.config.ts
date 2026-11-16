@@ -17,7 +17,7 @@ function roomsEditor(): Plugin {
     configureServer(server) {
       server.middlewares.use('/__dev/rooms/', (req, res) => {
         const zone = (req.url ?? '').replace(/^\//, '').split('?')[0]!;
-        if (req.method !== 'POST' || !/^[a-z_]+$/.test(zone)) {
+        if (req.method !== 'POST' || !/^[a-z_-]+$/.test(zone)) {
           res.statusCode = 400;
           return res.end('bad request');
         }

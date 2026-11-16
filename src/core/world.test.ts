@@ -1,61 +1,79 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../assets/manifest.json';
-import { MENTORS } from '../data/dialogue.ts';
-import { ITEMS } from '../data/items.ts';
+import v2 from '../assets/v2.json';
+import { MENTORS, TOWNSFOLK } from '../data/dialogue.ts';
+import { BULL_CALF, item, ITEMS, tameId } from '../data/items.ts';
 import { ROOMS } from '../data/rooms.ts';
-import { ZONES } from '../data/zones.ts';
+import { AVATAR, BATTLE, CREATURES, hatArt, WORLD } from '../data/v2.ts';
+import { FINALE, HUB_ID, ZONES } from '../data/zones.ts';
 import { REWARD_ONLY_ITEMS } from '../rewards/redeem.ts';
 import { MONSTERS } from './monsters.ts';
-import { TOPIC_ZONE_ORDER } from './progression.ts';
+import { ALL_DISTRICTS, MIXED_ZONE, TOPIC_ZONE_ORDER } from './progression.ts';
+import { petLooks } from './shop.ts';
+import { ZONE_SPELL } from './spells.ts';
 import { newQuestionState, pickTopic } from './questions.ts';
 import { seeded } from './rng.ts';
 import { TOPICS } from './types.ts';
-import { bonusOpen, canEnter } from './unlocks.ts';
+import { bonusOpen, canEnter, finaleOpen } from './unlocks.ts';
 
-const chars = (manifest as { characters: Record<string, unknown> }).characters;
+const files = (v2 as unknown as { files: Record<string, unknown> }).files;
 
 describe('the world', () => {
-  it('has all 11 locations connected: every exit leads to a real screen', () => {
-    expect(Object.keys(ROOMS).sort()).toEqual([...ZONES.map((z) => z.id), 'coin_academy'].sort());
-    for (const r of Object.values(ROOMS))
-      for (const [name, sc] of Object.entries(r.screens))
-        for (const e of sc.exits) {
-          if (e.to === 'world_map') continue;
-          const [zone, screen] = e.to.includes('/') ? e.to.split('/') : [r.zone, e.to];
-          expect(ROOMS[zone!]?.screens[screen!], `${r.zone}/${name} → ${e.to}`).toBeTruthy();
-        }
+  it('is Ledgerhold and the seven districts, each with a pin on the world map', () => {
+    expect(Object.keys(ROOMS).sort()).toEqual([...ZONES.map((z) => z.id), HUB_ID].sort());
+    expect(ZONES.map((z) => z.id)).toEqual([...ALL_DISTRICTS]);
+    for (const id of Object.keys(ROOMS)) expect(WORLD.pins[id], id).toBeTruthy();
+    // The world map lists the districts in play order.
+    expect(ZONES.map((z) => WORLD.pins[z.id]!.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(files[WORLD.image]).toBeTruthy();
   });
-  it('places every one of the 40 monsters exactly once, in its own zone', () => {
-    const placed = Object.values(ROOMS).flatMap((r) => Object.values(r.screens).flatMap((s) => s.monsters.map((m) => ({ id: m.id, zone: r.zone }))));
-    expect(placed.map((p) => p.id).sort()).toEqual(Object.keys(MONSTERS).sort());
-    for (const p of placed) expect(MONSTERS[p.id]!.zone).toBe(p.zone);
+  it('every district names its boss, its topic and the costume colours its boss gives', () => {
+    for (const z of ZONES) {
+      expect(MONSTERS[z.boss!]?.zone, z.id).toBe(z.id);
+      expect(AVATAR.costume.sets.some((c) => c.id === z.costume), `${z.id} costume`).toBe(true);
+    }
+    expect(ZONES.filter((z) => z.topic !== 'mixed').map((z) => z.topic).sort()).toEqual([...TOPICS].sort());
+    expect(ZONES.filter((z) => z.bonus).map((z) => z.id)).toEqual([MIXED_ZONE]);
+    expect(MONSTERS[FINALE]?.zone).toBe(HUB_ID);
+    // One spell per topic district.
+    expect(Object.keys(ZONE_SPELL).sort()).toEqual([...TOPIC_ZONE_ORDER].sort());
+    expect(new Set(Object.values(ZONE_SPELL)).size).toBe(6);
   });
-  it('has four portals on the portal ring, one per bonus zone', () => {
-    const portals = ROOMS.crossroads_observatory!.screens.portal_ring!.portals!;
-    expect(portals.map((p) => p.to).sort()).toEqual(ZONES.filter((z) => z.bonus).map((z) => z.id).sort());
-  });
-  it('every topic zone has a mentor with art and 2–3 tips; every NPC sprite exists', () => {
-    for (const z of TOPIC_ZONE_ORDER) {
+  it('every district has a guide with art and 2–3 tips; every NPC placed has art and a name', () => {
+    for (const z of ALL_DISTRICTS) {
       const m = MENTORS[z]!;
-      expect(chars[m.speaker.sprite], z).toBeTruthy();
+      expect(CREATURES.npcs[m.speaker.sprite]?.talk, z).toBeTruthy();
       expect(m.tips.length).toBeGreaterThanOrEqual(2);
       expect(m.tips.length).toBeLessThanOrEqual(3);
+      expect(Object.values(ROOMS[z]!.screens).flatMap((s) => s.npcs).map((n) => n.sprite), z).toEqual([m.speaker.sprite]);
     }
-    for (const r of Object.values(ROOMS)) for (const s of Object.values(r.screens)) for (const n of s.npcs) expect(chars[n.sprite], n.sprite).toBeTruthy();
+    for (const r of Object.values(ROOMS)) for (const s of Object.values(r.screens)) for (const n of s.npcs) {
+      expect(CREATURES.npcs[n.sprite]?.talk, n.sprite).toBeTruthy();
+      expect(files[`npc/${n.sprite}/portrait.webp`], n.sprite).toBeTruthy();
+      if (r.zone === HUB_ID) expect(TOWNSFOLK[n.id], n.id).toBeTruthy();
+    }
+    // Ledgerhold has everyone the game needs: Headmaster, shop, stylist, pets, quests, bank, arena.
+    expect(Object.values(ROOMS[HUB_ID]!.screens).flatMap((s) => s.npcs.map((n) => n.id)).sort()).toEqual(Object.keys(TOWNSFOLK).sort());
+  });
+  it('every place has a battle background', () => {
+    for (const id of Object.keys(ROOMS)) expect(files[BATTLE.backgrounds[id]!], id).toBeTruthy();
   });
 });
 
 describe('unlocks', () => {
-  it('topic zones open in order; bonus zones after all six bosses and Money Check 2', () => {
-    expect(canEnter('borrowers_bridges', [], false)).toBe(false);
-    expect(canEnter('borrowers_bridges', ['piggybank_village'], false)).toBe(true);
+  it('topic districts open in order; Phish Fens after all six bosses and Money Check 2; the Debt Dragon after all seven', () => {
+    expect(canEnter('the-sprawl', [], false)).toBe(false);
+    expect(canEnter('the-sprawl', ['coinfall-docks'], false)).toBe(true);
     expect(bonusOpen(TOPIC_ZONE_ORDER.slice(0, 5), true)).toBe(false);
     expect(bonusOpen([...TOPIC_ZONE_ORDER], false)).toBe(false);
     expect(bonusOpen([...TOPIC_ZONE_ORDER], true)).toBe(true);
+    expect(canEnter(MIXED_ZONE, [...TOPIC_ZONE_ORDER], true, false)).toBe(false);
+    expect(canEnter(MIXED_ZONE, [...TOPIC_ZONE_ORDER], true, true)).toBe(true);
+    expect(finaleOpen([...TOPIC_ZONE_ORDER])).toBe(false);
+    expect(finaleOpen([...ALL_DISTRICTS])).toBe(true);
   });
 });
 
-describe('bonus-zone questions', () => {
+describe('mixed-review questions (Phish Fens and the Debt Dragon)', () => {
   it('lean toward the weakest topic (about 3× a perfect one)', () => {
     const acc = Object.fromEntries(TOPICS.map((t) => [t, { answered: 10, correct: 10 }]));
     acc['Investing'] = { answered: 10, correct: 0 };
@@ -83,7 +101,19 @@ describe('items', () => {
       expect(it, id).toBeTruthy();
       expect(it.price).toBeNull();
     }
-    const v1px = (manifest as { v1px: Record<string, { frames: string[] }> }).v1px;
-    for (const p of ITEMS.filter((i) => i.kind === 'pet' && i.id !== 'pet-bull')) expect(v1px.pets!.frames).toContain(p.art);
+    // The Laurel Wreath keeps its id and draws from the art set's laurel-wreath folder.
+    expect(hatArt('hat-laurel')?.art).toBe('laurel-wreath');
+    expect(hatArt('hat-laurel')?.rewardOnly).toBe(true);
+    // The Bull Calf is the Hype Bull's fire look, which no other pet can wear.
+    for (const v of ['front', 'back', 'left', 'right', 'portrait']) expect(files[`mon/${BULL_CALF.species}/${BULL_CALF.look}-${v}.webp`], v).toBeTruthy();
+    expect(petLooks([...ALL_DISTRICTS])).not.toContain(BULL_CALF.look);
+  });
+  it('every monster can be a pet, with art for each look it can wear; bosses are legendary', () => {
+    for (const m of Object.values(MONSTERS)) {
+      const pet = item(tameId(m.id))!;
+      expect([pet.kind, pet.price, pet.legendary], m.id).toEqual(['pet', null, m.boss]);
+      if (m.boss) continue;
+      for (const look of petLooks([...ALL_DISTRICTS])) for (const v of ['front', 'back', 'left', 'right', 'portrait']) expect(files[`mon/${m.art}/${look}-${v}.webp`], `${m.id} ${look} ${v}`).toBeTruthy();
+    }
   });
 });

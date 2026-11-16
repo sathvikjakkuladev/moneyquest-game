@@ -35,7 +35,7 @@ export function Progress({ onClose }: { onClose: () => void }) {
           <button className="btn btn-quiet" onClick={onClose} aria-label="Close">✕</button>
         </div>
         <p className="text-lg">
-          Level {s.progress.level} · 🪙 {s.progress.coins} · {s.progress.zonesCleared.filter((z) => (TOPIC_ZONE_ORDER as readonly string[]).includes(z)).length} of 6 zones cleared · {s.progress.defeated.length} of {Object.keys(MONSTERS).length} monsters beaten · {s.progress.tamed.length} tamed
+          Level {s.progress.level} · 🪙 {s.progress.coins} · {s.progress.zonesCleared.filter((z) => (TOPIC_ZONE_ORDER as readonly string[]).includes(z)).length} of 6 topic districts cleared · {s.progress.defeated.length} of {Object.keys(MONSTERS).length} monsters beaten · {s.progress.tamed.length} captured
         </p>
         <section>
           <h3 className="text-2xl font-bold">Accuracy by topic</h3>

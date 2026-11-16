@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { postCheckReady } from '../core/moneyCheck.ts';
+import { TOPIC_ZONE_ORDER } from '../core/progression.ts';
+import { AVATAR } from '../data/v2.ts';
+import { zoneById } from '../data/zones.ts';
 import { SPELLS } from '../core/spells.ts';
 import { spellDamage } from '../core/battle.ts';
 import { useSlot } from '../state/save.ts';
@@ -235,12 +239,16 @@ function Result({ b }: { b: Battle }) {
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => ref.current?.focus(), []);
   const r = b.result;
+  const s = useSlot();
+  const zone = zoneById(b.monster.zone);
+  const costume = r?.cleared && zone.costume ? AVATAR.costume.sets.find((c) => c.id === zone.costume)?.name : null;
+  const sixDone = !!r?.cleared && !!s && postCheckReady(s, TOPIC_ZONE_ORDER) && zone.id === TOPIC_ZONE_ORDER[TOPIC_ZONE_ORDER.length - 1];
   if (b.phase === 'lost')
     return (
       <div className="panel flex w-[min(42rem,100%)] flex-col items-center gap-2 p-4 text-center" role="status">
         <h2 className="text-3xl font-bold">Your wizard needs a rest!</h2>
         <p className="text-xl">No coins or progress lost. Rest up and try again when you're ready.</p>
-        <button ref={ref} className="btn" onClick={leave}>Back to the village</button>
+        <button ref={ref} className="btn" onClick={leave}>Back to the waystone</button>
       </div>
     );
   return (
@@ -250,12 +258,13 @@ function Result({ b }: { b: Battle }) {
       {r?.coinsTaken ? <p className="text-lg">({b.monster.name} grabbed {r.coinsTaken} of your coins during the fight.)</p> : null}
       {r?.rematch && <p className="text-lg">Rematches pay half.</p>}
       {r?.levelUp && <p className="text-2xl font-bold text-[#1f7a3a]">Level up! You're now level {r.levelUp}.</p>}
-      {r?.newSpell === 'wise_choice' && <p className="text-xl font-bold">All six zones are clear! Visit the Headmaster in the library to take Money Check 2 and open the portals.</p>}
-      {r?.tamed && <p className="text-2xl font-bold text-[#7048e8]">🐾 {b.monster.name} is tamed! Find it in your bag (🎒) to bring it along as a pet.</p>}
+      {sixDone && <p className="text-xl font-bold">All six topic districts are clear! Visit the Headmaster in Ledgerhold’s plaza to take Money Check 2 and open Phish Fens.</p>}
+      {r?.tamed && <p className="text-2xl font-bold text-[#5a2fd0]">🐾 {b.monster.name} joins you! Find it in your bag (🎒) to bring it along as a pet.</p>}
+      {costume && <p className="text-xl font-bold text-[#1d5fd1]">New costume colours: {costume}! Visit the Stylist in Ledgerhold to wear them.</p>}
       {r?.scrollUsed && <p className="text-lg">Your Insurance Scroll paid out and is used up.</p>}
       {r?.newSpell && <p className="text-2xl font-bold text-[#1d5fd1]">New spell: {SPELLS[r.newSpell].name}! <span className="font-normal">{SPELLS[r.newSpell].blurb}</span></p>}
       {b.monster.lesson && <p className="text-xl"><strong>Lesson:</strong> {b.monster.lesson}</p>}
-      <button ref={ref} className="btn mt-1" onClick={leave}>Back to the village</button>
+      <button ref={ref} className="btn mt-1" onClick={leave}>Carry on</button>
     </div>
   );
 }

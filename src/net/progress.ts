@@ -3,7 +3,7 @@
 // level, XP, coins earned, zones cleared, accuracy per topic and Money Check scores.
 import type { Band, Topic } from '../core/types.ts';
 import { BANDS, TOPICS } from '../core/types.ts';
-import { ZONES } from '../data/zones.ts';
+import { ALL_DISTRICTS } from '../core/progression.ts';
 
 export interface Accuracy { answered: number; correct: number }
 export interface CheckSummary { date: string; band: Band; form: 'A' | 'B'; perTopic: Record<Topic, number>; total: number }
@@ -42,7 +42,8 @@ export const totalCorrect = (s: Pick<Summary, 'accuracy'>) => TOPICS.reduce((n, 
 
 // ---------- validation (server side) ----------
 
-const ZONE_IDS = new Set(ZONES.map((z) => z.id));
+/** Places that can be cleared: the seven districts, and Ledgerhold (beating the Debt Dragon). */
+const ZONE_IDS = new Set<string>([...ALL_DISTRICTS, 'ledgerhold']);
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const int = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 const form = (v: unknown): v is 'A' | 'B' => v === 'A' || v === 'B';

@@ -41,7 +41,7 @@ export interface Choice { label: string; run: () => void }
 export interface Dialogue { speaker: Speaker; lines: string[]; i: number; then?: () => void; choices?: Choice[] }
 
 export type Phase = 'intro' | 'ask' | 'resolving' | 'right' | 'explain' | 'won' | 'lost';
-export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number; scrollUsed: boolean; tamed: boolean }
+export interface Result { coins: number; xp: number; levelUp: number | null; newSpell: SpellId | null; rematch: boolean; coinsTaken: number; scrollUsed: boolean; tamed: boolean; /** This win beat a district's boss (or the Debt Dragon) for the first time. */ cleared: boolean }
 
 /** This question's tricks, made concrete: which answer is chained, fogged, hinted or removed. */
 export interface Mods { lock: number | null; lockTaps: number; fog: number | null; fakeHint: number | null; removed: number | null; shuffle: boolean; riddle: boolean; nap: boolean; glare: boolean; scramble: number | null }
@@ -247,7 +247,7 @@ export const useSession = create<Session>()((set, get) => {
       const st = b.state;
       if (st.outcome === 'won') {
         const won = b.events.find((e): e is Extract<BattleEvent, { type: 'won' }> => e.type === 'won')!;
-        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken, scrollUsed: st.scrollUsed, tamed: false };
+        let result: Result = { coins: won.coins, xp: won.xp, levelUp: null, newSpell: null, rematch: st.rematch, coinsTaken: st.coinsTaken, scrollUsed: st.scrollUsed, tamed: false, cleared: false };
         useSave.getState().edit((x) => {
           const p = x.progress;
           const first = !p.defeated.includes(b.monster.id);
@@ -258,7 +258,7 @@ export const useSession = create<Session>()((set, get) => {
           const level = levelFor(xp);
           // The first win over any monster captures it as a pet (PLAN.md §12).
           const tames = first;
-          result = { ...result, levelUp: level > p.level ? level : null, newSpell, tamed: tames };
+          result = { ...result, levelUp: level > p.level ? level : null, newSpell, tamed: tames, cleared: clears };
           let owned = st.scrollUsed ? dropOne(x.inventory.owned, SCROLL) : x.inventory.owned;
           if (tames && !owned.includes(tameId(b.monster.id))) owned = [...owned, tameId(b.monster.id)];
           return {

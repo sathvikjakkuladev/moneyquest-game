@@ -3,7 +3,7 @@
 // Every change returns the messages to send; positions go out in batches (flush, ~5 times a second)
 // and only to players on the same screen.
 import type { Bucket, ClientMsg, Face, Look, PlayerView, Pose, ServerMsg } from '../../src/net/protocol.ts';
-import { plausibleMove, take } from '../../src/net/protocol.ts';
+import { pickLook, plausibleMove, take } from '../../src/net/protocol.ts';
 import type { SayKind } from '../../src/net/says.ts';
 import { SAY_HISTORY } from '../../src/net/says.ts';
 
@@ -56,7 +56,7 @@ export class Hub {
   }
 
   view(c: Conn): PlayerView {
-    return { id: c.pid, n: c.name, s: c.s, x: c.x, y: c.y, f: c.f, h: c.h, p: c.p, b: c.b };
+    return { id: c.pid, n: c.name, s: c.s, x: c.x, y: c.y, f: c.f, ...pickLook(c) };
   }
 
   private onScreen(s: string, except?: number): Conn[] {
@@ -67,7 +67,7 @@ export class Hub {
   hello(pid: number, m: Member, msg: Extract<ClientMsg, { t: 'hello' }>, now: number): Out[] {
     const c: Conn = {
       pid, memberId: m.id, name: m.public_name, muted: !!m.muted,
-      s: msg.s, x: msg.x, y: msg.y, f: msg.f, h: msg.h, p: msg.p, b: msg.b,
+      s: msg.s, x: msg.x, y: msg.y, f: msg.f, ...pickLook(msg),
       lastMove: now, moves: { tokens: RATES.move[1], at: now }, other: { tokens: RATES.other[1], at: now },
       says: { tokens: RATES.say[1], at: now }, reports: { tokens: RATES.report[1], at: now }, said: [], strikes: 0,
     };
@@ -128,8 +128,8 @@ export class Hub {
       return { out };
     }
     // look: hat, pet, in battle
-    Object.assign(c, { h: msg.h, p: msg.p, b: msg.b });
-    return { out: this.onScreen(c.s, pid).map((p) => ({ to: p.pid, msg: { t: 'look' as const, id: pid, h: c.h, p: c.p, b: c.b } })) };
+    Object.assign(c, { a: undefined, pl: undefined }, pickLook(msg));
+    return { out: this.onScreen(c.s, pid).map((p) => ({ to: p.pid, msg: { t: 'look' as const, id: pid, ...pickLook(c) } })) };
   }
 
   /** A connection closed (or was replaced): tell its screen. */

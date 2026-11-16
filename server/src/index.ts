@@ -54,7 +54,7 @@ async function socket(req: Request, env: Env, url: URL, cors: Record<string, str
   if (req.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return json({ error: 'upgrade', message: 'Expected a WebSocket.' }, 426, cors);
   // World screens: /ws/world/<zone>/<screen>/<shard>. Membership and world mode are checked by the
   // WorldScreen itself, in the first message.
-  const w = /^\/ws\/world\/([a-z_]+)\/([a-z_]+)\/([0-9])$/.exec(url.pathname);
+  const w = /^\/ws\/world\/([a-z_-]+)\/([a-z0-9_-]+)\/([0-9])$/.exec(url.pathname);
   if (w) {
     const screen = `${w[1]}/${w[2]}`, shard = Number(w[3]);
     if (!validScreen(screen) || !screen || shard >= MAX_SHARDS) return json({ error: 'not-found', message: 'Not found.' }, 404, cors);

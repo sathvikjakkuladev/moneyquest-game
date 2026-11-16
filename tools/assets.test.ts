@@ -1,62 +1,37 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { Img } from './lib/img.ts';
-import { alphaBox, flipX, pack, padBottomCenter, pixelize } from './lib/img.ts';
 
-const solid = (w: number, h: number, rgba = [200, 100, 50, 255]): Img => {
-  const data = Buffer.alloc(w * h * 4);
-  for (let i = 0; i < w * h; i++) data.set(rgba, i * 4);
-  return { w, h, data };
-};
+const root = new URL('../', import.meta.url);
+const v2 = JSON.parse(readFileSync(new URL('src/assets/v2.json', root), 'utf8')) as { basePath: string; totalBytes: number; files: Record<string, { w: number; h: number; bytes: number }> };
+const entries = Object.entries(v2.files);
+const MB = 1e6;
 
-describe('image helpers', () => {
-  it('pixelize trims, fits the box, and leaves only hard alpha', async () => {
-    const img = solid(100, 50);
-    const big = { w: 120, h: 70, data: Buffer.alloc(120 * 70 * 4) };
-    for (let y = 0; y < 50; y++) img.data.copy(big.data, ((y + 10) * 120 + 10) * 4, y * 400, (y + 1) * 400);
-    const out = await pixelize(big, 40, 40);
-    expect(out.w).toBe(40);
-    expect(out.h).toBe(20);
-    const alphas = new Set<number>();
-    for (let i = 3; i < out.data.length; i += 4) alphas.add(out.data[i]!);
-    expect([...alphas].every((a) => a === 0 || a === 255)).toBe(true);
-  });
-  it('flipX mirrors and padBottomCenter anchors to the bottom middle', () => {
-    const img = solid(2, 1);
-    img.data.set([1, 2, 3, 255], 0);
-    expect([...flipX(img).data.subarray(4, 8)]).toEqual([1, 2, 3, 255]);
-    const padded = padBottomCenter(solid(2, 2), 6, 5);
-    expect(alphaBox(padded)).toEqual({ x: 2, y: 3, w: 2, h: 2 });
-  });
-  it('pack places frames without overlap and with a gap', () => {
-    const items = [{ name: 'a', img: solid(10, 10) }, { name: 'b', img: solid(20, 5) }, { name: 'c', img: solid(30, 8) }];
-    const p = pack(items, 40);
-    for (const a of p.placed)
-      for (const b of p.placed)
-        if (a !== b) expect(a.x + a.img.w <= b.x || b.x + b.img.w <= a.x || a.y + a.img.h <= b.y || b.y + b.img.h <= a.y).toBe(true);
-    expect(p.placed.every((q) => q.x >= 1 && q.y >= 1 && q.x + q.img.w < p.w && q.y + q.img.h < p.h)).toBe(true);
-  });
-});
-
-const manifestUrl = new URL('../src/assets/manifest.json', import.meta.url);
-describe.skipIf(!existsSync(manifestUrl))('generated manifest (run npm run import:assets first)', () => {
-  const m = JSON.parse(readFileSync(manifestUrl, 'utf8'));
-  const pub = (p: string) => new URL(`../public/assets/${p}`, import.meta.url);
-  it('has all 11 locations, 40 monsters, the player and the mentor', () => {
-    expect(Object.keys(m.locations)).toHaveLength(11);
-    expect(Object.keys(m.monsters)).toHaveLength(40);
-    expect(m.characters.player_coin_wizard.anims.walk.east).toHaveLength(6);
-    expect(m.characters.mentor_piggybank_village).toBeTruthy();
-  });
-  it('every screen, battle background and sheet file exists', () => {
-    for (const [zone, loc] of Object.entries<{ battleBg: string | null; screens: Record<string, { image: string }> }>(m.locations)) {
-      for (const s of Object.values(loc.screens)) expect(existsSync(pub(s.image)), s.image).toBe(true);
-      if (zone !== 'coin_academy') expect(loc.battleBg && existsSync(pub(loc.battleBg)), zone).toBeTruthy();
+describe('the exported art (src/assets/v2.json)', () => {
+  it('lists only files that are in public/, with the size it says', () => {
+    expect(entries.length).toBeGreaterThan(900);
+    for (const [rel, f] of entries) {
+      const url = new URL(`public/${v2.basePath}${rel}`, root);
+      expect(existsSync(url), rel).toBe(true);
+      expect(statSync(url).size, rel).toBe(f.bytes);
+      expect(f.w > 0 && f.h > 0, rel).toBe(true);
     }
-    for (const mon of Object.values<{ image: string; json: string }>(m.monsters)) expect(existsSync(pub(mon.image)) && existsSync(pub(mon.json))).toBe(true);
   });
-  it('the reward prizes have art: Bull Calf walk cycle and Laurel Wreath icon', () => {
-    expect(m.v1px.pet_bull_calf_walk.anims.left.frames).toHaveLength(4);
-    expect(existsSync(pub(m.v1px.laurel_icon.image))).toBe(true);
+  it('is WebP only, and never ships masters, clips as video or review sheets', () => {
+    for (const [rel] of entries) expect(rel, rel).toMatch(/^(loc|props|map|battle|mon|boss|npc|avatar|vfx)\/[a-z0-9@/_-]+\.webp$/);
+  });
+  it('stays inside the budgets: under 40 MB in all, under 10 MB before the hub shows', () => {
+    const total = entries.reduce((n, [, f]) => n + f.bytes, 0);
+    expect(total).toBe(v2.totalBytes);
+    expect(total).toBeLessThan(34 * MB); // leaves room for the code, fonts and sounds inside 40 MB
+    // What the title, the character creator and Ledgerhold can ask for: the hub, the avatar, NPCs, the map.
+    const first = entries.filter(([p]) => /^(loc\/ledgerhold|props\/ledgerhold|avatar|map|npc)\//.test(p)).reduce((n, [, f]) => n + f.bytes, 0);
+    expect(first).toBeLessThan(8 * MB);
+    // No single file is big enough to stall a school connection.
+    for (const [rel, f] of entries) expect(f.bytes, rel).toBeLessThan(1.2 * MB);
+  });
+  it('draws screens at the canvas size and keeps every sheet a whole number of cells', () => {
+    for (const [rel, f] of entries) if (/^(loc|battle|map)\//.test(rel)) expect([f.w, f.h], rel).toEqual([1280, 720]);
+    const avatar = JSON.parse(readFileSync(new URL('src/data/v2/avatar.json', root), 'utf8')) as { clips: Record<string, { image: string; cell: [number, number]; cols: number; frames: number }> };
+    for (const c of Object.values(avatar.clips)) expect([v2.files[c.image]!.w, v2.files[c.image]!.h], c.image).toEqual([c.cell[0] * c.cols, c.cell[1] * Math.ceil(c.frames / c.cols)]);
   });
 });

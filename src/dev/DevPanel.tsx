@@ -1,6 +1,8 @@
 // ?dev=1 test helpers: jump to any screen, equip a pet, add coins. Not shown in normal play.
 import { useState } from 'react';
-import { ITEMS } from '../data/items.ts';
+import { MONSTERS } from '../core/monsters.ts';
+import { ALL_DISTRICTS } from '../core/progression.ts';
+import { item, tameId } from '../data/items.ts';
 import { ROOMS } from '../data/rooms.ts';
 import { useSave, useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
@@ -9,7 +11,7 @@ export function DevPanel() {
   const s = useSlot();
   const [open, setOpen] = useState(false);
   if (!s) return null;
-  const pets = ITEMS.filter((i) => i.kind === 'pet');
+  const pets = [...Object.keys(MONSTERS).map(tameId), 'pet-bull'].map((id) => item(id)!);
   const edit = useSave.getState().edit;
   if (!open) return <button className="btn btn-quiet pointer-events-auto absolute bottom-2 right-36 text-base" onClick={() => setOpen(true)}>🧪 Dev</button>;
   return (
@@ -34,6 +36,7 @@ export function DevPanel() {
       </label>
       <p className="text-sm">Pick a pet, then walk to another screen to see it follow.</p>
       <button className="btn btn-quiet px-2 text-base" onClick={() => edit((x) => ({ ...x, progress: { ...x.progress, coins: x.progress.coins + 500 } }))}>+500 coins</button>
+      <button className="btn btn-quiet px-2 text-base" onClick={() => edit((x) => ({ ...x, progress: { ...x.progress, zonesCleared: [...ALL_DISTRICTS], defeated: Object.keys(MONSTERS).filter((m) => m !== 'boss_debt_dragon'), tamed: Object.keys(MONSTERS).filter((m) => m !== 'boss_debt_dragon') }, inventory: { ...x.inventory, owned: [...new Set([...x.inventory.owned, ...Object.keys(MONSTERS).filter((m) => m !== 'boss_debt_dragon').map(tameId)])] } }))}>Clear all 7 districts</button>
       <button className="btn px-2 text-base" onClick={() => setOpen(false)}>Close</button>
     </div>
   );

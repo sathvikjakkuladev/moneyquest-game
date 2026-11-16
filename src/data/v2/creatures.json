@@ -173,20 +173,6 @@
  "bosses": {
   "collector-scorpion": {
    "clips": {
-    "idle": {
-     "image": "boss/collector-scorpion/idle.webp",
-     "cell": [
-      363,
-      409
-     ],
-     "frames": 16,
-     "cols": 4,
-     "foot": [
-      184.3,
-      398.1
-     ],
-     "fps": 8
-    },
     "attack": {
      "image": "boss/collector-scorpion/attack.webp",
      "cell": [
@@ -198,6 +184,20 @@
      "foot": [
       308.5,
       515.2
+     ],
+     "fps": 8
+    },
+    "idle": {
+     "image": "boss/collector-scorpion/idle.webp",
+     "cell": [
+      363,
+      409
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      184.3,
+      398.1
      ],
      "fps": 8
     }
@@ -301,20 +301,6 @@
   },
   "overspend-kraken": {
    "clips": {
-    "idle": {
-     "image": "boss/overspend-kraken/idle.webp",
-     "cell": [
-      378,
-      399
-     ],
-     "frames": 16,
-     "cols": 4,
-     "foot": [
-      172.8,
-      391
-     ],
-     "fps": 8
-    },
     "attack": {
      "image": "boss/overspend-kraken/attack.webp",
      "cell": [
@@ -326,6 +312,20 @@
      "foot": [
       218.9,
       465.3
+     ],
+     "fps": 8
+    },
+    "idle": {
+     "image": "boss/overspend-kraken/idle.webp",
+     "cell": [
+      378,
+      399
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      172.8,
+      391
      ],
      "fps": 8
     }
@@ -365,20 +365,6 @@
   },
   "splurge-peacock": {
    "clips": {
-    "idle": {
-     "image": "boss/splurge-peacock/idle.webp",
-     "cell": [
-      339,
-      395
-     ],
-     "frames": 16,
-     "cols": 4,
-     "foot": [
-      204.2,
-      385.9
-     ],
-     "fps": 8
-    },
     "attack": {
      "image": "boss/splurge-peacock/attack.webp",
      "cell": [
@@ -390,6 +376,20 @@
      "foot": [
       335.4,
       519.7
+     ],
+     "fps": 8
+    },
+    "idle": {
+     "image": "boss/splurge-peacock/idle.webp",
+     "cell": [
+      339,
+      395
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      204.2,
+      385.9
      ],
      "fps": 8
     }

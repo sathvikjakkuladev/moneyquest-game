@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseCsv } from './lib/csv.ts';
 import { HEADER, importQuestions } from './lib/questionImport.ts';
@@ -52,8 +52,12 @@ describe('importQuestions', () => {
   });
 });
 
-describe('the real question bank', () => {
-  const text = readFileSync(new URL('../../make-bank-question-bank.csv', import.meta.url), 'utf8');
+// The question CSV sits next to the game folder and is not in the repo, so on a plain clone (CI, a
+// cloud session) this check is skipped, not failed. src/data/questions.json, which the game reads,
+// is checked by the core tests either way.
+const CSV = new URL('../../make-bank-question-bank.csv', import.meta.url);
+describe.skipIf(!existsSync(CSV))('the real question bank', () => {
+  const text = existsSync(CSV) ? readFileSync(CSV, 'utf8') : '';
   const overrides = JSON.parse(readFileSync(new URL('../src/data/question-overrides.json', import.meta.url), 'utf8'));
   it('imports with the reviewed overrides: 180 questions, 15 per topic per band', () => {
     const r = importQuestions(text, overrides);

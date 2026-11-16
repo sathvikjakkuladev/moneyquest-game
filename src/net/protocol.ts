@@ -1,24 +1,22 @@
 // The multiplayer wire format, shared by the game and the server (no browser or Workers APIs here).
 // Everything is validated strictly on both sides: unknown types, extra-large messages, bad numbers
 // or unknown screens are dropped. No free text exists in it: names come from the server's records
-// (generated or teacher-listed), hats/pets are item ids the game checks against its own list, and
-// emotes and phrases are numbers into the lists in says.ts.
+// (generated or teacher-listed), hats/pets are item ids the game checks against its own list, the
+// look is a short list of indexes into the game's option lists, and emotes and phrases are numbers
+// into the lists in says.ts.
 import type { SayKind } from './says.ts';
 import { sayValid } from './says.ts';
 
 /** Every screen a player can be on ('' = not on a screen: world map, title, loading). */
 export const SCREENS = [
-  'astral_ruins/island_portal', 'astral_ruins/rune_bridge', 'astral_ruins/rune_shrine',
-  'borrowers_bridges/bridge', 'borrowers_bridges/docks', 'borrowers_bridges/toll',
-  'coin_academy/great_hall', 'coin_academy/library',
-  'compound_orchard/great_tree', 'compound_orchard/orchard_gate', 'compound_orchard/sapling_rows',
-  'crossroads_observatory/crossroads', 'crossroads_observatory/observatory', 'crossroads_observatory/portal_ring',
-  'guildworks/bakery_smithy', 'guildworks/lemonade_lane', 'guildworks/workshop_square',
-  'moonwell_cavern/cave_portal', 'moonwell_cavern/crystal_stream', 'moonwell_cavern/moon_pool',
-  'nebula_grove/forest_portal', 'nebula_grove/pond_path', 'nebula_grove/star_tree',
-  'piggybank_village/cottages', 'piggybank_village/gate', 'piggybank_village/market', 'piggybank_village/plaza',
-  'stormwatch_coast/beach', 'stormwatch_coast/cliff_path', 'stormwatch_coast/lighthouse',
-  'sunfire_pass/canyon_portal', 'sunfire_pass/lava_crossing', 'sunfire_pass/sun_temple',
+  'coinfall-docks/0-0', 'coinfall-docks/0-1', 'coinfall-docks/1-0', 'coinfall-docks/1-1',
+  'compound-rift/0-0', 'compound-rift/0-1', 'compound-rift/1-0', 'compound-rift/1-1',
+  'credit-citadel/0-0', 'credit-citadel/0-1', 'credit-citadel/1-0', 'credit-citadel/1-1',
+  'frostvault/0-0', 'frostvault/0-1', 'frostvault/1-0', 'frostvault/1-1',
+  'ledgerhold/0-0', 'ledgerhold/0-1', 'ledgerhold/0-2', 'ledgerhold/1-0', 'ledgerhold/1-1', 'ledgerhold/1-2', 'ledgerhold/2-0', 'ledgerhold/2-1', 'ledgerhold/2-2',
+  'phish-fens/0-0', 'phish-fens/0-1', 'phish-fens/1-0', 'phish-fens/1-1',
+  'the-exchange/0-0', 'the-exchange/0-1', 'the-exchange/1-0', 'the-exchange/1-1',
+  'the-sprawl/0-0', 'the-sprawl/0-1', 'the-sprawl/1-0', 'the-sprawl/1-1',
 ] as const;
 const SCREEN_SET = new Set<string>(SCREENS);
 
@@ -35,7 +33,17 @@ export type Face = 0 | 1 | 2 | 3;
 
 /** What the game says about itself: where it is, which way it faces, its hat and pet, in battle. */
 export interface Pose { s: string; x: number; y: number; f: Face }
-export interface Look { h: string | null; p: string | null; b: boolean }
+/** `a`: the look as indexes [skin, eyes, hair, hair colour, face, costume] (core/look.ts). `pl`: the
+ *  pet's look, an index into the district list, or -1 for its home look. Both are optional so games
+ *  and servers of different versions still understand each other; a missing look draws the default. */
+export interface Look { h: string | null; p: string | null; b: boolean; a?: number[]; pl?: number }
+/** How many options each part of the look has. Append-only: saves and other players' games hold
+ *  positions in these lists. A test keeps them equal to the art set's lists. */
+export const LOOK_LIMITS = [10, 10, 7, 12, 6, 8] as const;
+export const PET_LOOKS = 7;
+/** Just the look fields of something bigger (a connection, a player). */
+export const pickLook = (l: Look): Look => ({ h: l.h, p: l.p, b: l.b, ...(l.a ? { a: l.a } : {}), ...(l.pl !== undefined ? { pl: l.pl } : {}) });
+export const sameLook = (x: Look, y: Look) => x.h === y.h && x.p === y.p && x.b === y.b && (x.pl ?? -1) === (y.pl ?? -1) && (x.a ?? []).join() === (y.a ?? []).join();
 
 export type ClientMsg =
   | ({ t: 'hello'; token: string } & Pose & Look)
@@ -83,7 +91,18 @@ function pose(o: Record<string, unknown>): Pose | null {
 }
 function look(o: Record<string, unknown>): Look | null {
   const h = itemId(o.h), p = itemId(o.p);
-  return h !== undefined && p !== undefined && typeof o.b === 'boolean' ? { h, p, b: o.b } : null;
+  if (h === undefined || p === undefined || typeof o.b !== 'boolean') return null;
+  const out: Look = { h, p, b: o.b };
+  if (o.a !== undefined) {
+    const a = o.a;
+    if (!Array.isArray(a) || a.length !== LOOK_LIMITS.length || !a.every((v, i) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < LOOK_LIMITS[i]!)) return null;
+    out.a = a as number[];
+  }
+  if (o.pl !== undefined) {
+    if (typeof o.pl !== 'number' || !Number.isInteger(o.pl) || o.pl < -1 || o.pl >= PET_LOOKS) return null;
+    out.pl = o.pl;
+  }
+  return out;
 }
 
 function parse(raw: unknown): Record<string, unknown> | null {

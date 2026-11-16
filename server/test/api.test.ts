@@ -249,7 +249,7 @@ describe('teacher controls', () => {
   });
   it('reports show up for the teacher with the phrase numbers, and can be closed', async () => {
     const { env, token, cls, member, name } = await classWithStudent();
-    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'piggybank_village/plaza' }];
+    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'coinfall-docks/0-1' }];
     await env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, history, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .bind('0b5c6a2e-0000-4000-8000-000000000001', member.id, cls.id, member.id, cls.id, JSON.stringify(history), T0).run();
     const d = await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token);
@@ -266,7 +266,7 @@ describe('teacher controls', () => {
 
 describe('progress, class goal and leaderboard', () => {
   const summary = (correct: number, over: Body = {}) => ({
-    level: 3, xp: 200, coinsEarned: 40, zones: ['piggybank_village'], mcForm: 'A', mcPre: null, mcPost: null,
+    level: 3, xp: 200, coinsEarned: 40, zones: ['coinfall-docks'], mcForm: 'A', mcPre: null, mcPost: null,
     accuracy: { 'Spending and Saving': { answered: correct + 2, correct } }, ...over,
   });
   async function setup(n = 1) {
@@ -329,11 +329,11 @@ describe('progress, class goal and leaderboard', () => {
     await upload(env, a!.token, summary(4, { mcPre: mc }));
     let d = (await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body as { goal: unknown; onlineKnown: boolean; members: { id: string; online: unknown; progress: Record<string, unknown> }[] };
     expect(d.onlineKnown).toBe(true);
-    expect(d.members[0]!.progress).toMatchObject({ level: 3, coinsEarned: 40, zones: ['piggybank_village'], mcPre: mc, mcPost: null });
+    expect(d.members[0]!.progress).toMatchObject({ level: 3, coinsEarned: 40, zones: ['coinfall-docks'], mcPre: mc, mcPost: null });
     expect(d.members[0]!.online).toBeNull();
-    online.push({ memberId: d.members[0]!.id, screen: 'piggybank_village/plaza', busy: true });
+    online.push({ memberId: d.members[0]!.id, screen: 'coinfall-docks/0-1', busy: true });
     d = (await call(env, 'GET', `/api/teacher/classes/${cls.id}`, undefined, token)).body as typeof d;
-    expect(d.members[0]!.online).toEqual({ screen: 'piggybank_village/plaza', busy: true });
+    expect(d.members[0]!.online).toEqual({ screen: 'coinfall-docks/0-1', busy: true });
     expect((await call(env, 'PATCH', `/api/teacher/classes/${cls.id}`, { goalTarget: 5 }, token)).status).toBe(400);
     expect((await call(env, 'PATCH', `/api/teacher/classes/${cls.id}`, { goalTarget: 50 }, token)).status).toBe(200);
     expect(calls.at(-1)!.body).toEqual({ kind: 'goal', n: 0, of: 50 });
@@ -415,7 +415,7 @@ describe('world mode', () => {
       get: (name: string) => ({ fetch: async (_u: string, init: { body: string }) => { const b = JSON.parse(init.body); if (b.kind !== 'roster') calls.push({ ns, name, body: b }); return reply(b); } }),
     }) as unknown as DurableObjectNamespace;
     const env = testEnv({
-      CLASSROOM: fake('class', (b) => (b.kind === 'world' ? Response.json({ screens: ['piggybank_village/plaza'] }) : b.kind === 'roster' ? Response.json({ online: [] }) : new Response(null, { status: 204 }))),
+      CLASSROOM: fake('class', (b) => (b.kind === 'world' ? Response.json({ screens: ['coinfall-docks/0-1'] }) : b.kind === 'roster' ? Response.json({ online: [] }) : new Response(null, { status: 204 }))),
       WORLD: fake('world', () => new Response(null, { status: 204 })),
     });
     const out = [];
@@ -442,7 +442,7 @@ describe('world mode', () => {
     calls.length = 0;
     await call(env, 'PATCH', `/api/teacher/classes/${a.cls.id}`, { worldMode: false }, a.teacher);
     expect(calls[0]).toEqual({ ns: 'class', name: a.cls.id, body: { kind: 'world', memberId: null, on: false } });
-    expect(calls.slice(1).map((c) => c.name)).toEqual([0, 1, 2, 3].map((i) => `piggybank_village/plaza#${i}`));
+    expect(calls.slice(1).map((c) => c.name)).toEqual([0, 1, 2, 3].map((i) => `coinfall-docks/0-1#${i}`));
     expect(calls[1]!.body).toEqual({ kind: 'kick', classId: a.cls.id });
   });
   it('the world leaderboard only includes classes with world mode on, by world name', async () => {
@@ -462,7 +462,7 @@ describe('world mode', () => {
   });
   it('world reports reach both teachers (other class by world name only) and the admin, who can block', async () => {
     const { env, a, b, calls } = await twoClasses(true);
-    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'piggybank_village/plaza' }];
+    const history = [{ kind: 'phrase', i: 6, at: T0, screen: 'coinfall-docks/0-1' }];
     await env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, world, history, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)')
       .bind('0b5c6a2e-0000-4000-8000-0000000000aa', a.id, a.cls.id, b.id, b.cls.id, JSON.stringify(history), T0).run();
     const forA = (await call(env, 'GET', `/api/teacher/classes/${a.cls.id}`, undefined, a.teacher)).body.reports as { target: string; targetId: string | null; world: boolean }[];
@@ -489,10 +489,10 @@ describe('world sockets', () => {
     const seen: string[] = [];
     const env = testEnv({ WORLD: { idFromName: (n: string) => n, get: (n: string) => ({ fetch: async () => (seen.push(n), new Response(null, { status: 204 })) }) } as unknown as DurableObjectNamespace });
     const ws = (path: string, origin = ORIGIN) => handle(new Request(`https://mp.nhsqa.org${path}`, { headers: { Origin: origin, Upgrade: 'websocket' } }), env, T0);
-    expect((await ws('/ws/world/piggybank_village/plaza/0')).status).toBe(204);
-    expect(seen).toEqual(['piggybank_village/plaza#0']);
-    for (const bad of ['/ws/world/piggybank_village/secret/0', '/ws/world/piggybank_village/plaza/4', '/ws/world/../plaza/0', '/ws/world/piggybank_village/plaza']) expect((await ws(bad)).status, bad).toBe(404);
-    expect((await ws('/ws/world/piggybank_village/plaza/0', 'https://evil.org')).status).toBe(403);
+    expect((await ws('/ws/world/coinfall-docks/0-1/0')).status).toBe(204);
+    expect(seen).toEqual(['coinfall-docks/0-1#0']);
+    for (const bad of ['/ws/world/coinfall-docks/secret/0', '/ws/world/coinfall-docks/0-1/4', '/ws/world/../plaza/0', '/ws/world/coinfall-docks/0-1']) expect((await ws(bad)).status, bad).toBe(404);
+    expect((await ws('/ws/world/coinfall-docks/0-1/0', 'https://evil.org')).status).toBe(403);
   });
 });
 

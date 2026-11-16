@@ -131,7 +131,7 @@ async function mapAndBattle(): Promise<void> {
   const bg: Record<string, string> = {};
   for (const d of dirs('backgrounds/battle')) {
     await img(`backgrounds/battle/${d}/battle-bg-${d}@1x.webp`, `battle/${d}.webp`, { exact: [SCREEN_W, SCREEN_H] }, { q: 82 });
-    bg[d] = `battle/${d}.webp`;
+    bg[d === 'ledgerhold-arena' ? 'ledgerhold' : d] = `battle/${d}.webp`; // the arena is Ledgerhold's (the Debt Dragon)
   }
   battleOut = { floorTop: B.floorTop, feetY: r1(B.feetY * 360), playerX: r1(B.player.x * 640), enemyX: r1(B.enemy.x * 640), hudTop: r1(B.safeTopForHud * 360), backgrounds: bg };
 }
@@ -178,7 +178,8 @@ async function creatures(): Promise<void> {
   }
   for (const n of dirs('npcs')) {
     npcsOut[n] = { talk: null };
-    for (const v of VIEWS) jobs.push(async () => void (await img(`npcs/${n}/npc-${n}-${v}.png`, `npc/${n}/${v}.webp`, { h: NPC_H })));
+    // NPCs always face you: only the front view (and the talk clip) is used.
+    jobs.push(async () => void (await img(`npcs/${n}/npc-${n}-front.png`, `npc/${n}/front.webp`, { h: NPC_H })));
     jobs.push(async () => void (await img(`npcs/${n}/npc-${n}-portrait.png`, `npc/${n}/portrait.webp`, { w: NPC_PORTRAIT })));
     const talk = `animations/npcs/${n}/npc-${n}-talk.json`;
     if (existsSync(join(SRC, talk))) jobs.push(async () => { npcsOut[n]!.talk = await clip(talk, `npc/${n}/talk.webp`, NPC_CLIP); });

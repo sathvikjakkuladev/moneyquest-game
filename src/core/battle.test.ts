@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../assets/manifest.json';
+import v2 from '../assets/v2.json';
+import attacks from '../data/monster_attacks.json';
+import { EFFECT_RULES } from '../data/effectRules.ts';
+import { FIXTURES, fixture } from './battleFixtures.ts';
 import type { BattleEvent, BattleState } from './battle.ts';
 import { answer, beginTurn, opening, slowStrike, spellDamage, startBattle } from './battle.ts';
 import type { MonsterDef } from './monsters.ts';
-import { MONSTERS, monster } from './monsters.ts';
+import { MONSTERS } from './monsters.ts';
+import { ALL_DISTRICTS } from './progression.ts';
 import { seeded } from './rng.ts';
 import type { SpellId } from './spells.ts';
 import type { Band } from './types.ts';
 
 interface Opts { band?: Band; wallet?: number; level?: number; rematch?: boolean; petBonus?: number; insured?: boolean }
 const start = (id: string, o: Opts = {}) =>
-  startBattle({ monster: monster(id), band: o.band ?? '6-8', level: o.level ?? 1, wallet: o.wallet ?? 50, rematch: o.rematch, petBonus: o.petBonus, insured: o.insured });
+  startBattle({ monster: fixture(id), band: o.band ?? '6-8', level: o.level ?? 1, wallet: o.wallet ?? 50, rematch: o.rematch, petBonus: o.petBonus, insured: o.insured });
 
 /** Play answers in order (true = right). `spells` per answer (default Budget Beam), `seconds` per answer. */
 function run(s: BattleState, m: MonsterDef, answers: boolean[], spells: SpellId[] = [], seconds: number[] = [], seed = 1) {
@@ -25,22 +29,36 @@ function run(s: BattleState, m: MonsterDef, answers: boolean[], spells: SpellId[
   });
   return { s, events };
 }
-const M = monster;
+// The engine's tests run against the frozen first-build monsters (battleFixtures.ts), so every rule
+// kind stays tested whether or not a monster in today's roster uses it.
+const M = fixture;
 
 describe('monster data', () => {
-  it('has all 40 monsters with art; every zone has 3 monsters and a boss', () => {
-    expect(Object.keys(MONSTERS)).toHaveLength(40);
-    for (const id of Object.keys(MONSTERS)) expect((manifest as { monsters: Record<string, unknown> }).monsters[id], id).toBeTruthy();
-    for (const zone of new Set(Object.values(MONSTERS).map((m) => m.zone))) {
-      const ms = Object.values(MONSTERS).filter((m) => m.zone === zone);
-      expect([ms.filter((m) => m.boss).length, ms.filter((m) => !m.boss).length], zone).toEqual([1, 3]);
+  it('has the 22 Vaultspire monsters with art: two and a boss per district, and the Debt Dragon', () => {
+    expect(Object.keys(MONSTERS)).toHaveLength(22);
+    const art = (v2 as unknown as { files: Record<string, unknown> }).files;
+    for (const m of Object.values(MONSTERS)) {
+      // Bosses have one look and battle clips; regular monsters have a look for their own district.
+      if (m.boss) for (const f of ['front', 'portrait', 'idle', 'attack']) expect(art[`boss/${m.art}/${f}.webp`], `${m.id} ${f}`).toBeTruthy();
+      else for (const f of ['front', 'back', 'left', 'right', 'portrait']) expect(art[`mon/${m.art}/${m.zone}-${f}.webp`], `${m.id} ${f}`).toBeTruthy();
     }
+    for (const zone of ALL_DISTRICTS) {
+      const ms = Object.values(MONSTERS).filter((m) => m.zone === zone);
+      expect([ms.filter((m) => m.boss).length, ms.filter((m) => !m.boss).length], zone).toEqual([1, 2]);
+    }
+    expect(Object.values(MONSTERS).filter((m) => m.zone === 'ledgerhold').map((m) => m.id)).toEqual(['boss_debt_dragon']);
   });
-  it('every topic-zone attack has a rule (bonus zones come in Phase 5)', () => {
-    const topic = ['piggybank_village', 'borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory'];
-    const plain = Object.values(MONSTERS).filter((m) => topic.includes(m.zone)).flatMap((m) => m.attacks.map((a, i) => ({ m: m.id, i, kind: a.rule.kind })));
-    // Burnout Blaze's Anvil Drop is the only attack whose effect is just "Big single hit".
-    expect(plain.filter((p) => p.kind === 'plain')).toEqual([{ m: 'boss_burnout_blaze', i: 1, kind: 'plain' }]);
+  it('every attack has a rule, and each monster keeps the rule of the monster it takes its mechanics from', () => {
+    for (const m of Object.values(MONSTERS)) expect(EFFECT_RULES[m.id], m.id).toHaveLength(m.attacks.length);
+    const plain = Object.values(MONSTERS).flatMap((m) => m.attacks.map((a, i) => ({ m: m.id, i, kind: a.rule.kind })));
+    // Frostfang Mammoth's Tusk Drop (from Burnout Blaze's Anvil Drop) is the only attack that is just a big hit.
+    expect(plain.filter((p) => p.kind === 'plain')).toEqual([{ m: 'boss_frostfang_mammoth', i: 1, kind: 'plain' }]);
+    const raw = attacks as unknown as Record<string, { monster: string; rules_from: string; damage: number }[]>;
+    for (const list of Object.values(raw)) for (const r of list) {
+      const from = Object.values(FIXTURES).find((f) => f.name === r.rules_from)!;
+      const now = Object.values(MONSTERS).find((x) => x.name === r.monster)!;
+      expect(now.attacks.map((a) => [a.rule, a.damage, a.effectText]), r.monster).toEqual(from.attacks.map((a) => [a.rule, a.damage, a.effectText]));
+    }
   });
 });
 

@@ -5,7 +5,7 @@
 // shown by their class's own room). Who-sees-whom is worked out again whenever someone arrives,
 // leaves or moves; changes go out as join and leave messages, positions in batches.
 import type { ClientMsg, Face, PlayerView } from '../../src/net/protocol.ts';
-import { plausibleMove, take } from '../../src/net/protocol.ts';
+import { pickLook, plausibleMove, take } from '../../src/net/protocol.ts';
 import { SAY_HISTORY } from '../../src/net/says.ts';
 import { WORLD_VISIBLE } from '../../src/net/world.ts';
 import type { Conn, Out, ReportOut, Said } from './hub.ts';
@@ -41,7 +41,7 @@ export class WorldHub {
   }
 
   view(c: WConn): PlayerView {
-    return { id: c.pid, n: c.name, s: c.s, x: c.x, y: c.y, f: c.f, h: c.h, p: c.p, b: c.b };
+    return { id: c.pid, n: c.name, s: c.s, x: c.x, y: c.y, f: c.f, ...pickLook(c) };
   }
 
   /** The nearest players from other classes, at most WORLD_VISIBLE, nearest first. */
@@ -72,7 +72,7 @@ export class WorldHub {
   hello(pid: number, m: WorldMember, msg: Extract<ClientMsg, { t: 'hello' }>, now: number): Out[] {
     const c: WConn = {
       pid, memberId: m.id, classId: m.class_id, name: m.name, muted: !!m.muted,
-      s: this.screen, x: msg.x, y: msg.y, f: msg.f, h: msg.h, p: msg.p, b: msg.b,
+      s: this.screen, x: msg.x, y: msg.y, f: msg.f, ...pickLook(msg),
       lastMove: now, moves: { tokens: RATES.move[1], at: now }, other: { tokens: RATES.other[1], at: now },
       says: { tokens: RATES.say[1], at: now }, reports: { tokens: RATES.report[1], at: now }, said: [], strikes: 0, sees: [],
     };
@@ -118,8 +118,8 @@ export class WorldHub {
       };
     }
     if (!take(c.other, now, RATES.other[0], RATES.other[1])) return strike();
-    Object.assign(c, { h: msg.h, p: msg.p, b: msg.b });
-    return { out: this.viewersOf(pid).map((to) => ({ to, msg: { t: 'look' as const, id: pid, h: c.h, p: c.p, b: c.b } })) };
+    Object.assign(c, { a: undefined, pl: undefined }, pickLook(msg));
+    return { out: this.viewersOf(pid).map((to) => ({ to, msg: { t: 'look' as const, id: pid, ...pickLook(c) } })) };
   }
 
   private viewersOf(pid: number): number[] {

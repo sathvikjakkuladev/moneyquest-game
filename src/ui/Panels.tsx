@@ -1,44 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { buy, equip, grantReward, SCROLL } from '../core/shop.ts';
-import { HAT_ART } from '../data/hats.ts';
+import { MONSTERS } from '../core/monsters.ts';
+import { buy, equip, grantReward, petLooks, restyle, SCROLL, setPetLook } from '../core/shop.ts';
 import type { Item } from '../data/items.ts';
-import { item, shopItems } from '../data/items.ts';
-import { manifest } from '../game/manifest.ts';
-import { pixelMapCanvas } from '../game/pixelMap.ts';
+import { BULL_CALF, item, ITEMS, shopItems, tamedMonster } from '../data/items.ts';
+import type { Rarity } from '../data/v2.ts';
+import { art, hatArt } from '../data/v2.ts';
+import { placeName } from '../data/zones.ts';
+import { assetUrl } from '../game/stage.ts';
 import { REDEEM_MESSAGES, REWARD_ONLY_ITEMS, redeem } from '../rewards/redeem.ts';
 import { sfx } from '../audio.ts';
 import { useSave, useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
+import { AvatarView } from './AvatarView.tsx';
+import { LookEditor } from './LookEditor.tsx';
 import { MoneyCheck } from './MoneyCheck.tsx';
 import { Progress } from './Progress.tsx';
 
-type Frames = Record<string, { frame: { x: number; y: number; w: number; h: number } }>;
-const atlasCache = new Map<string, Promise<{ frames: Frames; size: { w: number; h: number } }>>();
-const loadAtlas = (json: string) => {
-  let p = atlasCache.get(json);
-  if (!p) atlasCache.set(json, (p = fetch(manifest.basePath + json).then((r) => r.json()).then((j) => ({ frames: j.frames, size: j.meta.size }))));
-  return p;
-};
+/** An item's picture: a hat's icon, or a pet's portrait (in a district's look, if given). */
+export function itemImage(it: Item, look?: string | null): string | null {
+  if (it.kind === 'hat') return hatArt(it.id) ? assetUrl(hatArt(it.id)!.icon) : null;
+  if (it.id === 'pet-bull') return assetUrl(art.monster(BULL_CALF.species, BULL_CALF.look, 'portrait'));
+  const m = MONSTERS[tamedMonster(it.id) ?? ''];
+  if (!m) return null;
+  return assetUrl(m.boss ? art.boss(m.art, 'portrait') : art.monster(m.art, look ?? m.zone, 'portrait'));
+}
+export function ItemArt({ it, size = 72, look }: { it: Item; size?: number; look?: string | null }) {
+  const url = itemImage(it, look);
+  if (!url) return <div style={{ width: size, height: size }} role="img" aria-label={it.name} />;
+  return <img src={url} alt={it.name} width={size} height={size} draggable={false} style={{ width: size, height: size, objectFit: 'contain' }} />;
+}
 
-/** An item's pixel art: hats from their code pixel maps, pets from the pixelized pet sheet. */
-export function ItemArt({ it, scale = 2 }: { it: Item; scale?: number }) {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [atlas, setAtlas] = useState<{ frames: Frames; size: { w: number; h: number } } | null>(null);
-  const src = it.kind === 'pet' ? (it.tamed ? manifest.tamed : it.art === 'pet_bull_calf' ? manifest.v1px.pet_bull_calf_walk : manifest.v1px.pets) : null;
-  useEffect(() => {
-    if (it.kind === 'hat' && canvasRef.current) {
-      const c = pixelMapCanvas(HAT_ART[it.art]!, scale * 2);
-      c.style.imageRendering = 'pixelated';
-      canvasRef.current.replaceChildren(c);
-    }
-    if (src) void loadAtlas(src.json).then(setAtlas);
-  }, [it, scale, src]);
-  if (it.kind === 'hat') return <div ref={canvasRef} role="img" aria-label={it.name} className="flex h-16 items-center justify-center" />;
-  const f = atlas?.frames[it.art === 'pet_bull_calf' ? 'down_0' : it.art]?.frame;
-  if (!src || !atlas || !f) return <div className="h-16 w-16" role="img" aria-label={it.name} />;
-  return (
-    <div role="img" aria-label={it.name} style={{ width: f.w * scale, height: f.h * scale, backgroundImage: `url(${manifest.basePath + src.image})`, backgroundSize: `${atlas.size.w * scale}px ${atlas.size.h * scale}px`, backgroundPosition: `${-f.x * scale}px ${-f.y * scale}px`, imageRendering: 'pixelated' }} />
-  );
+const RARITY_LABEL: Record<Rarity, string> = { common: 'Common', rare: 'Rare', epic: 'Epic', legendary: 'Legendary' };
+const RARITY_STYLE: Record<Rarity, string> = { common: 'bg-[#e9ecef] text-[#212529]', rare: 'bg-[#d0ebff] text-[#0b3c6e]', epic: 'bg-[#e5dbff] text-[#3b1d8f]', legendary: 'bg-[#ffec99] text-[#5c3d00]' };
+/** Rarity is always written out, never shown by colour alone. The labels are drafts. */
+function RarityTag({ r }: { r: Rarity }) {
+  return <span className={`rounded-sm border-2 border-frame px-1.5 text-lg font-semibold leading-tight ${RARITY_STYLE[r]}`}>{RARITY_LABEL[r]}</span>;
 }
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
@@ -68,6 +64,8 @@ export function Panels() {
     <>
       {panel === 'shop' && <Shop onClose={close} />}
       {panel === 'bag' && <Bag onClose={close} />}
+      {panel === 'pets' && <Bag onClose={close} only="pet" />}
+      {panel === 'style' && <Style onClose={close} />}
       {panel === 'redeem' && <Redeem onClose={close} />}
       {panel === 'progress' && <Progress onClose={close} />}
       {panel === 'check' && <MoneyCheck which="post" onDone={close} />}
@@ -82,58 +80,113 @@ const claimOnce = import.meta.env.VITE_MP_URL ? () => import('../net/redeemCheck
 function Shop({ onClose }: { onClose: () => void }) {
   const s = useSlot()!;
   const [msg, setMsg] = useState('');
+  const [tryOn, setTryOn] = useState<string | null>(s.inventory.hat);
   const items = shopItems(REWARD_ONLY_ITEMS);
+  const laurel = item('hat-laurel')!;
   const doBuy = (it: Item) => {
     const r = buy(s, it.id);
     if (!r.ok) return setMsg(r.reason === 'coins' ? `You need ${it.price! - s.progress.coins} more coins. Battles and saving up will get you there!` : 'You can’t buy that.');
     sfx('coins');
     useSave.getState().edit(() => equip(r.slot, it.kind, it.id));
-    setMsg(`You bought the ${it.name}${it.kind === 'hat' ? ' and put it on' : ', and it’s following you now'}!`);
+    setMsg(`You bought the ${it.name} and put it on!`);
   };
+  const picked = tryOn ? item(tryOn) : undefined;
   return (
-    <Modal title="Banker Bix’s Shop" onClose={onClose} wide>
-      <p className="text-xl">You have <strong>🪙 {s.progress.coins} coins</strong>. Pets help in battle (+2 damage, legendary +4).</p>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {items.map((it) => {
-          const owned = s.inventory.owned.includes(it.id);
-          return (
-            <li key={it.id} className="flex flex-col items-center gap-1 rounded-sm border-2 border-frame bg-white/60 p-2 text-center">
-              <div className="flex h-20 items-end"><ItemArt it={it} /></div>
-              <p className="text-lg font-semibold leading-tight">{it.name}{it.legendary ? ' ★' : ''}</p>
-              {owned ? <p className="text-lg">✓ Owned</p> : <button className="btn w-full" onClick={() => doBuy(it)} disabled={s.progress.coins < it.price!}>🪙 {it.price}</button>}
-            </li>
-          );
-        })}
-      </ul>
-      <p className="text-lg">The Laurel Wreath and the Bull Calf can’t be bought: they come only from winner cards.</p>
+    <Modal title="Shopkeeper Bix’s Hats" onClose={onClose} wide>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex shrink-0 flex-col items-center gap-1 self-center rounded-md bg-paper-dark px-4 py-2 sm:sticky sm:top-0 sm:self-start">
+          <AvatarView look={s.look} hat={tryOn} tall={110} label={picked ? `You, trying on the ${picked.name}` : 'You, with no hat'} />
+          <p className="text-lg font-semibold" role="status">{picked ? `Trying on: ${picked.name}` : 'No hat'}</p>
+          <p className="text-xl"><strong>🪙 {s.progress.coins}</strong> coins</p>
+        </div>
+        <ul className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3">
+          {items.map((it) => {
+            const owned = s.inventory.owned.includes(it.id);
+            return (
+              <li key={it.id} className={`flex flex-col items-center gap-1 rounded-sm border-2 bg-white/60 p-2 text-center ${tryOn === it.id ? 'border-[#1d5fd1] outline outline-2 outline-[#1d5fd1]' : 'border-frame'}`}>
+                <button className="flex flex-col items-center" onClick={() => setTryOn(it.id)} aria-label={`Try on the ${it.name}`}><ItemArt it={it} /></button>
+                <p className="text-lg font-semibold leading-tight">{it.name}</p>
+                {it.rarity && <RarityTag r={it.rarity} />}
+                {owned ? <button className="btn btn-quiet w-full" onClick={() => (useSave.getState().edit((x) => equip(x, 'hat', it.id)), setTryOn(it.id), setMsg(`You put on the ${it.name}.`))}>{s.inventory.hat === it.id ? '✓ Wearing' : '✓ Owned · wear'}</button> : <button className="btn w-full" onClick={() => doBuy(it)} disabled={s.progress.coins < it.price!}>🪙 {it.price}</button>}
+              </li>
+            );
+          })}
+          <li className="flex flex-col items-center gap-1 rounded-sm border-2 border-frame bg-white/60 p-2 text-center">
+            <button className="flex flex-col items-center" onClick={() => setTryOn(laurel.id)} aria-label={`Try on the ${laurel.name}`}><ItemArt it={laurel} /></button>
+            <p className="text-lg font-semibold leading-tight">{laurel.name}</p>
+            <RarityTag r="legendary" />
+            <p className="text-lg leading-tight">{s.inventory.owned.includes(laurel.id) ? '✓ Yours' : '🎁 Winner cards only'}</p>
+          </li>
+        </ul>
+      </div>
+      <p className="text-lg">The Laurel Wreath and the Bull Calf can’t be bought: they come only from winner cards. Pets aren’t sold either: every monster you beat becomes one.</p>
       {msg && <p className="text-lg font-semibold" role="status">{msg}</p>}
     </Modal>
   );
 }
 
-function Bag({ onClose }: { onClose: () => void }) {
+/** The bag: hats and pets you own. `only="pet"` is the Pet Trader's view. Prizes you don't have yet show as locked. */
+function Bag({ onClose, only }: { onClose: () => void; only?: 'hat' | 'pet' }) {
   const s = useSlot()!;
   const owned = s.inventory.owned.map(item).filter((x): x is Item => !!x);
   const set = (kind: 'hat' | 'pet', id: string | null) => useSave.getState().edit((x) => equip(x, kind, id));
   const scroll = s.inventory.owned.includes(SCROLL);
+  const pet = s.inventory.pet ? item(s.inventory.pet) : undefined;
+  const looks = petLooks(s.progress.zonesCleared);
+  const canDress = !!pet?.tamed && !pet.legendary;
   return (
-    <Modal title="Your bag" onClose={onClose} wide>
-      {(['hat', 'pet'] as const).map((kind) => (
-        <section key={kind} className="flex flex-col gap-2">
-          <h3 className="text-2xl font-bold">{kind === 'hat' ? 'Hats' : 'Pets'}</h3>
-          <div className="flex flex-wrap gap-2">
-            <button className={`btn ${s.inventory[kind] === null ? '' : 'btn-quiet'}`} aria-pressed={s.inventory[kind] === null} onClick={() => set(kind, null)}>{s.inventory[kind] === null ? '✓ ' : ''}None</button>
-            {owned.filter((i) => i.kind === kind).map((it) => (
-              <button key={it.id} className={`btn flex items-center gap-2 ${s.inventory[kind] === it.id ? '' : 'btn-quiet'}`} aria-pressed={s.inventory[kind] === it.id} onClick={() => set(kind, it.id)}>
-                <span className="flex h-10 items-center [&_canvas]:max-h-10"><ItemArt it={it} scale={1} /></span>
-                {s.inventory[kind] === it.id ? '✓ ' : ''}{it.name}
-              </button>
-            ))}
-          </div>
-          {!owned.some((i) => i.kind === kind) && <p className="text-lg">None yet. {kind === 'hat' ? 'Visit Banker Bix in the Great Hall.' : 'Pets are sold in the shop, and the Bull Calf comes from a Champion card.'}</p>}
-        </section>
-      ))}
-      {scroll && <p className="text-lg">📜 You carry an Insurance Scroll: it pays out once, against Catastrophe Leviathan’s Perfect Storm.</p>}
+    <Modal title={only === 'pet' ? 'Your pets' : 'Your bag'} onClose={onClose} wide>
+      {(['hat', 'pet'] as const).filter((k) => !only || k === only).map((kind) => {
+        const mine = owned.filter((i) => i.kind === kind);
+        const prize = ITEMS.find((i) => i.kind === kind && i.price === null)!;
+        return (
+          <section key={kind} className="flex flex-col gap-2">
+            <h3 className="text-2xl font-bold">{kind === 'hat' ? 'Hats' : 'Pets'}</h3>
+            {kind === 'pet' && <p className="text-lg">The first time you beat a monster, it joins you. A pet adds +2 damage to your spells; a boss or the Bull Calf adds +4.</p>}
+            <div className="flex flex-wrap gap-2">
+              <button className={`btn ${s.inventory[kind] === null ? '' : 'btn-quiet'}`} aria-pressed={s.inventory[kind] === null} onClick={() => set(kind, null)}>{s.inventory[kind] === null ? '✓ ' : ''}None</button>
+              {mine.map((it) => (
+                <button key={it.id} className={`btn flex items-center gap-2 px-2 ${s.inventory[kind] === it.id ? '' : 'btn-quiet'}`} aria-pressed={s.inventory[kind] === it.id} onClick={() => set(kind, it.id)}>
+                  <ItemArt it={it} size={44} look={kind === 'pet' && s.inventory.pet === it.id ? s.inventory.petLook : null} />
+                  {s.inventory[kind] === it.id ? '✓ ' : ''}{it.name}{it.legendary ? ' ★' : ''}
+                </button>
+              ))}
+              {!mine.some((i) => i.id === prize.id) && (
+                <span className="flex min-h-12 items-center gap-2 rounded-md border-[3px] border-frame bg-[#d9d0c0] px-2 text-[1.15rem] font-semibold text-[#3b3026]" aria-label={`${prize.name}: locked. It comes only from a ${kind === 'hat' ? 'Winner' : 'Champion'} card.`}>
+                  <span className="opacity-60"><ItemArt it={prize} size={44} /></span>🔒 {prize.name}
+                </span>
+              )}
+            </div>
+            {!mine.length && <p className="text-lg">None yet. {kind === 'hat' ? 'Visit Shopkeeper Bix in Ledgerhold.' : 'Beat a monster and it becomes your first pet.'}</p>}
+            {kind === 'pet' && canDress && (
+              <div className="flex flex-col gap-1">
+                <h4 className="text-xl font-bold">{pet!.name}’s look</h4>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Pet look">
+                  <button role="radio" aria-checked={s.inventory.petLook === null} className={`btn ${s.inventory.petLook === null ? '' : 'btn-quiet'}`} onClick={() => useSave.getState().edit((x) => setPetLook(x, null))}>{s.inventory.petLook === null ? '✓ ' : ''}Home</button>
+                  {looks.map((l) => (
+                    <button key={l} role="radio" aria-checked={s.inventory.petLook === l} className={`btn flex items-center gap-2 px-2 ${s.inventory.petLook === l ? '' : 'btn-quiet'}`} onClick={() => useSave.getState().edit((x) => setPetLook(x, l))}>
+                      <ItemArt it={pet!} size={40} look={l} />{s.inventory.petLook === l ? '✓ ' : ''}{placeName(l)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-lg">Each district boss you beat unlocks that district’s look for your pets.</p>
+              </div>
+            )}
+          </section>
+        );
+      })}
+      {scroll && !only && <p className="text-lg">📜 You carry an Insurance Scroll: it pays out once, against the Volatility Roc’s Perfect Storm.</p>}
+    </Modal>
+  );
+}
+
+/** The Stylist: change your look for free, as often as you like. */
+function Style({ onClose }: { onClose: () => void }) {
+  const s = useSlot()!;
+  return (
+    <Modal title="Stylist Juno" onClose={onClose} wide>
+      <LookEditor look={s.look} hat={s.inventory.hat} cleared={s.progress.zonesCleared} onChange={(l) => useSave.getState().edit((x) => restyle(x, l))} />
+      <p className="text-lg">Changing your look is free. New costume colours unlock when you beat district bosses.</p>
     </Modal>
   );
 }
@@ -254,7 +307,7 @@ function Celebrate({ items }: { items: string[] }) {
         <h2 className="title-text text-4xl font-bold">You unlocked a prize!</h2>
         {its.map((it) => (
           <div key={it.id} className="flex flex-col items-center gap-2">
-            <div className="flex h-28 items-end">{it.id === 'hat-laurel' && manifest.v1px.laurel_icon ? <img src={manifest.basePath + manifest.v1px.laurel_icon.image} alt="Laurel Wreath" width={112} height={112} style={{ imageRendering: 'pixelated' }} /> : <ItemArt it={it} scale={3} />}</div>
+            <div className="flex h-28 items-end"><ItemArt it={it} size={112} /></div>
             <p className="text-2xl font-bold">{it.name}</p>
             <p className="text-lg">{it.kind === 'hat' ? 'A winner’s crown of laurel leaves.' : 'A loyal legendary companion: +4 damage in battle.'}</p>
           </div>

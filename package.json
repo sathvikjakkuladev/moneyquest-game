@@ -14,7 +14,8 @@
     "import:assets": "node tools/import-assets.ts",
     "dev:all": "concurrently -k -n server,game -c blue,green \"npm --prefix server run dev -- --var PEPPER:dev-pepper --var ADMIN_EMAIL:admin@moneyquest.test\" \"VITE_MP_URL=http://localhost:8787 vite\"",
     "server:typecheck": "npm --prefix server run typecheck",
-    "server:test": "npm --prefix server test"
+    "server:test": "npm --prefix server test",
+    "import:monsters": "node tools/import-monsters.ts"
   },
   "dependencies": {
     "jsqr": "1.4.0",

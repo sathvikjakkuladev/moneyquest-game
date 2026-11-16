@@ -8,7 +8,7 @@ import { bridge, ME, publishGoal, publishPeople, useNet } from './bridge.ts';
 import type { Remote, Report } from './bridge.ts';
 import { addSample } from './interp.ts';
 import type { Face, Look, PlayerView, ServerMsg } from './protocol.ts';
-import { CLOSE, MOVE_INTERVAL_MS, parseServer } from './protocol.ts';
+import { CLOSE, MOVE_INTERVAL_MS, parseServer, pickLook, sameLook } from './protocol.ts';
 import { MAX_SHARDS } from './world.ts';
 import type { SayKind } from './says.ts';
 import { SAY_COOLDOWN_MS, sayValid } from './says.ts';
@@ -153,11 +153,11 @@ export class ClassConnection {
     this.sent = { s: r.s, x: r.x, y: r.y, f: r.f, at: now };
   }
 
-  /** Hat, pet and "in battle" (shown as ⚔ over the player). */
+  /** Look, hat, pet and "in battle" (shown as ⚔ over the player). */
   setLook(l: Look): void {
     const me = this.me;
-    if (me.h === l.h && me.p === l.p && me.b === l.b) return;
-    Object.assign(me, l);
+    if (sameLook(me, l)) return;
+    Object.assign(me, { a: undefined, pl: undefined }, l);
     if (this.ready) this.send({ t: 'look', ...l });
   }
 
@@ -178,7 +178,7 @@ export class ClassConnection {
   }
 
   private remote(p: PlayerView, now: number): Remote {
-    return { id: this.key(p.id), name: p.n, world: !!this.world, s: p.s, x: p.x, y: p.y, f: p.f, h: p.h, p: p.p, b: p.b, samples: [{ t: now, x: p.x, y: p.y }] };
+    return { id: this.key(p.id), name: p.n, world: !!this.world, s: p.s, x: p.x, y: p.y, f: p.f, ...pickLook(p), samples: [{ t: now, x: p.x, y: p.y }] };
   }
 
   private onMessage(msg: ServerMsg | null): void {
@@ -215,7 +215,7 @@ export class ClassConnection {
         return; // positions only: the list of people didn't change
       case 'look': {
         const r = R.get(this.key(msg.id));
-        if (r) Object.assign(r, { h: msg.h, p: msg.p, b: msg.b });
+        if (r) Object.assign(r, { a: undefined, pl: undefined }, pickLook(msg));
         break;
       }
       case 'say': {

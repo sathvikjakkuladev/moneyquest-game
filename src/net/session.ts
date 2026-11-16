@@ -2,6 +2,10 @@
 // "Play offline", and is being played. Feeds the connection the player's look and battle state.
 // With world mode on (the class room says so), also keeps a connection to the world screen the
 // player is on, opening a new one on each screen change. Only loaded when VITE_MP_URL is set.
+import type { Slot } from '../core/save.ts';
+import { lookToList } from '../core/look.ts';
+import { ALL_DISTRICTS } from '../core/progression.ts';
+import type { Look } from './protocol.ts';
 import { useSave } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
 import { bridge, publishPeople, useNet } from './bridge.ts';
@@ -43,10 +47,15 @@ function check(): void {
   if (kind === 'world') screen = ''; // on the world map: off every screen
   syncWorld();
   if (!conn || !s) return;
-  const look = { h: s.inventory.hat, p: s.inventory.pet, b: kind === 'battle' };
+  const look = wireLook(s, kind === 'battle');
   conn.setLook(look);
   world?.setLook(look);
   if (kind === 'world') conn.report({ s: '', x: 0, y: 0, f: 0, moving: false });
+}
+
+/** What other players need to draw you: numbers and item ids only (PLAN.md §12, decision 7). */
+function wireLook(s: Slot, busy: boolean): Look {
+  return { h: s.inventory.hat, p: s.inventory.pet, b: busy, a: lookToList(s.look), pl: s.inventory.petLook ? ALL_DISTRICTS.indexOf(s.inventory.petLook as (typeof ALL_DISTRICTS)[number]) : -1 };
 }
 
 /** Open, move or close the world connection to match: world mode on, connected, and on a screen. */
@@ -60,7 +69,7 @@ function syncWorld(): void {
   if (!k) return void useNet.setState({ worldStatus: 'off' });
   world = new ClassConnection(m!, { notMember: () => {} }, { screen });
   const s = openSlot()!;
-  world.setLook({ h: s.inventory.hat, p: s.inventory.pet, b: useSession.getState().scene?.kind === 'battle' });
+  world.setLook(wireLook(s, useSession.getState().scene?.kind === 'battle'));
 }
 
 export function startMultiplayer(): void {

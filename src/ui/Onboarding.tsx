@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import { newSlot, randomNickname, validNickname } from '../core/save.ts';
+import { randomLook } from '../core/look.ts';
 import type { Band } from '../core/types.ts';
 import { HEADMASTER, WELCOME } from '../data/dialogue.ts';
 import { useSave } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
+import { LookEditor } from './LookEditor.tsx';
 import { MoneyCheck } from './MoneyCheck.tsx';
 
-type Step = 'welcome' | 'name' | 'level' | 'check';
+type Step = 'welcome' | 'name' | 'look' | 'level' | 'check';
 
-/** New game: Headmaster's welcome → nickname → level → Money Check (Phase 5) → hub. */
+/** New game: Headmaster's welcome → nickname → your look → level → Money Check → hub. */
 export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCancel: () => void }) {
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
   const [band, setBand] = useState<Band>('K-5');
+  const [look, setLook] = useState(() => randomLook(Math.random));
 
   useEffect(() => {
     if (step === 'welcome') useSession.getState().say(HEADMASTER, WELCOME, () => setStep('name'));
@@ -21,7 +24,7 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
   // The save is made before Money Check 1 so its result can be stored. Which form comes first is
   // picked at random, so the pre/post forms are counterbalanced across players.
   const toCheck = () => {
-    useSave.getState().create(slotIndex, newSlot(name, band, Math.random() < 0.5 ? 'A' : 'B'));
+    useSave.getState().create(slotIndex, newSlot(name, band, Math.random() < 0.5 ? 'A' : 'B', new Date(), look));
     setStep('check');
   };
   const start = () => {
@@ -35,9 +38,9 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
   if (step === 'check') return <MoneyCheck which="pre" onDone={start} />;
   return (
     <div className="flex h-full items-center justify-center p-3">
-      <div className="panel flex max-h-full w-[min(42rem,100%)] flex-col gap-4 overflow-auto p-5">
+      <div className="panel flex max-h-full w-[min(52rem,100%)] flex-col gap-4 overflow-auto p-5">
         {step === 'name' && (
-          <form className="flex flex-col gap-3" onSubmit={(e) => (e.preventDefault(), validNickname(name) && setStep('level'))}>
+          <form className="flex flex-col gap-3" onSubmit={(e) => (e.preventDefault(), validNickname(name) && setStep('look'))}>
             <h2 className="text-3xl font-bold">What should we call you?</h2>
             <p className="text-lg">Pick a fun name, <strong>not your real name</strong>. Letters and numbers only, 2 to 12 characters.</p>
             <div className="flex flex-wrap gap-3">
@@ -49,6 +52,18 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
               <button type="submit" className="btn" disabled={!validNickname(name)}>Next</button>
             </div>
           </form>
+        )}
+        {step === 'look' && (
+          <div className="flex flex-col gap-3">
+            <h2 className="text-3xl font-bold">Make your wizard</h2>
+            <LookEditor look={look} hat={null} cleared={[]} onChange={setLook} />
+            <p className="text-lg">You can change all of this later, for free, at the Stylist in Ledgerhold.</p>
+            <div className="flex flex-wrap justify-between gap-2">
+              <button className="btn btn-quiet" onClick={() => setStep('name')}>Back</button>
+              <button className="btn btn-quiet" onClick={() => setLook(randomLook(Math.random))}>🎲 Surprise me</button>
+              <button className="btn" onClick={() => setStep('level')}>Next</button>
+            </div>
+          </div>
         )}
         {step === 'level' && (
           <div className="flex flex-col gap-3">
@@ -63,7 +78,7 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
               ))}
             </div>
             <div className="flex justify-between">
-              <button className="btn btn-quiet" onClick={() => setStep('name')}>Back</button>
+              <button className="btn btn-quiet" onClick={() => setStep('look')}>Back</button>
               <button className="btn" onClick={toCheck}>Next</button>
             </div>
           </div>

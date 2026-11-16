@@ -4,7 +4,7 @@ import { useSession } from '../state/session.ts';
 import { Portrait } from './Portrait.tsx';
 import { canSpeak, hush, speak } from './speech.ts';
 
-/** NPC dialogue: pixel portrait, name, one line at a time. Space, Enter or a tap moves on. */
+/** NPC dialogue: portrait, name, one line at a time. Space, Enter or a tap moves on. */
 export function Dialogue() {
   const d = useSession((s) => s.dialogue);
   const next = useSession((s) => s.next);
@@ -27,7 +27,7 @@ export function Dialogue() {
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-3 flex justify-center px-3" role="dialog" aria-label={`${d.speaker.name} says`}>
       <div className="panel flex w-[min(54rem,100%)] items-end gap-4 p-3">
-        <div className="shrink-0 rounded bg-paper-dark p-1"><Portrait id={d.speaker.sprite} scale={2} alt={d.speaker.name} /></div>
+        <div className="shrink-0 rounded bg-paper-dark p-1"><Portrait id={d.speaker.sprite} alt={d.speaker.name} /></div>
         <div className="flex flex-1 flex-col gap-2">
           <p className="text-lg font-bold text-frame">{d.speaker.name}</p>
           <p className="text-[1.35rem] leading-snug" aria-live="polite">{line}</p>

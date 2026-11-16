@@ -27,8 +27,8 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
   const start = () => {
     const s = useSession.getState();
     s.setScreen('play');
-    s.go({ kind: 'room', zone: 'coin_academy', entry: 'from_world_map' });
-    s.say(HEADMASTER, [`Welcome to Coin Academy, ${name}!`, 'Walk with the arrow keys or WASD, tap where you want to go, or use the arrow pad on a touch screen.', 'Come and find me in the library, up through the big door. Press Space or tap someone to talk.']);
+    s.go({ kind: 'room', zone: 'ledgerhold', entry: 'arrival' });
+    s.say(HEADMASTER, [`Welcome to Ledgerhold, ${name}!`, 'Walk with the arrow keys or WASD, tap where you want to go, or use the arrow pad on a touch screen.', 'Come and find me in the plaza, just north of here. Press Space or tap someone to talk. The waystone behind you opens the world map.']);
   };
 
   if (step === 'welcome') return null; // the dialogue box shows the welcome

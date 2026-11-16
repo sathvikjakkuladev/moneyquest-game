@@ -1,10 +1,10 @@
-import { canEnter, devMode } from '../core/unlocks.ts';
-import { ACADEMY_AT, ZONES } from '../data/zones.ts';
+import { canEnter } from '../core/unlocks.ts';
+import { HUB, ZONES } from '../data/zones.ts';
 import { useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
 
-/** World map: real buttons on each island (Tab/Enter and screen readers work). Bonus islands are
- *  reached through the Crossroads portal ring, so their buttons only explain that. */
+/** World map: a real button on each place (Tab/Enter and screen readers work). Choosing one
+ *  teleports you to its waystone. */
 export function WorldButtons() {
   const s = useSlot();
   const go = useSession((x) => x.go);
@@ -13,17 +13,16 @@ export function WorldButtons() {
   const pos = ([x, y]: [number, number]) => ({ left: `${(x / 640) * 100}%`, top: `${(y / 360) * 100}%` });
   return (
     <nav aria-label="World map" className="absolute inset-0">
-      <button className="btn pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2" style={pos(ACADEMY_AT)} onClick={() => go({ kind: 'room', zone: 'coin_academy', entry: 'from_world_map' })}>🏰 Coin Academy</button>
+      <button className="btn pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2" style={pos(HUB.at)} onClick={() => go({ kind: 'room', zone: HUB.id, entry: 'arrival' })}>🏰 {HUB.name}</button>
       {ZONES.map((z) => {
         const done = cleared.includes(z.id);
-        const viaPortal = z.bonus && !devMode();
-        const open = !viaPortal && canEnter(z.id, cleared, z.bonus);
-        const label = z.bonus ? (canEnter(z.id, cleared, true, s.moneyCheck.post !== null) ? 'through the Crossroads portals' : 'opens after all six bosses and Money Check 2') : open ? z.topic : 'locked';
+        const open = canEnter(z.id, cleared, z.bonus, s.moneyCheck.post !== null);
+        const label = open ? (z.topic === 'mixed' ? 'Every topic' : z.topic) : z.bonus ? 'opens after six bosses and Money Check 2' : 'locked';
         return (
           <button key={z.id} disabled={!open} style={pos(z.at)} aria-label={`${z.name}, ${done ? 'cleared, ' : ''}${label}`}
             className={`btn pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center px-2 py-1 leading-tight ${open ? '' : 'btn-locked'}`}
-            onClick={() => go({ kind: 'room', zone: z.id, entry: z.bonus ? 'from_crossroads_observatory/portal_ring' : 'from_world_map' })}>
-            <span className="text-lg">{open ? (done ? '✓ ' : '★ ') : z.bonus ? '🌀 ' : '🔒 '}{z.name}</span>
+            onClick={() => go({ kind: 'room', zone: z.id, entry: 'arrival' })}>
+            <span className="text-lg">{open ? (done ? '✓ ' : '★ ') : '🔒 '}{z.name}</span>
             <span className="text-lg font-normal">{label}</span>
           </button>
         );

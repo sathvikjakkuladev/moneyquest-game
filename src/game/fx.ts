@@ -51,3 +51,27 @@ export async function coinsFly(scene: Phaser.Scene, from: [number, number], to: 
 }
 
 export { tween };
+
+// ── The art set's VFX strips (src/data/v2/vfx.json): equal square frames in one row ──
+import { VFX } from '../data/v2.ts';
+import { queueSheet, RENDER } from './stage.ts';
+
+export type VfxName = 'hit-spark' | 'coin-burst' | 'capture-sparkle' | 'level-up-rays' | 'heal-swirl' | 'shield-bubble' | 'spell-cast' | 'spell-projectile' | 'spell-impact' | 'hurt-flash' | 'defeat-poof' | 'teleport-flash';
+
+export function queueVfx(scene: Phaser.Scene, names: readonly VfxName[]): string[] {
+  return names.filter((n) => VFX[n]).map((n) => queueSheet(scene, VFX[n]!.image, [VFX[n]!.frame, VFX[n]!.frame]));
+}
+
+/** Play a strip once at (x, y), `size` stage px across. With `move`, it flies there while it plays. */
+export function vfx(scene: Phaser.Scene, name: VfxName, x: number, y: number, size: number, o: { fast?: boolean; move?: [number, number]; tint?: number; depth?: number } = {}): Promise<void> {
+  const v = VFX[name];
+  if (!v || !scene.textures.exists(v.image)) return Promise.resolve();
+  if (!scene.anims.exists(v.image)) scene.anims.create({ key: v.image, frames: scene.anims.generateFrameNumbers(v.image, { start: 0, end: v.frames - 1 }), frameRate: v.fps, repeat: 0 });
+  const s = scene.add.sprite(x, y, v.image, 0).setScale(size / v.frame).setDepth(o.depth ?? 900);
+  if (o.tint !== undefined) s.setTint(o.tint);
+  const ms = ((v.frames / v.fps) * 1000) / (o.fast ? 2.5 : 1);
+  s.play({ key: v.image, timeScale: o.fast ? 2.5 : 1 });
+  if (o.move) scene.tweens.add({ targets: s, x: o.move[0], y: o.move[1], duration: ms * 0.8, ease: 'Quad.easeIn' });
+  return new Promise((resolve) => scene.time.delayedCall(ms, () => { s.destroy(); resolve(); }));
+}
+void RENDER;

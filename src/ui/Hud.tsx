@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { xpToReach } from '../core/progression.ts';
 import type { Band } from '../core/types.ts';
 import { pad, roomActions } from '../game/input.ts';
+import { ATTRACT } from '../game/attract.ts';
 import { useSave, useSlot } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
 
@@ -25,6 +26,7 @@ export function Hud() {
         <span className="text-lg font-semibold" aria-label={`${p.coins} coins`}>🪙 {p.coins}</span>
       </div>
       <div className="pointer-events-auto absolute right-2 top-2 flex gap-2">
+        <button className="btn" onClick={() => useSession.getState().go({ kind: 'world' })} aria-label="World map">🗺️</button>
         <button className="btn" onClick={() => useSession.getState().setPanel('progress')} aria-label="Progress and Money Check">📊</button>
         <button className="btn" onClick={() => useSession.getState().setPanel('bag')} aria-label="Your bag: hats and pets">🎒</button>
         <button className="btn" onClick={() => useSession.getState().setPanel('redeem')} aria-label="Redeem a card">🎁</button>
@@ -85,7 +87,7 @@ function Settings({ onClose }: { onClose: () => void }) {
           </button>
         )}
         <div className="flex flex-wrap justify-between gap-2 pt-1">
-          <button className="btn btn-quiet" onClick={() => { useSave.getState().open(null); const ss = useSession.getState(); ss.setScreen('title'); ss.go({ kind: 'room', zone: 'coin_academy', attract: true }); }}>Save and quit</button>
+          <button className="btn btn-quiet" onClick={() => { useSave.getState().open(null); const ss = useSession.getState(); ss.setScreen('title'); ss.go({ kind: 'room', ...ATTRACT, attract: true }); }}>Save and quit</button>
           <button className="btn" autoFocus onClick={onClose}>Done</button>
         </div>
       </div>

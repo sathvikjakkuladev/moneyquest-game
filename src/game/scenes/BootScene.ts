@@ -1,22 +1,27 @@
 import * as Phaser from 'phaser';
-import { useSession } from '../../state/session.ts';
-import { useSave } from '../../state/save.ts';
 import { devMode } from '../../core/unlocks.ts';
-import { manifest, queueCharacter, queueScreens } from '../manifest.ts';
+import { ROOMS } from '../../data/rooms.ts';
+import { art, LOCATIONS, WORLD } from '../../data/v2.ts';
+import { useSave } from '../../state/save.ts';
+import { useSession } from '../../state/session.ts';
+import { queue } from '../stage.ts';
 
-/** Loads what the title and hub need, then shows the Great Hall behind the title screen. */
+import { ATTRACT } from '../attract.ts';
+
+/** Loads what the title needs, then shows Ledgerhold behind the title screen. */
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('boot');
   }
 
   preload(): void {
-    const bar = this.add.rectangle(170, 180, 1, 8, 0xf2c14e).setOrigin(0, 0.5);
-    this.add.rectangle(320, 180, 304, 12).setStrokeStyle(2, 0xf2c14e);
-    this.load.on('progress', (p: number) => (bar.width = 300 * p));
-    queueScreens(this, 'coin_academy');
-    for (const id of ['player_coin_wizard', 'headmaster', 'merchant']) if (manifest.characters[id]) queueCharacter(this, id);
-    if (manifest.worldMap) this.load.image('worldmap', manifest.basePath + manifest.worldMap);
+    const w = this.scale.width, h = this.scale.height;
+    const bar = this.add.rectangle(w / 2 - 300, h / 2, 1, 16, 0xf2c14e).setOrigin(0, 0.5);
+    this.add.rectangle(w / 2, h / 2, 608, 24).setStrokeStyle(4, 0xf2c14e);
+    this.load.on('progress', (p: number) => (bar.width = 600 * p));
+    queue(this, art.ground(ATTRACT.zone, ATTRACT.screen));
+    for (const p of LOCATIONS[ATTRACT.zone]!.screens[ATTRACT.screen]!.props) queue(this, art.prop(ATTRACT.zone, p.p));
+    queue(this, WORLD.image);
   }
 
   async create(): Promise<void> {
@@ -27,11 +32,13 @@ export class BootScene extends Phaser.Scene {
     if (back && useSave.getState().active !== null) {
       sessionStorage.removeItem('mq-dev-return');
       const r = JSON.parse(back) as { zone: string; screen: string; at: [number, number] | null };
-      s.setScreen('play');
-      s.go({ kind: 'room', zone: r.zone, screen: r.screen, at: r.at ?? undefined });
-      return;
+      if (ROOMS[r.zone]) {
+        s.setScreen('play');
+        s.go({ kind: 'room', zone: r.zone, screen: r.screen, at: r.at ?? undefined });
+        return;
+      }
     }
     s.setScreen('title');
-    s.go({ kind: 'room', zone: 'coin_academy', attract: true });
+    s.go({ kind: 'room', ...ATTRACT, attract: true });
   }
 }

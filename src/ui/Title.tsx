@@ -10,7 +10,7 @@ export function Title({ onNew }: { onNew: (slot: number) => void }) {
     useSave.getState().open(i);
     const s = useSession.getState();
     s.setScreen('play');
-    s.go({ kind: 'room', zone: 'coin_academy', entry: 'from_world_map' });
+    s.go({ kind: 'room', zone: 'ledgerhold', entry: 'arrival' });
   };
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 p-4">

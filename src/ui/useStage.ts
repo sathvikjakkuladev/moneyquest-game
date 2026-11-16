@@ -7,7 +7,7 @@ export interface Stage { left: number; top: number; width: number; height: numbe
 
 /**
  * Where the 640×360 canvas sits: as big as the browser window allows (16:9 kept, centred, thin bars
- * only on the longer side). CSS `image-rendering: pixelated` keeps the pixels sharp at any size.
+ * only on the longer side). The canvas itself is drawn at twice that size and scaled smoothly.
  * In portrait (iPad upright) the canvas goes to the top so menus can sit below it.
  */
 export function measure(winW: number, winH: number): Stage {

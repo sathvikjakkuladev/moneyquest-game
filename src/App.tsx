@@ -16,6 +16,7 @@ import { Panels } from './ui/Panels.tsx';
 import { codeFromHash } from './rewards/redeem.ts';
 import { Title } from './ui/Title.tsx';
 import { H, useStage, W } from './ui/useStage.ts';
+import { RENDER } from './game/stage.ts';
 import { WorldButtons } from './ui/WorldButtons.tsx';
 import { devMode } from './core/unlocks.ts';
 import { DevPanel } from './dev/DevPanel.tsx';
@@ -29,7 +30,7 @@ if (import.meta.env.VITE_MP_URL) void import('./net/session.ts').then((m) => m.s
 // import.meta.env.DEV is false in the production build, so the dev tools are dropped from it entirely.
 const DEV = import.meta.env.DEV && devMode();
 
-/** Phaser draws the 640×360 pixel world; React draws all text and buttons on top in real CSS pixels. */
+/** Phaser draws the 640×360 stage on a canvas RENDER× that size (smooth art); React draws all text and buttons on top in real CSS pixels. */
 export function App() {
   const host = useRef<HTMLDivElement>(null);
   const stage = useStage();
@@ -63,10 +64,11 @@ export function App() {
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: host.current,
-      width: W,
-      height: H,
-      pixelArt: true,
-      roundPixels: true,
+      width: W * RENDER,
+      height: H * RENDER,
+      pixelArt: false,
+      antialias: true,
+      roundPixels: false,
       backgroundColor: '#1b1410',
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       scene: [BootScene, RoomScene, WorldScene, BattleScene],

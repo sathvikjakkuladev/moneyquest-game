@@ -72,12 +72,13 @@ function seed(place: string): unknown {
     screens[id] = {
       name: s.name,
       exits: (E.exits as any[]).map((e) => ({ edge: EDGE[e.edge as keyof typeof EDGE], range: [r1(e.band[0]), r1(Math.min(e.band[1], e.axis === 'x' ? 1920 : 1080))], to: e.targetScreen, enterAt: null })),
-      entries: {
+      // Every arrival point is nudged to the nearest spot where the player can stand.
+      entries: Object.fromEntries(Object.entries<Pt>({
         default: [r1(E.spawns.default.x), r1(E.spawns.default.y)],
         ...(E.spawns.teleportArrival && L.teleportArrival.screen === id ? { arrival: [r1(E.spawns.teleportArrival.x), r1(E.spawns.teleportArrival.y) + (waystone ? 22 : 0)] } : {}),
         // Where you appear after walking in from each neighbouring screen.
         ...Object.fromEntries(Object.entries<any>(L.screens).flatMap(([from, fs]) => (j(`${place}/${fs.folder}/exits.json`).exits as any[]).filter((e) => e.targetScreen === id).map((e) => [`from_${from}`, [r1(e.spawn.x), r1(e.spawn.y)]]))),
-      },
+      }).map(([k, p]) => [k, k.startsWith('from_') ? p : freeSpot(block, p, 10)])),
       walk: [FULL],
       block,
       npcs,

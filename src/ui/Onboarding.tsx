@@ -44,7 +44,7 @@ export function Onboarding({ slotIndex, onCancel }: { slotIndex: number; onCance
             <h2 className="text-3xl font-bold">What should we call you?</h2>
             <p className="text-lg">Pick a fun name, <strong>not your real name</strong>. Letters and numbers only, 2 to 12 characters.</p>
             <div className="flex flex-wrap gap-3">
-              <input autoFocus aria-label="Nickname" maxLength={12} value={name} onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9]/g, ''))} className="min-h-12 flex-1 rounded-md border-4 border-frame bg-white px-3 text-2xl" />
+              <input autoFocus aria-label="Nickname" maxLength={12} value={name} onChange={(e) => setName(e.target.value.replace(/[^A-Za-z0-9]/g, ''))} className="min-h-12 flex-1 field px-3 text-2xl" />
               <button type="button" className="btn btn-quiet" onClick={() => setName(randomNickname(Math.random))}>🎲 Random name</button>
             </div>
             <div className="flex justify-between">

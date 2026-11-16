@@ -46,7 +46,7 @@ export function Progress({ onClose }: { onClose: () => void }) {
               return (
                 <li key={t} className="grid grid-cols-[minmax(9rem,13rem)_1fr_auto] items-center gap-2 text-lg">
                   <span>{t}</span>
-                  <span className="h-5 overflow-hidden rounded-sm border-2 border-frame bg-white" role="progressbar" aria-label={`${t} accuracy`} aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
+                  <span className="h-5 overflow-hidden track" role="progressbar" aria-label={`${t} accuracy`} aria-valuenow={pct ?? 0} aria-valuemin={0} aria-valuemax={100}>
                     <span className="block h-full bg-[#2f9e44]" style={{ width: `${pct ?? 0}%` }} />
                   </span>
                   <span className="w-36 text-right">{pct === null ? 'not tried yet' : `${pct}% of ${a!.answered}`}</span>
@@ -72,7 +72,7 @@ export function Progress({ onClose }: { onClose: () => void }) {
               </tbody>
             </table>
           )}
-          {!post && <p className="mt-1 text-lg">{ready ? 'You’ve beaten all six bosses: Money Check 2 is ready!' : 'Money Check 2 opens after you beat all six zone bosses.'}</p>}
+          {!post && <p className="mt-1 text-lg">{ready ? 'You’ve beaten all six bosses: Money Check 2 is ready!' : 'Money Check 2 opens after you beat all six topic bosses.'}</p>}
         </section>
         {ClassBoard && s.online && <Suspense fallback={null}><ClassBoard /></Suspense>}
         <div className="flex flex-wrap gap-2">

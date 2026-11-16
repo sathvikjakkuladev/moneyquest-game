@@ -66,3 +66,41 @@ canvas { display: block; }
 .confetti { position: absolute; inset: 0; pointer-events: none; }
 .confetti span { position: absolute; top: -12px; width: 8px; height: 12px; animation: confetti-fall 2.4s linear infinite; }
 @keyframes confetti-fall { to { transform: translateY(110vh) rotate(540deg); } }
+
+/* ── The game's look: the art set's UI kit (docs/assets_v2/UI_KIT.md, src/data/v2/ui-tokens.json) ──
+   Navy surfaces, thick navy outlines, a hard drop shadow, cyan for the main action. Acid green is
+   for money and right answers only; gold is an accent. Scoped to the game, so the teacher pages
+   keep their plain light style. Every text/background pair here is 4.5:1 or better. */
+.mq-game {
+  --color-ink: #F2F8FF; --color-paper: #12224A; --color-paper-dark: #0B1630; --color-frame: #070F22; --color-gold: #FFC83C;
+  --mq-raised: #1B3166; --mq-cyan: #00E5FF; --mq-cyan-soft: #7DF3FF; --mq-acid: #9CFF3A; --mq-wrong: #C3A6FF; --mq-muted: #C7D3EA;
+  color: var(--color-ink);
+}
+.mq-game .panel { background: var(--color-paper); border: 3px solid var(--color-frame); border-radius: 18px; box-shadow: 0 4px 0 #070F22, inset 0 0 0 2px #1B3166; }
+.mq-game .btn { background: var(--mq-cyan); color: #070F22; border: 3px solid var(--color-frame); border-radius: 999px; box-shadow: 0 4px 0 #070F22; font-weight: 700; }
+.mq-game .btn:focus-visible, .mq-game .opt:focus-visible, .mq-game :focus-visible { outline: 4px solid var(--mq-cyan-soft); outline-offset: 3px; }
+.mq-game .btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #070F22; }
+.mq-game .btn-quiet { background: var(--mq-raised); color: var(--color-ink); }
+.mq-game .btn-danger { background: #FF8A1E; color: #070F22; }
+.mq-game .btn:disabled { background: #3A4D73; color: #C7D3EA; opacity: 1; }
+.mq-game .btn-locked:disabled { background: #3A4D73; color: #C7D3EA; }
+.mq-game .opt { background: var(--mq-raised); color: var(--color-ink); border: 3px solid var(--color-frame); border-radius: 14px; box-shadow: 0 4px 0 #070F22; }
+.mq-game .opt:hover:not(:disabled) { background: #24407f; }
+.mq-game .opt-letter { background: #0B1630; color: var(--mq-cyan-soft); border: 2px solid #00A9C2; border-radius: 10px; }
+.mq-game .opt-right { background: var(--mq-acid) !important; border-color: #070F22; color: #0B1630; }
+.mq-game .opt-right .opt-letter { background: #0B1630; color: var(--mq-acid); border-color: #0B1630; }
+.mq-game .opt-wrong { background: #0B1630 !important; border: 3px dashed #965CFF; color: var(--mq-wrong); }
+.mq-game .opt-wrong .opt-letter { background: #0B1630; color: var(--mq-wrong); border-color: #965CFF; }
+.mq-game .opt-removed { opacity: 0.7; }
+.mq-game .opt-locked { background: repeating-linear-gradient(45deg, #0B1630 0 10px, #1B3166 10px 20px) !important; }
+.mq-game .opt-fog { background: #3A4D73 !important; color: #F2F8FF; }
+.mq-game .scam-tip { background: linear-gradient(90deg, #FFC83C, #FF8A1E, #FFC83C); color: #070F22; }
+/* Small parts used across the game UI. */
+.mq-game .track { background: #070F22; border: 2px solid #070F22; border-radius: 999px; overflow: hidden; }
+.mq-game .field { background: #F2F8FF; color: #0B1630; border: 3px solid #070F22; border-radius: 12px; }
+.mq-game .card { background: var(--mq-raised); border: 2px solid var(--color-frame); border-radius: 12px; }
+.mq-game .chip { background: #D6F4FF; color: #0B1630; border-radius: 8px; }
+.mq-game .t-good { color: var(--mq-acid); }
+.mq-game .t-bad { color: #FFB9AE; }
+.mq-game .t-info { color: var(--mq-cyan-soft); }
+.mq-game .t-special { color: var(--mq-wrong); }

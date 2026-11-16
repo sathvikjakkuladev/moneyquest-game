@@ -59,7 +59,7 @@ export function MoneyCheck({ which, onDone }: { which: Which; onDone: () => void
 
   const title = which === 'pre' ? 'Money Check' : 'Money Check 2';
   return (
-    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-[#1b1410]/85 p-3" role="dialog" aria-label={title}>
+    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-[#070F22]/85 p-3" role="dialog" aria-label={title}>
       <div className="panel flex max-h-full w-[min(46rem,100%)] flex-col gap-3 overflow-auto p-5">
         {step === 'intro' && (
           <>
@@ -76,7 +76,7 @@ export function MoneyCheck({ which, onDone }: { which: Which; onDone: () => void
           <>
             <div className="flex items-center justify-between">
               <p className="text-lg font-semibold">Question {step + 1} of {qs.length}</p>
-              <div className="h-3 w-40 overflow-hidden rounded-sm border-2 border-frame bg-white" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={qs.length} aria-label="Progress">
+              <div className="h-3 w-40 overflow-hidden track" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={qs.length} aria-label="Progress">
                 <div className="h-full bg-[#3b6fd4]" style={{ width: `${(step / qs.length) * 100}%` }} />
               </div>
             </div>
@@ -105,7 +105,7 @@ function CheckResults({ which, result, pre, onDone }: { which: Which; result: Ch
   return (
     <div className="flex flex-col gap-3" role="status">
       <h2 className="text-3xl font-bold">You got {result.total} of 12!</h2>
-      {imp && <p className="text-2xl font-bold text-[#1f7a3a]">{imp.total > 0 ? `That’s ${imp.total} more than your first Money Check (${pre!.total}). Great learning!` : imp.total === 0 ? `The same as your first Money Check (${pre!.total}).` : `Your first Money Check was ${pre!.total}. Keep practising in the bonus zones!`}</p>}
+      {imp && <p className="text-2xl font-bold t-good">{imp.total > 0 ? `That’s ${imp.total} more than your first Money Check (${pre!.total}). Great learning!` : imp.total === 0 ? `The same as your first Money Check (${pre!.total}).` : `Your first Money Check was ${pre!.total}. Keep practising in the bonus zones!`}</p>}
       {!imp && <p className="text-xl">Now you know where you’re starting. Your adventure will help with every topic.</p>}
       <ul className="flex flex-col gap-1">
         {TOPICS.map((t) => (

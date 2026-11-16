@@ -19,7 +19,7 @@ export function Hud() {
         <span className="text-xl font-bold">{s.nickname}</span>
         <span className="flex items-center gap-2 text-lg">
           Lv {p.level}
-          <span role="progressbar" aria-label="XP to next level" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="inline-block h-4 w-20 overflow-hidden rounded-sm border-2 border-frame bg-white">
+          <span role="progressbar" aria-label="XP to next level" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} className="inline-block h-4 w-20 overflow-hidden track">
             <span className="block h-full bg-[#3b6fd4]" style={{ width: `${pct}%` }} />
           </span>
         </span>
@@ -103,7 +103,7 @@ export function Prompt() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
       <button className="btn pointer-events-auto flex items-center gap-2" onClick={() => roomActions.interact()}>
-        <kbd className="rounded border-2 border-frame bg-white px-1.5 text-lg">Space</kbd>{prompt}
+        <kbd className="field px-1.5 text-lg">Space</kbd>{prompt}
       </button>
     </div>
   );

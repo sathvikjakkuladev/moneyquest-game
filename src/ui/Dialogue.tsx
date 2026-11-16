@@ -29,7 +29,7 @@ export function Dialogue() {
       <div className="panel flex w-[min(54rem,100%)] items-end gap-4 p-3">
         <div className="shrink-0 rounded bg-paper-dark p-1"><Portrait id={d.speaker.sprite} alt={d.speaker.name} /></div>
         <div className="flex flex-1 flex-col gap-2">
-          <p className="text-lg font-bold text-frame">{d.speaker.name}</p>
+          <p className="text-lg font-bold t-info">{d.speaker.name}</p>
           <p className="text-[1.35rem] leading-snug" aria-live="polite">{line}</p>
           <div className="flex justify-end gap-2">
             {canSpeak() && <button className="btn btn-quiet" onClick={() => speak(line)} aria-label="Read aloud">🔊</button>}

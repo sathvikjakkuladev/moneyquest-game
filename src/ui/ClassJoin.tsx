@@ -108,7 +108,7 @@ export default function ClassJoin() {
           <label className="flex flex-col text-lg">
             Class code or device code
             <input
-              className="min-h-12 w-56 rounded-md border-[3px] border-frame bg-white px-3 text-2xl uppercase tracking-widest"
+              className="min-h-12 w-56 field px-3 text-2xl uppercase tracking-widest"
               value={code}
               onChange={(e) => setCode(e.target.value.slice(0, 12))}
               autoComplete="off"
@@ -133,7 +133,7 @@ export default function ClassJoin() {
           <button className="btn btn-quiet self-start" onClick={() => (setStep({ kind: 'idle' }), setMsg(null))}>Cancel</button>
         </>
       )}
-      {msg && <p className="text-lg font-semibold text-[#9b2c1c]" role="alert">{msg}</p>}
+      {msg && <p className="text-lg font-semibold t-bad" role="alert">{msg}</p>}
     </fieldset>
   );
 }

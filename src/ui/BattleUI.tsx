@@ -42,7 +42,7 @@ export function BattleUI({ stage }: { stage: Stage }) {
 
 function Bar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
   return (
-    <div role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} className="h-4 w-full overflow-hidden rounded-sm border-2 border-[#1b1410] bg-[#3b2a20]">
+    <div role="progressbar" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} className="h-4 w-full overflow-hidden track">
       <div className="h-full transition-[width] duration-300" style={{ width: `${Math.max(0, (value / max) * 100)}%`, background: color }} />
     </div>
   );
@@ -55,7 +55,7 @@ function PlayerBar({ b }: { b: Battle }) {
     <div className="panel flex-1 px-2.5 py-1.5">
       <div className="flex justify-between text-lg font-bold">
         <span>{nick}</span>
-        <span>❤ {s.playerHp}/{s.playerMaxHp}{s.shield > 0 && <span className="ml-2 text-[#1d5fd1]">🛡 {s.shield}</span>}</span>
+        <span>❤ {s.playerHp}/{s.playerMaxHp}{s.shield > 0 && <span className="ml-2 t-info">🛡 {s.shield}</span>}</span>
       </div>
       <Bar value={s.playerHp} max={s.playerMaxHp} color="#2f9e44" label="Your health" />
     </div>
@@ -68,7 +68,7 @@ function FoeBar({ b }: { b: Battle }) {
   return (
     <div className="panel flex-1 px-2.5 py-1.5">
       <div className="flex justify-between gap-2 text-lg font-bold">
-        <span>{b.monster.name}{b.monster.boss && <span className="ml-2 rounded-sm bg-[#a3271f] px-1.5 text-lg text-white">BOSS</span>}</span>
+        <span>{b.monster.name}{b.monster.boss && <span className="ml-2 rounded-md bg-[#FF8A1E] px-1.5 text-lg text-[#070F22]">BOSS</span>}</span>
         <span>{s.hp}/{s.maxHp}</span>
       </div>
       <Bar value={s.hp} max={s.maxHp} color="#d9480f" label={`${b.monster.name} health`} />
@@ -156,8 +156,8 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
       {asking && (b.warning || m.riddle || m.nap) && (
         <div className="flex flex-col gap-1">
           {m.riddle && <p className="rounded-sm bg-[#e5dbff] px-2 py-0.5 text-lg font-bold text-[#3b1d8f]">❓ RIDDLE: a wrong answer does double damage!</p>}
-          {m.nap && <p className="rounded-sm bg-[#e7f5ff] px-2 py-0.5 text-lg font-semibold">💤 You're sleepy: a right answer only wakes you up.</p>}
-          {b.warning && !m.riddle && <p className="rounded-sm bg-[#fff1c2] px-2 py-0.5 text-lg font-semibold">⚠ {b.warning}</p>}
+          {m.nap && <p className="rounded-sm bg-[#D6F4FF] px-2 py-0.5 text-lg font-semibold text-[#0B1630]">💤 You're sleepy: a right answer only wakes you up.</p>}
+          {b.warning && !m.riddle && <p className="rounded-sm bg-[#FFC83C] px-2 py-0.5 text-lg font-semibold text-[#070F22]">⚠ {b.warning}</p>}
         </div>
       )}
       {asking && m.fakeHint !== null && (
@@ -169,7 +169,7 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
         <p className={`flex-1 font-semibold leading-snug ${compact ? 'text-xl' : 'text-2xl'}`} aria-live="polite">{q.question}</p>
         {canSpeak() && <button className="btn btn-quiet shrink-0" onClick={() => speak(reading)} aria-label="Read the question aloud (R)">🔊</button>}
       </div>
-      {glaring && <p className="rounded-sm bg-[#fff3bf] px-2 py-1 text-xl font-bold" aria-live="assertive">☀ Solar Glare! The answers will appear in a moment…</p>}
+      {glaring && <p className="rounded-sm bg-[#FFC83C] px-2 py-1 text-xl font-bold text-[#070F22]" aria-live="assertive">☀ Solar Glare! The answers will appear in a moment…</p>}
       <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${glaring ? 'invisible' : ''}`}>
         {b.order.map((oi, pos) => {
           const o = q.options[oi]!;
@@ -193,11 +193,11 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
           );
         })}
       </div>
-      {b.phase === 'resolving' && b.last === 'right' && <p className="text-xl font-bold text-[#1f7a3a]" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
-      {b.phase === 'resolving' && b.last === 'wrong' && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">{b.picked === -1 ? '⏱ Time is up!' : '✗ Not quite.'} {b.monster.name} attacks!</p>}
-      {b.phase === 'resolving' && (b.last === 'slow' || b.last === 'opening') && <p className="text-xl font-bold text-[#a3271f]" aria-live="assertive">⏱ {b.monster.name} struck first! Keep going.</p>}
+      {b.phase === 'resolving' && b.last === 'right' && <p className="text-xl font-bold t-good" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
+      {b.phase === 'resolving' && b.last === 'wrong' && <p className="text-xl font-bold t-bad" aria-live="assertive">{b.picked === -1 ? '⏱ Time is up!' : '✗ Not quite.'} {b.monster.name} attacks!</p>}
+      {b.phase === 'resolving' && (b.last === 'slow' || b.last === 'opening') && <p className="text-xl font-bold t-bad" aria-live="assertive">⏱ {b.monster.name} struck first! Keep going.</p>}
       {showWhy && (
-        <div className="flex flex-wrap items-center gap-2 rounded-sm bg-white/70 p-2" aria-live="polite">
+        <div className="flex flex-wrap items-center gap-2 rounded-sm card p-2" aria-live="polite">
           <p className="flex-1 text-xl"><strong>{b.phase === 'right' ? '✓ ' : 'Why: '}</strong>{q.explanation}</p>
           {canSpeak() && <button className="btn btn-quiet" onClick={() => speak(`The answer is ${q.options[q.correct]}. ${q.explanation}`)} aria-label="Read the explanation aloud">🔊</button>}
           <button ref={nextRef} className="btn" onClick={gotIt}>{b.phase === 'right' ? 'Next' : 'Got it'}</button>
@@ -228,7 +228,7 @@ function TimerBar({ seconds, since, kind, onDone }: { seconds: number; since: nu
   return (
     <div className="flex items-center gap-2" role="timer" aria-label={`${Math.ceil(left)} seconds left`}>
       <span className="text-lg font-bold">⏱ {Math.ceil(left)}s</span>
-      <div className="h-3 flex-1 overflow-hidden rounded-sm border-2 border-[#1b1410] bg-white"><div className="h-full bg-[#e8590c]" style={{ width: `${(left / seconds) * 100}%` }} /></div>
+      <div className="h-3 flex-1 overflow-hidden track"><div className="h-full bg-[#e8590c]" style={{ width: `${(left / seconds) * 100}%` }} /></div>
       <span className="text-lg">{kind === 'slowStrike' ? 'Answer before it swoops!' : 'Answer before time runs out!'}</span>
     </div>
   );
@@ -257,12 +257,12 @@ function Result({ b }: { b: Battle }) {
       {r && <p className="text-2xl font-semibold">🪙 +{r.coins} coins · ⭐ +{r.xp} XP</p>}
       {r?.coinsTaken ? <p className="text-lg">({b.monster.name} grabbed {r.coinsTaken} of your coins during the fight.)</p> : null}
       {r?.rematch && <p className="text-lg">Rematches pay half.</p>}
-      {r?.levelUp && <p className="text-2xl font-bold text-[#1f7a3a]">Level up! You're now level {r.levelUp}.</p>}
+      {r?.levelUp && <p className="text-2xl font-bold t-good">Level up! You're now level {r.levelUp}.</p>}
       {sixDone && <p className="text-xl font-bold">All six topic districts are clear! Visit the Headmaster in Ledgerhold’s plaza to take Money Check 2 and open Phish Fens.</p>}
-      {r?.tamed && <p className="text-2xl font-bold text-[#5a2fd0]">🐾 {b.monster.name} joins you! Find it in your bag (🎒) to bring it along as a pet.</p>}
-      {costume && <p className="text-xl font-bold text-[#1d5fd1]">New costume colours: {costume}! Visit the Stylist in Ledgerhold to wear them.</p>}
+      {r?.tamed && <p className="text-2xl font-bold t-special">🐾 {b.monster.name} joins you! Find it in your bag (🎒) to bring it along as a pet.</p>}
+      {costume && <p className="text-xl font-bold t-info">New costume colours: {costume}! Visit the Stylist in Ledgerhold to wear them.</p>}
       {r?.scrollUsed && <p className="text-lg">Your Insurance Scroll paid out and is used up.</p>}
-      {r?.newSpell && <p className="text-2xl font-bold text-[#1d5fd1]">New spell: {SPELLS[r.newSpell].name}! <span className="font-normal">{SPELLS[r.newSpell].blurb}</span></p>}
+      {r?.newSpell && <p className="text-2xl font-bold t-info">New spell: {SPELLS[r.newSpell].name}! <span className="font-normal">{SPELLS[r.newSpell].blurb}</span></p>}
       {b.monster.lesson && <p className="text-xl"><strong>Lesson:</strong> {b.monster.lesson}</p>}
       <button ref={ref} className="btn mt-1" onClick={leave}>Carry on</button>
     </div>

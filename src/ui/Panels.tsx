@@ -103,7 +103,7 @@ function Shop({ onClose }: { onClose: () => void }) {
           {items.map((it) => {
             const owned = s.inventory.owned.includes(it.id);
             return (
-              <li key={it.id} className={`flex flex-col items-center gap-1 rounded-sm border-2 bg-white/60 p-2 text-center ${tryOn === it.id ? 'border-[#1d5fd1] outline outline-2 outline-[#1d5fd1]' : 'border-frame'}`}>
+              <li key={it.id} className={`flex flex-col items-center gap-1 rounded-sm border-2 card p-2 text-center ${tryOn === it.id ? 'border-[#7DF3FF] outline outline-2 outline-[#7DF3FF]' : 'border-frame'}`}>
                 <button className="flex flex-col items-center" onClick={() => setTryOn(it.id)} aria-label={`Try on the ${it.name}`}><ItemArt it={it} /></button>
                 <p className="text-lg font-semibold leading-tight">{it.name}</p>
                 {it.rarity && <RarityTag r={it.rarity} />}
@@ -111,7 +111,7 @@ function Shop({ onClose }: { onClose: () => void }) {
               </li>
             );
           })}
-          <li className="flex flex-col items-center gap-1 rounded-sm border-2 border-frame bg-white/60 p-2 text-center">
+          <li className="flex flex-col items-center gap-1 rounded-sm border-2 border-frame card p-2 text-center">
             <button className="flex flex-col items-center" onClick={() => setTryOn(laurel.id)} aria-label={`Try on the ${laurel.name}`}><ItemArt it={laurel} /></button>
             <p className="text-lg font-semibold leading-tight">{laurel.name}</p>
             <RarityTag r="legendary" />
@@ -152,7 +152,7 @@ function Bag({ onClose, only }: { onClose: () => void; only?: 'hat' | 'pet' }) {
                 </button>
               ))}
               {!mine.some((i) => i.id === prize.id) && (
-                <span className="flex min-h-12 items-center gap-2 rounded-md border-[3px] border-frame bg-[#d9d0c0] px-2 text-[1.15rem] font-semibold text-[#3b3026]" aria-label={`${prize.name}: locked. It comes only from a ${kind === 'hat' ? 'Winner' : 'Champion'} card.`}>
+                <span className="flex min-h-12 items-center gap-2 rounded-md border-[3px] border-frame bg-[#3A4D73] px-2 text-[1.15rem] font-semibold text-[#C7D3EA]" aria-label={`${prize.name}: locked. It comes only from a ${kind === 'hat' ? 'Winner' : 'Champion'} card.`}>
                   <span className="opacity-60"><ItemArt it={prize} size={44} /></span>🔒 {prize.name}
                 </span>
               )}
@@ -225,11 +225,11 @@ function Redeem({ onClose }: { onClose: () => void }) {
     <Modal title="Redeem a card" onClose={() => (useSession.getState().setRedeemCode(null), onClose())}>
       <p className="text-lg">Won a MoneyQuest card? Type the code under the QR code, or scan it with the camera.</p>
       <form className="flex flex-wrap gap-2" onSubmit={(e) => (e.preventDefault(), void submit(code))}>
-        <input autoFocus aria-label="Card code" placeholder="MB-W1234-ABCDE" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="min-h-12 flex-1 rounded-md border-4 border-frame bg-white px-3 font-mono text-2xl tracking-wider" />
+        <input autoFocus aria-label="Card code" placeholder="MB-W1234-ABCDE" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="min-h-12 flex-1 field px-3 font-mono text-2xl tracking-wider" />
         <button type="submit" className="btn" disabled={!code.trim() || checking}>{checking ? 'Checking…' : 'Redeem'}</button>
       </form>
       {scanning ? <Scanner onCode={(c) => (setScanning(false), setCode(c), void submit(c))} onStop={() => setScanning(false)} /> : <button className="btn btn-quiet" onClick={() => setScanning(true)}>📷 Scan the QR code</button>}
-      {msg && <p className="text-lg font-semibold text-[#a3271f]" role="alert">✗ {msg}</p>}
+      {msg && <p className="text-lg font-semibold t-bad" role="alert">✗ {msg}</p>}
       <p className="text-lg">Each card works once per save. The camera stays on this device: nothing is sent anywhere.</p>
     </Modal>
   );

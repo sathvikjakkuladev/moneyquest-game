@@ -103,7 +103,7 @@ function GoalBar() {
     <>
       <div className="panel absolute left-2 top-[4.25rem] flex items-center gap-2 px-3 py-1 text-lg">
         <span>🎯 Class goal</span>
-        <span role="progressbar" aria-label="Class goal this week" aria-valuenow={goal.n} aria-valuemin={0} aria-valuemax={goal.of} className="inline-block h-4 w-24 overflow-hidden rounded-sm border-2 border-frame bg-white">
+        <span role="progressbar" aria-label="Class goal this week" aria-valuenow={goal.n} aria-valuemin={0} aria-valuemax={goal.of} className="inline-block h-4 w-24 overflow-hidden track">
           <span className="block h-full bg-[#2f9e44]" style={{ width: `${pct}%` }} />
         </span>
         <span className="font-semibold">{goal.n}/{goal.of}</span>
@@ -135,7 +135,7 @@ function Bubble({ said, who }: { said: Said; who: string }) {
   const emote = said.k === 'e';
   return (
     <div
-      className={`relative mb-2 max-w-48 rounded-lg border-2 border-[#2a1c12] bg-white px-2 py-0.5 text-center font-semibold leading-tight text-[#2a1c12] shadow-[0_2px_0_#1b1410] ${emote ? 'text-3xl' : 'text-lg'}`}
+      className={`relative mb-2 max-w-48 rounded-lg border-2 border-[#070F22] bg-[#F2F8FF] text-[#0B1630] px-2 py-0.5 text-center font-semibold leading-tight text-[#2a1c12] shadow-[0_2px_0_#1b1410] ${emote ? 'text-3xl' : 'text-lg'}`}
       role="status"
       aria-label={`${who} said ${emote ? EMOTES[said.i]!.label : PHRASES[said.i]}`}
     >

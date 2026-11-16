@@ -82,7 +82,7 @@ export function App() {
   }, []);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="mq-game relative h-full w-full overflow-hidden">
       <div ref={host} className="absolute" style={{ left: stage.left, top: stage.top, width: stage.width, height: stage.height }} />
       <div className="pointer-events-none absolute" style={{ left: stage.left, top: stage.top, width: stage.width, bottom: 0 }}>
         <div className="absolute inset-x-0 top-0" style={{ height: stage.height }}>

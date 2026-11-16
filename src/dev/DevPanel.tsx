@@ -19,7 +19,7 @@ export function DevPanel() {
       <p className="font-bold">Dev tools (?dev=1: every zone is open)</p>
       <label className="flex flex-col gap-1">
         Go to screen
-        <select className="min-h-10 rounded border-2 border-frame bg-white px-1" defaultValue="" onChange={(e) => {
+        <select className="min-h-10 field px-1" defaultValue="" onChange={(e) => {
           const [zone, screen] = e.target.value.split('/');
           if (zone && screen) useSession.getState().go({ kind: 'room', zone, screen });
         }}>
@@ -29,7 +29,7 @@ export function DevPanel() {
       </label>
       <label className="flex flex-col gap-1">
         Pet
-        <select className="min-h-10 rounded border-2 border-frame bg-white px-1" value={s.inventory.pet ?? ''} onChange={(e) => edit((x) => ({ ...x, inventory: { ...x.inventory, pet: e.target.value || null } }))}>
+        <select className="min-h-10 field px-1" value={s.inventory.pet ?? ''} onChange={(e) => edit((x) => ({ ...x, inventory: { ...x.inventory, pet: e.target.value || null } }))}>
           <option value="">None</option>
           {pets.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>

@@ -35,7 +35,7 @@ export default function ClassBoard() {
                 <h4 className="mt-1 text-xl font-bold">Most coins earned</h4>
                 <ol className="flex flex-col gap-0.5 text-lg">
                   {data.board.top.map((r, i) => (
-                    <li key={r.name} className={`flex justify-between rounded-sm px-2 ${r.name === m.publicName ? 'bg-[#f2c14e] font-bold' : ''}`}>
+                    <li key={r.name} className={`flex justify-between rounded-sm px-2 ${r.name === m.publicName ? 'bg-[#FFC83C] font-bold text-[#070F22]' : ''}`}>
                       <span>{i + 1}. {r.name}</span><span>🪙 {r.coins}</span>
                     </li>
                   ))}

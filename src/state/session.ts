@@ -78,7 +78,7 @@ interface Session {
   float: (x: number, y: number, text: string, tone: Float['tone']) => void;
   scene: SceneReq | null;
   dialogue: Dialogue | null;
-  panel: 'shop' | 'bag' | 'redeem' | 'progress' | 'check' | null;
+  panel: 'shop' | 'bag' | 'redeem' | 'progress' | 'check' | 'style' | 'pets' | null;
   setPanel: (p: Session['panel']) => void;
   celebrate: string[] | null; // prizes just unlocked by a reward card
   setCelebrate: (items: string[] | null) => void;
@@ -103,7 +103,7 @@ interface Session {
   leave: () => void;
 }
 
-/** Next question for a zone: its topic, or for bonus zones a mix weighted toward the weakest topic. */
+/** Next question for a place: its topic, or (Phish Fens, the Debt Dragon) a mix weighted toward the weakest topic. */
 function nextQuestion(zone: string): { q: Shown; pool: Pool } {
   const s = slot();
   const zt = zoneById(zone).topic;
@@ -256,8 +256,8 @@ export const useSession = create<Session>()((set, get) => {
           const newSpell = spell && !p.spells.includes(spell) ? spell : null;
           const xp = p.xp + won.xp;
           const level = levelFor(xp);
-          // Bonus zones: the first win over a monster tames it as a pet.
-          const tames = first && zoneById(b.monster.zone).bonus;
+          // The first win over any monster captures it as a pet (PLAN.md §12).
+          const tames = first;
           result = { ...result, levelUp: level > p.level ? level : null, newSpell, tamed: tames };
           let owned = st.scrollUsed ? dropOne(x.inventory.owned, SCROLL) : x.inventory.owned;
           if (tames && !owned.includes(tameId(b.monster.id))) owned = [...owned, tameId(b.monster.id)];
@@ -292,8 +292,8 @@ export const useSession = create<Session>()((set, get) => {
     leave: () => {
       const b = get().battle;
       if (!b || (b.phase !== 'won' && b.phase !== 'lost')) return;
-      // After fainting you rest at the zone's first screen, with full HP.
-      const back: SceneReq = b.phase === 'lost' && b.back.kind === 'room' ? { kind: 'room', zone: b.back.zone, entry: 'from_world_map' } : b.back;
+      // After fainting you rest at the place's waystone, with full HP.
+      const back: SceneReq = b.phase === 'lost' && b.back.kind === 'room' ? { kind: 'room', zone: b.back.zone, entry: 'arrival' } : b.back;
       set({ battle: null, scene: back });
     },
   };

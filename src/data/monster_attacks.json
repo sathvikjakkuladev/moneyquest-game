@@ -1,418 +1,274 @@
 {
- "piggybank_village": [
-  {
-   "monster": "Spendling",
-   "type": "regular",
-   "attack": "Grab Bag",
-   "does": "Swings a shopping bag that sucks up your coins.",
-   "effect": "Steals 5 coins if you answer wrong.",
-   "lesson": "Impulse buys drain savings fast.",
-   "damage": 8
-  },
-  {
-   "monster": "Impulse Magpie",
-   "type": "regular",
-   "attack": "Shiny Swoop",
-   "does": "Dives claws first and snatches coins.",
-   "effect": "Hits first if you take longer than 10 seconds.",
-   "lesson": "Shiny things tempt you to buy without thinking.",
-   "damage": 9
-  },
-  {
-   "monster": "Jar Muncher",
-   "type": "regular",
-   "attack": "Coin Crunch",
-   "does": "Lunges with chomping jaws and spits coins.",
-   "effect": "Eats part of your savings shield.",
-   "lesson": "Small leaks empty the jar.",
-   "damage": 10
-  },
-  {
-   "monster": "King Splurge",
-   "type": "boss",
-   "attack": "Shopping Spree Storm",
-   "does": "Rains shopping bags across the whole screen.",
-   "effect": "Hits twice in a row on a wrong answer.",
-   "lesson": "Big splurges wreck a budget.",
-   "damage": 16,
-   "second_attack": {
-    "attack": "Buy Now Beam",
-    "does": "Fires a blinking BUY NOW ray.",
-    "effect": "Shrinks your answer timer for 1 turn.",
-    "damage": 12
-   }
-  }
- ],
- "borrowers_bridges": [
-  {
-   "monster": "Debt Slime",
-   "type": "regular",
-   "attack": "Split Splat",
-   "does": "Splits in two and hurls slime blobs with IOU notes.",
-   "effect": "Splits into 2 slimes if not beaten in 3 turns.",
-   "lesson": "Unpaid debt multiplies.",
-   "damage": 8
-  },
-  {
-   "monster": "Interest Imp",
-   "type": "regular",
-   "attack": "Compound Sting",
-   "does": "Stabs with its percent-sign tail.",
-   "effect": "Damage goes up +2 every turn it is ignored.",
-   "lesson": "Interest grows on top of interest.",
-   "damage": 6
-  },
-  {
-   "monster": "Late Fee Troll",
-   "type": "regular",
-   "attack": "Late Smash",
-   "does": "Slams its stopwatch club and sends out a clock shockwave.",
-   "effect": "Extra damage if your answer is slow.",
-   "lesson": "Paying late costs extra.",
-   "damage": 10
-  },
-  {
-   "monster": "Loan Shark Lord",
-   "type": "boss",
-   "attack": "Chain Lash",
-   "does": "Cracks a chain whip covered in IOU tags.",
-   "effect": "Locks one answer button for a turn.",
-   "lesson": "Bad loans trap you.",
-   "damage": 15,
-   "second_attack": {
-    "attack": "Feeding Frenzy",
-    "does": "Circles and bites three times.",
-    "effect": "Hits 3 times for small damage.",
-    "damage": 5
-   }
-  }
- ],
- "guildworks": [
-  {
-   "monster": "Tax Gremlin",
-   "type": "regular",
-   "attack": "Paycheck Nibble",
-   "does": "Tears open a paycheck and coins fly out.",
-   "effect": "Takes a slice of coins you earned this battle.",
-   "lesson": "Gross pay vs. take-home pay.",
-   "damage": 8
-  },
-  {
-   "monster": "Slacker Golem",
-   "type": "regular",
-   "attack": "Nap Quake",
-   "does": "Flops down and sends out a Zzz shockwave.",
-   "effect": "Makes you skip a turn.",
-   "lesson": "Skipping work means no pay.",
-   "damage": 9
-  },
-  {
-   "monster": "Gig Goblin",
-   "type": "regular",
-   "attack": "Toolstorm Toss",
-   "does": "Juggles and throws tools and delivery boxes.",
-   "effect": "Random damage from 4 to 14.",
-   "lesson": "Gig income is unpredictable.",
-   "damage": 9
-  },
-  {
-   "monster": "Burnout Blaze",
-   "type": "boss",
-   "attack": "Overtime Inferno",
-   "does": "Shoots fireballs made of spinning gears.",
-   "effect": "Gets stronger each turn but loses health too.",
-   "lesson": "Working nonstop burns you out.",
-   "damage": 16,
-   "second_attack": {
-    "attack": "Anvil Drop",
-    "does": "Drops a giant anvil from above.",
-    "effect": "Big single hit.",
-    "damage": 20
-   }
-  }
- ],
- "compound_orchard": [
-  {
-   "monster": "Hype Hornet",
-   "type": "regular",
-   "attack": "FOMO Rocket",
-   "does": "Dives with its rocket stinger trailing green up arrows.",
-   "effect": "Fast; always attacks first.",
-   "lesson": "Fear of missing out leads to bad investments.",
-   "damage": 9
-  },
-  {
-   "monster": "Bubble Beetle",
-   "type": "regular",
-   "attack": "Bubble Pop Burst",
-   "does": "Inflates its bubble until it bursts.",
-   "effect": "Grows for 2 turns, then pops for big damage.",
-   "lesson": "Bubbles always pop.",
-   "damage": 14
-  },
-  {
-   "monster": "Panic Bear",
-   "type": "regular",
-   "attack": "Sell-Off Slam",
-   "does": "Smashes down a red down-arrow sign.",
-   "effect": "Knocks your next spell's power down.",
-   "lesson": "Panic selling locks in losses.",
-   "damage": 10
-  },
-  {
-   "monster": "Crash Treant",
-   "type": "boss",
-   "attack": "Market Crash",
-   "does": "Slams its red-chart branches and drops rotten coin fruit.",
-   "effect": "Hits everyone; your pet too.",
-   "lesson": "Markets drop, but patience recovers.",
-   "damage": 17,
-   "second_attack": {
-    "attack": "Root Recession",
-    "does": "Roots burst out of the ground.",
-    "effect": "Slows you for 2 turns.",
-    "damage": 10
-   }
-  }
- ],
- "stormwatch_coast": [
-  {
-   "monster": "Risk Squall",
-   "type": "regular",
-   "attack": "Thunder Jab",
-   "does": "Punches with lightning fists.",
-   "effect": "25% chance of a double hit.",
-   "lesson": "Risks can strike any time.",
-   "damage": 9
-  },
-  {
-   "monster": "Mishap Crab",
-   "type": "regular",
-   "attack": "Oops Pinch",
-   "does": "Snaps its cracked claws.",
-   "effect": "Breaks your shield if you have no insurance spell up.",
-   "lesson": "Accidents happen; insurance helps.",
-   "damage": 9
-  },
-  {
-   "monster": "Flood Eel",
-   "type": "regular",
-   "attack": "Riptide Shock",
-   "does": "Shoots a rushing water blast with sparks.",
-   "effect": "Washes away 1 buff.",
-   "lesson": "Disasters can wipe out what you have.",
-   "damage": 11
-  },
-  {
-   "monster": "Catastrophe Leviathan",
-   "type": "boss",
-   "attack": "Perfect Storm",
-   "does": "Summons a tidal wave plus lightning.",
-   "effect": "Huge hit unless Insurance Barrier is up.",
-   "lesson": "Plan for the worst case.",
-   "damage": 22,
-   "second_attack": {
-    "attack": "Whirlpool",
-    "does": "Spins you around in a whirlpool.",
-    "effect": "Shuffles the answer buttons.",
-    "damage": 8
-   }
-  }
- ],
- "crossroads_observatory": [
-  {
-   "monster": "Scam Serpent",
-   "type": "regular",
-   "attack": "Too Good To Be True",
-   "does": "Opens a FREE PRIZE box that explodes into hypnotic spirals.",
-   "effect": "Shows a fake answer hint.",
-   "lesson": "If it sounds too good to be true, it's a scam.",
-   "damage": 9
-  },
-  {
-   "monster": "Inflation Balloon",
-   "type": "regular",
-   "attack": "Price Puff",
-   "does": "Puffs up and squeezes coins smaller.",
-   "effect": "Your coins are worth less until it's beaten.",
-   "lesson": "Inflation shrinks what money buys.",
-   "damage": 8
-  },
-  {
-   "monster": "Doubt Wraith",
-   "type": "regular",
-   "attack": "Second Guess",
-   "does": "Swings question-mark lanterns that confuse you.",
-   "effect": "Hides one answer choice for a turn.",
-   "lesson": "Make a plan and stick to it.",
-   "damage": 9
-  },
-  {
-   "monster": "Chaos Sphinx",
-   "type": "boss",
-   "attack": "Riddle Rift",
-   "does": "Fires a star beam from its wings.",
-   "effect": "Asks a bonus riddle; wrong = double damage.",
-   "lesson": "Think before big decisions.",
-   "damage": 18,
-   "second_attack": {
-    "attack": "Scale Smash",
-    "does": "Slams its golden scale.",
-    "effect": "Balances both health bars toward the middle.",
-    "damage": 12
-   }
-  }
- ],
- "sunfire_pass": [
-  {
-   "monster": "Ember Jackal",
-   "type": "regular",
-   "attack": "Flame Pounce",
-   "does": "Leaps with a fiery mane.",
-   "effect": "Burn: 3 damage for 2 turns.",
-   "damage": 9,
-   "tames_into": "Ember Jackal pet"
-  },
-  {
-   "monster": "Sunscale Basilisk",
-   "type": "regular",
-   "attack": "Solar Glare",
-   "does": "Flashes its sun plates.",
-   "effect": "Blinds: answers fade for 1 turn.",
-   "damage": 9,
-   "tames_into": "Sunscale Basilisk pet"
-  },
-  {
-   "monster": "Cinder Scarab",
-   "type": "regular",
-   "attack": "Molten Roll",
-   "does": "Rolls into a ball of molten gold.",
-   "effect": "Hard to hit; takes half spell damage.",
-   "damage": 10,
-   "tames_into": "Cinder Scarab pet"
-  },
-  {
-   "monster": "Solar Wyrm",
-   "type": "boss",
-   "attack": "Sunfall Breath",
-   "does": "Breathes a beam of sunfire.",
-   "effect": "Huge burn damage.",
-   "damage": 20,
-   "tames_into": "Solar Wyrm pet (legendary)"
-  }
- ],
- "nebula_grove": [
-  {
-   "monster": "Starmoth",
-   "type": "regular",
-   "attack": "Stardust Gust",
-   "does": "Flaps galaxy wings, blowing stardust.",
-   "effect": "Sleepy: skip a turn 30% of the time.",
-   "damage": 8,
-   "tames_into": "Starmoth pet"
-  },
-  {
-   "monster": "Nebula Lynx",
-   "type": "regular",
-   "attack": "Comet Claw",
-   "does": "Slashes with glowing star claws.",
-   "effect": "Critical hit chance up.",
-   "damage": 11,
-   "tames_into": "Nebula Lynx pet"
-  },
-  {
-   "monster": "Void Sprout",
-   "type": "regular",
-   "attack": "Black Hole Bloom",
-   "does": "Opens a tiny black hole flower.",
-   "effect": "Pulls in 1 of your buffs.",
-   "damage": 9,
-   "tames_into": "Void Sprout pet"
-  },
-  {
-   "monster": "Galaxy Stag",
-   "type": "boss",
-   "attack": "Constellation Charge",
-   "does": "Charges with glowing star antlers.",
-   "effect": "Hits harder each time it charges.",
-   "damage": 19,
-   "tames_into": "Galaxy Stag pet (legendary)"
-  }
- ],
- "astral_ruins": [
-  {
-   "monster": "Rune Golem",
-   "type": "regular",
-   "attack": "Rune Slam",
-   "does": "Slams the ground and runes light up.",
-   "effect": "Shield up for itself next turn.",
-   "damage": 11,
-   "tames_into": "Rune Golem pet"
-  },
-  {
-   "monster": "Relic Wraith",
-   "type": "regular",
-   "attack": "Ancient Shield Bash",
-   "does": "Bashes with an old star shield.",
-   "effect": "Blocks your next spell.",
-   "damage": 10,
-   "tames_into": "Relic Wraith pet"
-  },
-  {
-   "monster": "Comet Hound",
-   "type": "regular",
-   "attack": "Comet Dash",
-   "does": "Dashes past with a blazing comet tail.",
-   "effect": "Always attacks first.",
-   "damage": 9,
-   "tames_into": "Comet Hound pet"
-  },
-  {
-   "monster": "Astral Colossus",
-   "type": "boss",
-   "attack": "Planet Crush",
-   "does": "Hurls its orbiting planet down.",
-   "effect": "Massive hit every 3rd turn.",
-   "damage": 24,
-   "tames_into": "Astral Colossus pet (legendary)"
-  }
- ],
- "moonwell_cavern": [
-  {
-   "monster": "Moonbat",
-   "type": "regular",
-   "attack": "Crescent Screech",
-   "does": "Screeches crescent-shaped sound waves.",
-   "effect": "Scrambles one answer's text.",
-   "damage": 8,
-   "tames_into": "Moonbat pet"
-  },
-  {
-   "monster": "Crystal Crawler",
-   "type": "regular",
-   "attack": "Shard Spray",
-   "does": "Fires glowing crystal shards.",
-   "effect": "Hits 3 times for small damage.",
-   "damage": 4,
-   "tames_into": "Crystal Crawler pet"
-  },
-  {
-   "monster": "Tide Specter",
-   "type": "regular",
-   "attack": "Moon Tide",
-   "does": "Washes a ghostly wave over you.",
-   "effect": "Heals itself a little.",
-   "damage": 9,
-   "tames_into": "Tide Specter pet"
-  },
-  {
-   "monster": "Lunar Hydra",
-   "type": "boss",
-   "attack": "Triple Moonbeam",
-   "does": "All three heads fire silver beams.",
-   "effect": "3 hits; each head can be beaten separately.",
-   "damage": 21,
-   "tames_into": "Lunar Hydra pet (legendary)"
-  }
- ]
+  "coinfall-docks": [
+    {
+      "monster": "Budget Breaker",
+      "type": "regular",
+      "attack": "Budget Smash",
+      "does": "Cracks your budget open and scoops up loose coins.",
+      "effect": "Steals 5 coins if you answer wrong.",
+      "lesson": "Spending without a plan drains your savings fast.",
+      "damage": 8,
+      "rules_from": "Spendling"
+    },
+    {
+      "monster": "Subscription Swarm",
+      "type": "regular",
+      "attack": "Monthly Nibble",
+      "does": "A cloud of tiny bills, each taking a small bite.",
+      "effect": "Eats part of your savings shield.",
+      "lesson": "Small payments that repeat every month add up.",
+      "damage": 10,
+      "rules_from": "Jar Muncher"
+    },
+    {
+      "monster": "Overspend Kraken",
+      "type": "boss",
+      "attack": "Eight-Arm Spree",
+      "does": "Grabs everything on the dock with all eight arms at once.",
+      "effect": "Hits twice in a row on a wrong answer.",
+      "lesson": "Big splurges wreck a budget.",
+      "damage": 16,
+      "rules_from": "King Splurge",
+      "second_attack": {
+        "attack": "Flash Sale Wave",
+        "does": "A wave of BUY NOW signs rushes at you.",
+        "effect": "Shrinks your answer timer for 1 turn.",
+        "damage": 12
+      }
+    }
+  ],
+  "the-sprawl": [
+    {
+      "monster": "Impulse Wisp",
+      "type": "regular",
+      "attack": "Shiny Flicker",
+      "does": "Darts in the moment something shiny catches your eye.",
+      "effect": "Hits first if you take longer than 10 seconds.",
+      "lesson": "Deciding in a hurry leads to choices you regret.",
+      "damage": 9,
+      "rules_from": "Impulse Magpie"
+    },
+    {
+      "monster": "Splurge Hound",
+      "type": "regular",
+      "attack": "Deal Chase",
+      "does": "Runs off with one of your choices while you chase a bargain.",
+      "effect": "Hides one answer choice for a turn.",
+      "lesson": "Make a plan and stick to it.",
+      "damage": 9,
+      "rules_from": "Doubt Wraith"
+    },
+    {
+      "monster": "Splurge Peacock",
+      "type": "boss",
+      "attack": "Dazzle Fan",
+      "does": "Spreads a dazzling tail to rush you into a snap decision.",
+      "effect": "Asks a bonus riddle; wrong = double damage.",
+      "lesson": "Think before big decisions.",
+      "damage": 18,
+      "rules_from": "Chaos Sphinx",
+      "second_attack": {
+        "attack": "Trade-Off Tilt",
+        "does": "Tips the scales so both sides meet in the middle.",
+        "effect": "Balances both health bars toward the middle.",
+        "damage": 12
+      }
+    }
+  ],
+  "frostvault": [
+    {
+      "monster": "Inflation Shade",
+      "type": "regular",
+      "attack": "Price Creep",
+      "does": "A cold fog that makes every price tag climb.",
+      "effect": "Your coins are worth less until it's beaten.",
+      "lesson": "Inflation shrinks what your money can buy.",
+      "damage": 8,
+      "rules_from": "Inflation Balloon"
+    },
+    {
+      "monster": "Overdraft Golem",
+      "type": "regular",
+      "attack": "Fee Chip",
+      "does": "Chips a slice off the coins you earned.",
+      "effect": "Takes a slice of coins you earned this battle.",
+      "lesson": "Take-home pay is less than gross pay, and spending more than you have brings fees.",
+      "damage": 8,
+      "rules_from": "Tax Gremlin"
+    },
+    {
+      "monster": "Frostfang Mammoth",
+      "type": "boss",
+      "attack": "Overtime Stampede",
+      "does": "Charges harder every turn and wears itself out doing it.",
+      "effect": "Gets stronger each turn but loses health too.",
+      "lesson": "Working nonstop burns you out.",
+      "damage": 16,
+      "rules_from": "Burnout Blaze",
+      "second_attack": {
+        "attack": "Tusk Drop",
+        "does": "One huge swing of its icy tusks.",
+        "effect": "Big single hit.",
+        "damage": 20
+      }
+    }
+  ],
+  "credit-citadel": [
+    {
+      "monster": "Late Fee Raptor",
+      "type": "regular",
+      "attack": "Late Swoop",
+      "does": "Dives the moment a payment is overdue.",
+      "effect": "Extra damage if your answer is slow.",
+      "lesson": "Paying late costs extra.",
+      "damage": 10,
+      "rules_from": "Late Fee Troll"
+    },
+    {
+      "monster": "Minimum Payment Leech",
+      "type": "regular",
+      "attack": "Interest Drain",
+      "does": "Latches on and drains a little more every turn.",
+      "effect": "Damage goes up +2 every turn it is ignored.",
+      "lesson": "Paying only the minimum lets interest keep growing.",
+      "damage": 6,
+      "rules_from": "Interest Imp"
+    },
+    {
+      "monster": "Collector Scorpion",
+      "type": "boss",
+      "attack": "Pincer Lock",
+      "does": "Clamps one of your answers shut.",
+      "effect": "Locks one answer button for a turn.",
+      "lesson": "Bad loans trap you.",
+      "damage": 15,
+      "rules_from": "Loan Shark Lord",
+      "second_attack": {
+        "attack": "Stinger Flurry",
+        "does": "Jabs three times in a row.",
+        "effect": "Hits 3 times for small damage.",
+        "damage": 5
+      }
+    }
+  ],
+  "compound-rift": [
+    {
+      "monster": "APR Serpent",
+      "type": "regular",
+      "attack": "Double Coil",
+      "does": "Coils around itself until there are two of it.",
+      "effect": "Splits into 2 slimes if not beaten in 3 turns.",
+      "lesson": "Growth builds on growth, for savings and for debts alike.",
+      "damage": 8,
+      "rules_from": "Debt Slime"
+    },
+    {
+      "monster": "Rug Pull Mimic",
+      "type": "regular",
+      "attack": "Trapdoor Snap",
+      "does": "Looks like treasure, swells up, then snaps.",
+      "effect": "Grows for 2 turns, then pops for big damage.",
+      "lesson": "If an investment promises quick riches, check it carefully. Bubbles pop.",
+      "damage": 14,
+      "rules_from": "Bubble Beetle"
+    },
+    {
+      "monster": "Compound Leviathan",
+      "type": "boss",
+      "attack": "Market Plunge",
+      "does": "Dives and drags the whole rift down with it.",
+      "effect": "Hits everyone; your pet too.",
+      "lesson": "Markets drop, but patience recovers.",
+      "damage": 17,
+      "rules_from": "Crash Treant",
+      "second_attack": {
+        "attack": "Slow Tide",
+        "does": "A heavy current that slows you down.",
+        "effect": "Slows you for 2 turns.",
+        "damage": 10
+      }
+    }
+  ],
+  "the-exchange": [
+    {
+      "monster": "Hype Bull",
+      "type": "regular",
+      "attack": "FOMO Charge",
+      "does": "Charges before you have had time to think.",
+      "effect": "Fast; always attacks first.",
+      "lesson": "Fear of missing out leads to risky choices.",
+      "damage": 9,
+      "rules_from": "Hype Hornet"
+    },
+    {
+      "monster": "Panic Bear",
+      "type": "regular",
+      "attack": "Sell-Off Slam",
+      "does": "A panicked swipe that knocks the power out of your next spell.",
+      "effect": "Knocks your next spell's power down.",
+      "lesson": "Panicking in a downturn locks in losses.",
+      "damage": 10,
+      "rules_from": "Panic Bear"
+    },
+    {
+      "monster": "Volatility Roc",
+      "type": "boss",
+      "attack": "Perfect Storm",
+      "does": "Brings the whole storm down on you at once.",
+      "effect": "Huge hit unless Insurance Barrier is up.",
+      "lesson": "Plan for the worst case. Insurance spreads the cost of a big loss.",
+      "damage": 22,
+      "rules_from": "Catastrophe Leviathan",
+      "second_attack": {
+        "attack": "Whirlwind",
+        "does": "Spins the answer buttons around.",
+        "effect": "Shuffles the answer buttons.",
+        "damage": 8
+      }
+    }
+  ],
+  "phish-fens": [
+    {
+      "monster": "Phish Lurker",
+      "type": "regular",
+      "attack": "Too Good To Be True",
+      "does": "Dangles a glowing hint that points the wrong way.",
+      "effect": "Shows a fake answer hint.",
+      "lesson": "If it sounds too good to be true, it is probably a scam.",
+      "damage": 9,
+      "rules_from": "Scam Serpent"
+    },
+    {
+      "monster": "Identity Wraith",
+      "type": "regular",
+      "attack": "Name Scramble",
+      "does": "Steals the letters of one answer and jumbles them.",
+      "effect": "Scrambles one answer's text.",
+      "lesson": "Keep your personal information private so nobody can pretend to be you.",
+      "damage": 8,
+      "rules_from": "Moonbat"
+    },
+    {
+      "monster": "Phish Queen",
+      "type": "boss",
+      "attack": "Web of Lies",
+      "does": "Spins quietly, then springs the trap.",
+      "effect": "Massive hit every 3rd turn.",
+      "lesson": "Scammers are patient. Stop and check before you click, share or pay.",
+      "damage": 24,
+      "rules_from": "Astral Colossus"
+    }
+  ],
+  "ledgerhold": [
+    {
+      "monster": "Debt Dragon",
+      "type": "boss",
+      "attack": "Compound Flame",
+      "does": "Fire that keeps burning after the blast.",
+      "effect": "Huge burn damage.",
+      "lesson": "Debt that is left alone keeps growing. Face it early, with a plan.",
+      "damage": 20,
+      "rules_from": "Solar Wyrm"
+    }
+  ]
 }

@@ -1,361 +1,328 @@
-// Asset importer: `../MoneyQuest Assets/` (read-only) → public/assets/, src/assets/manifest.json and
-// ASSET_REPORT.md. Also pixelizes the few pieces the pack doesn't have from the v1 art in
-// assets-src/v1/ (read-only), and imports any extra PixelLab characters saved in `assets-src/pixellab/`.
-//   node tools/import-assets.ts   (or: npm run import:assets)
-
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+// Asset importer: `../assets_v2` (read-only, 1.4 GB of masters) → the runtime set the game ships.
+//
+//   public/assets/v2/**       WebP at the sizes the game draws (canvas 1280×720, see PLAN.md §12)
+//   src/assets/v2.json        every exported file with its size
+//   src/data/v2/*.json        the data the game builds against (coordinates on the 640×360 stage)
+//   docs/assets_v2/**         reference copies of the art set's docs and scripts
+//   ASSET_REPORT.md           what was exported and how big it is
+//
+// Everything this writes is generated: re-run `npm run import:assets` instead of editing it.
+// Run with --force to re-encode files that already exist.
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Img } from './lib/img.ts';
-import { alphaBox, atlasJson, flipX, loadImg, pack, padBottomCenter, pixelize, toSharp } from './lib/img.ts';
+import sharp from 'sharp';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PACK = join(root, '..', 'MoneyQuest Assets');
-const V1 = join(root, 'assets-src', 'v1'); // smooth v1 art (Meta AI) kept from the old build, read-only
-const EXTRA = join(root, 'assets-src', 'pixellab'); // PixelLab characters made for this game
-const OUT = join(root, 'public', 'assets');
-const MANIFEST = join(root, 'src', 'assets', 'manifest.json');
-const REPORT = join(root, 'ASSET_REPORT.md');
-const WEBP = { lossless: true, effort: 6 };
+const SRC = join(root, '..', 'assets_v2');
+const OUT = join(root, 'public', 'assets', 'v2');
+const DATA = join(root, 'src', 'data', 'v2');
+const DOCS = join(root, 'docs', 'assets_v2');
+const FORCE = process.argv.includes('--force');
 
-if (!existsSync(join(PACK, 'locations'))) {
-  console.error(`✗ Asset pack not found at ${PACK}. Nothing written.`);
+if (!existsSync(join(SRC, 'manifest.json'))) {
+  console.error(`assets_v2 not found at ${SRC}. It sits next to the game folder on Sathvik's Mac and is not in the repo.`);
   process.exit(1);
 }
 
-// Every source file gets a row in the report: how it's used, or why it isn't.
-const used = new Map<string, { use: string; notes: string[] }>();
-const claim = (abs: string, use: string, ...notes: string[]) => used.set(abs, { use, notes: notes.filter(Boolean) });
-const defects: string[] = [];
-let bytes = 0;
-const outRel = (p: string) => relative(OUT, p);
+// ── Sizes (PLAN.md §12, decision 1). The stage is 640×360; the canvas draws it at 2×. ──
+const STAGE = 3; // source screen px (1920×1080) per stage px
+const RENDER = 2; // canvas px per stage px
+const SCREEN_W = 640 * RENDER, SCREEN_H = 360 * RENDER;
+const PROP = RENDER / STAGE; // props: @1x source size × this
+const MONSTER_H = 200, MONSTER_PORTRAIT = 128;
+const BOSS_H = 384, BOSS_PORTRAIT = 192, BOSS_CLIP = 0.64; // clip factor: full-size frame px → export px
+const NPC_H = 160, NPC_PORTRAIT = 160, NPC_CLIP = 0.25;
+const AVATAR_CLIP = 0.35;
+const LAYER = 0.25; // hair, face and hats: head-template px → export px
+const HAT_ICON = 128;
+const Q = 82;
 
-async function writeWebp(img: Img | string, out: string): Promise<string> {
-  mkdirSync(dirname(out), { recursive: true });
-  await (typeof img === 'string' ? (await import('sharp')).default(img) : toSharp(img)).webp(WEBP).toFile(out);
-  bytes += statSync(out).size;
-  return outRel(out);
+const j = <T = any>(p: string): T => JSON.parse(readFileSync(join(SRC, p), 'utf8')) as T;
+const r1 = (n: number) => Math.round(n * 10) / 10;
+const st = (n: number) => r1(n / STAGE);
+const files: Record<string, { w: number; h: number; bytes: number }> = {};
+const notes: string[] = [];
+let encoded = 0;
+
+function fresh(src: string, out: string): boolean {
+  return !FORCE && existsSync(out) && statSync(out).mtimeMs >= statSync(src).mtimeMs;
 }
-function writeJson(obj: unknown, out: string): string {
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, JSON.stringify(obj));
-  bytes += statSync(out).size;
-  return outRel(out);
+async function record(rel: string): Promise<{ w: number; h: number }> {
+  const out = join(OUT, rel);
+  const m = await sharp(out).metadata();
+  files[rel] = { w: m.width!, h: m.height!, bytes: statSync(out).size };
+  return { w: m.width!, h: m.height! };
 }
-const listDirs = (p: string) => (existsSync(p) ? readdirSync(p).filter((f) => !f.startsWith('.') && !f.startsWith('_') && statSync(join(p, f)).isDirectory()).sort() : []);
+type Size = { w?: number; h?: number; scale?: number; exact?: [number, number] };
+/** Resize one source image to WebP. Returns the exported size. */
+async function img(srcRel: string, outRel: string, size: Size, opts: { alpha?: boolean; q?: number } = {}): Promise<{ w: number; h: number }> {
+  const src = join(SRC, srcRel), out = join(OUT, outRel);
+  if (!fresh(src, out)) {
+    mkdirSync(dirname(out), { recursive: true });
+    let s = sharp(src);
+    const m = await s.metadata();
+    let w: number, h: number;
+    if (size.exact) [w, h] = size.exact;
+    else if (size.scale) [w, h] = [Math.max(1, Math.round(m.width! * size.scale)), Math.max(1, Math.round(m.height! * size.scale))];
+    else if (size.h) [w, h] = [Math.max(1, Math.round((m.width! * size.h) / m.height!)), size.h];
+    else [w, h] = [size.w!, Math.max(1, Math.round((m.height! * size.w!) / m.width!))];
+    s = s.resize(w, h, { fit: 'fill', kernel: 'lanczos3' });
+    await s.webp({ quality: opts.q ?? Q, alphaQuality: 90, effort: 5 }).toFile(out);
+    encoded++;
+  }
+  return record(outRel);
+}
+const dirs = (p: string) => readdirSync(join(SRC, p), { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith('_')).map((d) => d.name).sort();
+async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Promise<void> {
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) await fn(items[i++]!); }));
+}
 
-// ── Locations ─────────────────────────────────────────────────────────────
-interface Exit { edge: 'left' | 'right' | 'top' | 'bottom'; range: [number, number]; to: string; enter_at: [number, number] | null }
-interface PackScreen { image: string; landmark?: string; npcs?: string[]; exits: Exit[]; entries?: Record<string, [number, number]>; monster_spawns?: [number, number][]; boss_spawn?: [number, number]; portals?: { at: [number, number]; color: string; to: string }[] }
-interface PackRooms { zone: string; topic?: string; start: string; screens: Record<string, PackScreen>; battle_background?: string; notes?: string }
-const KNOWN_ROUGH: Record<string, string> = {
-  'borrowers_bridges/toll': 'darker than its neighbours (pack README): brighten slightly in the game',
-  'piggybank_village/cottages': 'darker than its neighbours (pack README): brighten slightly in the game',
-  'compound_orchard/orchard_gate': 'the gate is drawn closed (pack README): treat as a doorway',
-};
-
-const locations: Record<string, { topic: string; start: string; battleBg: string | null; screens: Record<string, { image: string } & Omit<PackScreen, 'image'>> }> = {};
-
-async function importLocations() {
-  for (const zone of listDirs(join(PACK, 'locations'))) {
-    const dir = join(PACK, 'locations', zone);
-    const roomsPath = join(dir, 'rooms.json');
-    const rooms = JSON.parse(readFileSync(roomsPath, 'utf8')) as PackRooms;
-    claim(roomsPath, 'layout source for this location (copied into the manifest; game-side layouts live in src/data/rooms/)');
-    const screens: (typeof locations)[string]['screens'] = {};
-    for (const [name, s] of Object.entries(rooms.screens)) {
-      const src = join(dir, s.image);
-      if (!existsSync(src)) {
-        defects.push(`${zone}/${name}: image ${s.image} is missing`);
-        continue;
+// ── Locations: grounds, the overhang layer, props and where each prop stands ──
+interface SrcObject { file: string; prop: string; anchor: [number, number]; size: [number, number]; flip: boolean }
+const screensOut: Record<string, { grid: [number, number]; boss: string | null; monsters: string[]; arrival: { screen: string; at: [number, number] }; screens: Record<string, unknown> }> = {};
+const propSizes: Record<string, Record<string, { w: number; h: number }>> = {};
+async function locations(): Promise<void> {
+  for (const loc of dirs('locations')) {
+    const L = j(`locations/${loc}/${loc}.json`);
+    const out: Record<string, unknown> = {};
+    propSizes[loc] = {};
+    const jobs: (() => Promise<void>)[] = [];
+    for (const [id, s] of Object.entries<any>(L.screens)) {
+      const dir = `locations/${loc}/${s.folder}`;
+      const objs = j<{ objects: SrcObject[] }>(`${dir}/objects.json`).objects;
+      const exits = j(`${dir}/exits.json`);
+      jobs.push(async () => void (await img(`${dir}/ground.png`, `loc/${loc}/${id}.webp`, { exact: [SCREEN_W, SCREEN_H] }, { q: 80 })));
+      const over = (await sharp(join(SRC, dir, 'overhang.png')).extractChannel(3).stats()).channels[0]!.max > 0;
+      if (over) jobs.push(async () => void (await img(`${dir}/overhang.png`, `loc/${loc}/${id}-over.webp`, { exact: [SCREEN_W, SCREEN_H] })));
+      const props = [];
+      for (const o of objs) {
+        // A prop is drawn from its master; the two arch halves only exist as placed renders.
+        const master = `props/${loc}/prop-${loc}-${o.prop}.png`;
+        const key = existsSync(join(SRC, master)) ? o.prop : `${o.prop}@${id}`;
+        if (!propSizes[loc]![key]) {
+          propSizes[loc]![key] = { w: 0, h: 0 };
+          const srcRel = key === o.prop ? master : `${dir}/${o.file}`;
+          jobs.push(async () => { propSizes[loc]![key] = await img(srcRel, `props/${loc}/${key.replace('@', '-at-')}.webp`, { exact: [Math.round(o.size[0] * PROP), Math.round(o.size[1] * PROP)] }); });
+        }
+        props.push({ p: key, x: st(o.anchor[0]), y: st(o.anchor[1]), w: st(o.size[0]), h: st(o.size[1]), ...(o.flip && key === o.prop ? { flip: true } : {}) });
       }
-      const img = await loadImg(src);
-      const notes: string[] = [];
-      if (img.w !== 320 || img.h !== 180) notes.push(`size ${img.w}×${img.h}, expected 320×180`);
-      if (KNOWN_ROUGH[`${zone}/${name}`]) notes.push(KNOWN_ROUGH[`${zone}/${name}`]!);
-      notes.forEach((n) => defects.push(`${zone}/${name}: ${n}`));
-      const image = await writeWebp(img, join(OUT, 'screens', zone, `${name}.webp`));
-      claim(src, `screen "${name}" of ${zone} (drawn at 2× to fill 640×360)`, ...notes);
-      const { image: _src, ...rest } = s;
-      screens[name] = { image, ...rest };
+      out[id] = {
+        name: s.name,
+        over,
+        props,
+        doors: (exits.doors ?? []).map((d: any) => ({ kind: d.type, target: d.target, rect: d.rect.map(st) })),
+        ...(exits.arch ? { arch: { opening: exits.arch.opening.map(st), lintel: st(exits.arch.lintel_bottom) } } : {}),
+      };
     }
-    let battleBg: string | null = null;
-    const bg = join(dir, rooms.battle_background ?? 'battle_bg.png');
-    if (existsSync(bg)) {
-      battleBg = await writeWebp(bg, join(OUT, 'battle', `${zone}.webp`));
-      claim(bg, `battle background for ${zone}`);
-    } else if (zone !== 'coin_academy') defects.push(`${zone}: no battle background`);
-    locations[zone] = { topic: rooms.topic ?? '', start: rooms.start, battleBg, screens };
-    // The pack keeps alternate palette versions and helper scripts; note them as unused.
-    for (const f of readdirSync(dir)) {
-      const p = join(dir, f);
-      if (used.has(p)) continue;
-      if (f === 'v1_palette') for (const g of readdirSync(p)) claim(join(p, g), 'not used: alternate palette version of a screen');
-      else if (f.endsWith('.sh')) claim(p, 'not used: download script (the images are already in the pack)');
-      else if (f.endsWith('.md')) claim(p, 'read for layout notes');
-    }
+    await pool(jobs, 6, (f) => f());
+    screensOut[loc] = { grid: L.grid, boss: L.boss ?? null, monsters: L.monsters ?? [], arrival: { screen: L.teleportArrival.screen, at: [st(L.teleportArrival.x), st(L.teleportArrival.y)] }, screens: out };
   }
 }
 
-// ── Monsters ──────────────────────────────────────────────────────────────
-interface MonsterEntry { zone: string; atlas: string; image: string; json: string; cell: number; baseline: number; size: number; boss: boolean; anims: { key: string; frames: string[]; frameRate: number; repeat: number }[] }
-const monsters: Record<string, MonsterEntry> = {};
-const EXPECTED_ROWS = { idle: 4, attack: 6, hit: 4, defeat: 5 };
-
-async function importMonsters() {
-  for (const zone of listDirs(join(PACK, 'monsters'))) {
-    const dir = join(PACK, 'monsters', zone);
-    for (const f of readdirSync(dir).filter((f) => f.endsWith('_sheet.json')).sort()) {
-      const id = f.replace('_sheet.json', '');
-      const json = JSON.parse(readFileSync(join(dir, f), 'utf8'));
-      const sheet = join(dir, json.meta.image);
-      const single = join(dir, `${id}.png`);
-      const notes: string[] = [];
-      for (const [row, n] of Object.entries(EXPECTED_ROWS)) {
-        const a = (json.anims as { key: string; frames: string[] }[]).find((x) => x.key.endsWith(`_${row}`));
-        if (!a) notes.push(`no ${row} animation`);
-        else if (a.frames.length !== n) notes.push(`${row} has ${a.frames.length} frames, expected ${n}`);
-      }
-      notes.forEach((n) => defects.push(`${id}: ${n}`));
-      const singleMeta = await loadImg(single);
-      const boss = id.startsWith('boss_');
-      const image = await writeWebp(sheet, join(OUT, 'monsters', `${id}.webp`));
-      const jsonOut = writeJson({ frames: json.frames, meta: { ...json.meta, image: `${id}.webp` } }, join(OUT, 'monsters', `${id}.json`));
-      monsters[id] = { zone, atlas: `mon:${id}`, image, json: jsonOut, cell: json.meta.frame.w, baseline: json.meta.baseline_y, size: singleMeta.h, boss, anims: json.anims };
-      claim(sheet, `${boss ? 'boss' : 'monster'} animation sheet (idle, attack, hit, defeat)`, ...notes);
-      claim(join(dir, f), 'Phaser atlas for the sheet');
-      claim(single, 'not used directly: the sheet already contains this pose (kept for reference)');
-    }
-    for (const f of readdirSync(dir)) {
-      const p = join(dir, f);
-      if (f === 'ai_animations') for (const g of readdirSync(p)) claim(join(p, g), 'not used: only the first frame of a PixelLab animation (the other frames are behind download links)');
-    }
+// ── World map and battle backgrounds ──
+let worldOut: unknown, battleOut: unknown;
+async function mapAndBattle(): Promise<void> {
+  const W = j('world-map/world-map.json');
+  await img(W.image['720'], 'map/world.webp', { exact: [SCREEN_W, SCREEN_H] }, { q: 84 });
+  worldOut = { image: 'map/world.webp', pins: Object.fromEntries(Object.entries<any>(W.pins).map(([id, p]) => [id, { x: r1(p.x * 640), y: r1(p.y * 360), r: r1(p.radius * 640), kind: p.kind, boss: p.boss, order: p.order }])) };
+  const B = j('backgrounds/battle/battle-layout.json');
+  const bg: Record<string, string> = {};
+  for (const d of dirs('backgrounds/battle')) {
+    await img(`backgrounds/battle/${d}/battle-bg-${d}@1x.webp`, `battle/${d}.webp`, { exact: [SCREEN_W, SCREEN_H] }, { q: 82 });
+    bg[d] = `battle/${d}.webp`;
   }
-  for (const f of ['monster_attacks.json', 'MONSTER_ATTACKS.md', 'README.md', 'download_ai_animations.sh']) {
-    const p = join(PACK, 'monsters', f);
-    if (!existsSync(p)) continue;
-    claim(p, f === 'monster_attacks.json' ? 'monster data (copied to src/data/monster_attacks.json by this importer)' : f.endsWith('.sh') ? 'not used: download script' : 'read for notes');
-  }
-  // monster_attacks.json is the only source of monster data; copy it in so the game can import it.
-  writeFileSync(join(root, 'src', 'data', 'monster_attacks.json'), readFileSync(join(PACK, 'monsters', 'monster_attacks.json')));
+  battleOut = { floorTop: B.floorTop, feetY: r1(B.feetY * 360), playerX: r1(B.player.x * 640), enemyX: r1(B.enemy.x * 640), hudTop: r1(B.safeTopForHud * 360), backgrounds: bg };
 }
 
-// ── Characters (PixelLab layout) ──────────────────────────────────────────
-interface CharEntry { atlas: string; image: string; json: string; size: number; foot: number; height: number; source: 'pack' | 'pixellab-extra' | 'v1-pixelized'; anims: Record<string, Record<string, string[]>>; rotations: Record<string, string> }
-const characters: Record<string, CharEntry> = {};
+// ── Monsters (which are also the pets), bosses and NPCs ──
+const VIEWS = ['front', 'back', 'left', 'right'] as const;
+const monstersOut: Record<string, { looks: string[] }> = {};
+const bossesOut: Record<string, { clips: Record<string, Clip> }> = {};
+const npcsOut: Record<string, { talk: Clip | null }> = {};
+interface Clip { image: string; cell: [number, number]; frames: number; cols: number; foot: [number, number]; fps: number; head?: number[][]; view?: string }
 
-async function importCharacter(id: string, base: string, source: CharEntry['source']) {
-  const meta = JSON.parse(readFileSync(join(base, 'metadata.json'), 'utf8'));
-  claim(join(base, 'metadata.json'), `character "${id}" layout`);
-  const state = meta.states[0];
-  const items: { name: string; img: Img }[] = [];
-  const add = async (name: string, rel: string) => {
-    const p = join(base, rel);
-    items.push({ name, img: await loadImg(p) });
-    claim(p, `character "${id}" frame ${name}`);
-  };
-  const rotations: Record<string, string> = {};
-  for (const [dir, rel] of Object.entries(state.frames.rotations as Record<string, string>)) {
-    rotations[dir] = `rot_${dir}`;
-    await add(`rot_${dir}`, rel);
+/** A 16-frame sheet (4×4 cells of the full-size frame × sheet.scale) re-cut at `factor` × full size. */
+async function clip(jsonRel: string, outRel: string, factor: number, withHead = false): Promise<Clip> {
+  const c = j(jsonRel);
+  const names = Object.keys(c.sheet.frames).sort();
+  const [cw0, ch0] = c.sheet.cell as [number, number];
+  const cols = Math.round(Math.max(...names.map((n) => c.sheet.frames[n].frame.x)) / cw0) + 1;
+  const rows = Math.ceil(names.length / cols);
+  const cw = Math.round((cw0 / c.sheet.scale) * factor), ch = Math.round((ch0 / c.sheet.scale) * factor);
+  await img(join(dirname(jsonRel), c.sheet.image), outRel, { exact: [cw * cols, ch * rows] });
+  const out: Clip = { image: outRel, cell: [cw, ch], frames: names.length, cols, foot: [r1(c.anchor.foot[0] * factor), r1(c.anchor.foot[1] * factor)], fps: 8 };
+  if (withHead && c.head) {
+    out.view = c.head.view;
+    out.head = names.map((n) => (c.head.frames[c.sheet.frames[n].sourceFrame] as number[]).map((v) => r1(v * factor)));
   }
-  const anims: CharEntry['anims'] = {};
-  for (const [anim, byDir] of Object.entries((state.frames.animations ?? {}) as Record<string, Record<string, string[]>>)) {
-    anims[anim] = {};
-    for (const [dir, frames] of Object.entries(byDir)) {
-      anims[anim][dir] = [];
-      for (let i = 0; i < frames.length; i++) {
-        anims[anim][dir].push(`${anim}_${dir}_${i}`);
-        await add(`${anim}_${dir}_${i}`, frames[i]!);
-      }
-    }
-  }
-  // Feet line and visible height from the south rotation, so characters on different canvas sizes
-  // (PixelLab standard mode pads to 92 px) stand on the same spot.
-  const south = items.find((it) => it.name === 'rot_south')!.img;
-  const box = alphaBox(south)!;
-  const packed = pack(items);
-  const image = await writeWebp(packed.sheet, join(OUT, 'characters', `${id}.webp`));
-  const json = writeJson(atlasJson(`${id}.webp`, packed), join(OUT, 'characters', `${id}.json`));
-  characters[id] = { atlas: `chr:${id}`, image, json, size: state.character.size.height, foot: box.y + box.h, height: box.h, source, anims, rotations };
-}
-
-async function importCharacters() {
-  for (const id of listDirs(join(PACK, 'characters'))) await importCharacter(id, join(PACK, 'characters', id), 'pack');
-  for (const id of listDirs(EXTRA)) await importCharacter(id, join(EXTRA, id), 'pixellab-extra');
-}
-
-// ── Gaps filled from the v1 art in assets-src/v1 (pixelized, PLAN.md §7) ─
-const v1px: Record<string, { atlas: string; image: string; json: string; frames: string[]; anims?: Record<string, { frames: string[]; flipX: boolean }> }> = {};
-let worldMap: string | null = null;
-let tamed: { atlas: string; image: string; json: string; frames: string[] } | null = null;
-
-/** Bonus-zone monsters can be tamed as pets, which are half the player's height: 32 px versions. */
-async function importTamed() {
-  const items: { name: string; img: Img }[] = [];
-  for (const [id, m] of Object.entries(monsters)) {
-    if (!['sunfire_pass', 'nebula_grove', 'astral_ruins', 'moonwell_cavern'].includes(m.zone)) continue;
-    const src = join(PACK, 'monsters', m.zone, `${id}.png`);
-    items.push({ name: id, img: await pixelize(await loadImg(src), 40, 32) });
-    claim(src, 'single sprite: used for the 32 px tamed-pet version (and kept for reference)');
-  }
-  const packed = pack(items);
-  tamed = { atlas: 'tamed', image: await writeWebp(packed.sheet, join(OUT, 'tamed', 'tamed.webp')), json: writeJson(atlasJson('tamed.webp', packed), join(OUT, 'tamed', 'tamed.json')), frames: items.map((i) => i.name) };
-}
-
-async function v1Frames(atlasName: string): Promise<Record<string, Img>> {
-  const json = JSON.parse(readFileSync(join(V1, 'atlas', `${atlasName}.json`), 'utf8')) as { frames: Record<string, { frame: { x: number; y: number; w: number; h: number } }> };
-  const src = join(V1, 'atlas', `${atlasName}.webp`);
-  claim(src, `v1 art (assets-src/v1), pixelized for the game`);
-  const out: Record<string, Img> = {};
-  for (const [name, f] of Object.entries(json.frames)) out[name] = await loadImg(src, f.frame);
   return out;
 }
 
-async function importV1Gaps() {
-  if (!existsSync(V1)) {
-    defects.push(`v1 art not found at ${V1}: pets, Bull Calf, Laurel Wreath icon and world map were skipped`);
-    return;
+async function creatures(): Promise<void> {
+  const jobs: (() => Promise<void>)[] = [];
+  for (const sp of dirs('monsters')) {
+    const looks = dirs(`monsters/${sp}`);
+    monstersOut[sp] = { looks };
+    for (const look of looks) {
+      for (const v of VIEWS) jobs.push(async () => void (await img(`monsters/${sp}/${look}/monster-${sp}-${look}-${v}.png`, `mon/${sp}/${look}-${v}.webp`, { h: MONSTER_H })));
+      jobs.push(async () => void (await img(`monsters/${sp}/${look}/monster-${sp}-${look}-portrait.png`, `mon/${sp}/${look}-portrait.webp`, { w: MONSTER_PORTRAIT })));
+    }
   }
-  // Pets: half the player's height (32 px).
-  const pets = await v1Frames('pets');
-  const petItems = await Promise.all(Object.entries(pets).map(async ([name, img]) => ({ name, img: await pixelize(img, 40, 32) })));
-  const petPack = pack(petItems);
-  v1px.pets = { atlas: 'v1px:pets', image: await writeWebp(petPack.sheet, join(OUT, 'v1px', 'pets.webp')), json: writeJson(atlasJson('pets.webp', petPack), join(OUT, 'v1px', 'pets.json')), frames: Object.keys(pets) };
+  for (const b of dirs('bosses')) {
+    bossesOut[b] = { clips: {} };
+    for (const v of VIEWS) jobs.push(async () => void (await img(`bosses/${b}/boss-${b}-${v}.png`, `boss/${b}/${v}.webp`, { h: BOSS_H })));
+    jobs.push(async () => void (await img(`bosses/${b}/boss-${b}-portrait.png`, `boss/${b}/portrait.webp`, { w: BOSS_PORTRAIT })));
+    for (const c of dirs(`animations/bosses/${b}`)) jobs.push(async () => { bossesOut[b]!.clips[c] = await clip(`animations/bosses/${b}/${c}/boss-${b}-${c}.json`, `boss/${b}/${c}.webp`, BOSS_CLIP); });
+  }
+  for (const n of dirs('npcs')) {
+    npcsOut[n] = { talk: null };
+    for (const v of VIEWS) jobs.push(async () => void (await img(`npcs/${n}/npc-${n}-${v}.png`, `npc/${n}/${v}.webp`, { h: NPC_H })));
+    jobs.push(async () => void (await img(`npcs/${n}/npc-${n}-portrait.png`, `npc/${n}/portrait.webp`, { w: NPC_PORTRAIT })));
+    const talk = `animations/npcs/${n}/npc-${n}-talk.json`;
+    if (existsSync(join(SRC, talk))) jobs.push(async () => { npcsOut[n]!.talk = await clip(talk, `npc/${n}/talk.webp`, NPC_CLIP); });
+    else notes.push(`NPC ${n} has no talk clip.`);
+  }
+  await pool(jobs, 8, (f) => f());
+}
 
-  // Bull Calf walk frames (reward pet): 4 directions × 4 frames, padded to one cell so frames share a baseline.
-  const calf = await v1Frames('walk_pet_bull_calf');
-  const calfPx = await Promise.all(Object.entries(calf).map(async ([name, img]) => ({ name, img: await pixelize(img, 40, 32) })));
-  const cw = Math.max(...calfPx.map((c) => c.img.w)), ch = Math.max(...calfPx.map((c) => c.img.h));
-  const calfItems = calfPx.map((c) => ({ name: c.name, img: padBottomCenter(c.img, cw, ch) }));
-  // Store a real right-facing set too, so the game never has to guess.
-  for (const c of calfItems.filter((c) => c.name.startsWith('left_'))) calfItems.push({ name: c.name.replace('left_', 'right_'), img: flipX(c.img) });
-  const calfPack = pack(calfItems);
-  const dirs = ['down', 'up', 'left', 'right'];
-  v1px.pet_bull_calf_walk = {
-    atlas: 'v1px:pet_bull_calf_walk',
-    image: await writeWebp(calfPack.sheet, join(OUT, 'v1px', 'pet_bull_calf_walk.webp')),
-    json: writeJson(atlasJson('pet_bull_calf_walk.webp', calfPack), join(OUT, 'v1px', 'pet_bull_calf_walk.json')),
-    frames: calfItems.map((c) => c.name),
-    anims: Object.fromEntries(dirs.map((d) => [d, { frames: [0, 1, 2, 3].map((i) => `${d}_${i}`), flipX: false }])),
+// ── The avatar: body clips, hair and face layers, hats, colour sets ──
+let avatarOut: unknown, hatsOut: unknown;
+async function avatar(): Promise<void> {
+  const O = j('avatars/unisex/options.json');
+  const clips: Record<string, Clip> = {};
+  const templates: Record<string, { top: number; cx: number; w: number }> = {};
+  for (const c of dirs('animations/avatars/unisex')) {
+    const rel = `animations/avatars/unisex/${c}/avatar-unisex-${c}.json`;
+    clips[c] = await clip(rel, `avatar/clips/${c}.webp`, AVATAR_CLIP, true);
+    const h = j(rel).head;
+    templates[h.view] = { top: r1(h.template.top * LAYER), cx: r1(h.template.cx * LAYER), w: r1(h.template.w * LAYER) };
+  }
+  // Skin colour the body was drawn in: the median of its skin pixels (same test as overlay.py).
+  const { data } = await sharp(join(OUT, 'avatar/clips/idle.webp')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const ch: number[][] = [[], [], []];
+  for (let i = 0; i < data.length; i += 4) {
+    const [r, g, b, a] = [data[i]!, data[i + 1]!, data[i + 2]!, data[i + 3]!];
+    if (r > g && g > b && r - b > 40 && r > 80 && a > 128) { ch[0]!.push(r); ch[1]!.push(g); ch[2]!.push(b); }
+  }
+  const skinBase = ch.map((c) => c.sort((x, y) => x - y)[c.length >> 1]!);
+
+  const layers = async (meta: string, view: string) => {
+    const out: Record<string, { i: number; layer: string; image: string; off: [number, number]; w: number; h: number }[]> = {};
+    for (const m of j(meta).layers as any[]) {
+      if (m.empty) continue;
+      const image = `avatar/${view}/${m.file.replace(/\.png$/, '.webp')}`;
+      const s = await img(`avatars/unisex/layers/${m.file}`, image, { scale: LAYER });
+      (out[m.layer] ??= []).push({ i: m.i, layer: m.layer, image, off: [r1(m.off[0] * LAYER), r1(m.off[1] * LAYER)], ...s });
+    }
+    return out;
+  };
+  const front = { ...(await layers('avatars/unisex/layers/hair-front.json', 'front')), ...(await layers('avatars/unisex/layers/face-front.json', 'front')) };
+  const back = await layers('avatars/unisex/layers/hair-back.json', 'back');
+  const C = j('avatars/costume-sets/costume_sets.json');
+  avatarOut = {
+    note: 'Generated. Sizes are export px: clip cells, head tracks [top, cx, w] per frame, and layers in head-template px.',
+    skin: O.skin, eyes: Object.entries(O.eyes).map(([name, hex]) => ({ name, hex })), hairColours: Object.entries(O.hair).map(([name, hex]) => ({ name, hex })),
+    hairStyles: O.hairStyles, faces: O.faces, neat: O.hairStyles.indexOf('neat'), hairTintBase: 215, skinBase,
+    templates, clips, layers: { front, back },
+    costume: { groups: C.groups, order: ['trim', 'light', 'cape', 'tunic'], neck: 1.15, sets: C.sets },
   };
 
-  // Laurel Wreath icon for the shop, inventory and reward popup (the worn version is drawn in code).
-  const gear = await v1Frames('avatar_gear');
-  if (gear.hat_laurel_wreath) {
-    const icon = await pixelize(gear.hat_laurel_wreath, 32, 32);
-    v1px.laurel_icon = { atlas: 'v1px:laurel_icon', image: await writeWebp(icon, join(OUT, 'v1px', 'laurel_icon.webp')), json: '', frames: [] };
-  } else defects.push('v1 avatar_gear has no hat_laurel_wreath frame');
-
-  // Mentors not made with PixelLab yet: pixelize the v1 mentor (front from the static portrait, sides
-  // and back from its walk sheet) into the same character layout, at the PixelLab mentors' height.
-  const npcs = await v1Frames('npcs');
-  for (const zone of ['borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory']) {
-    const id = `mentor_${zone}`;
-    if (characters[id]) continue;
-    const walk = await v1Frames(`walk_npc_mentor_${zone}`);
-    const front = npcs[`npc_mentor_${zone}`] ?? walk.down_0;
-    const side = walk.left_0 ?? front;
-    // Stormwatch's v1 "up" row is a side view, so use the side frame for north there.
-    const back = zone === 'stormwatch_coast' ? side : (walk.up_0 ?? side);
-    if (!front) continue;
-    const H = 64, CANVAS = 72;
-    const px = async (img: Img) => padBottomCenter(await pixelize(img, 56, H), CANVAS, CANVAS);
-    const south = await px(front), west = await px(side), north = await px(back!);
-    const east = flipX(west);
-    const frames = [{ name: 'rot_south', img: south }, { name: 'rot_west', img: west }, { name: 'rot_east', img: east }, { name: 'rot_north', img: north }];
-    const packed = pack(frames);
-    const box = alphaBox(south)!;
-    characters[id] = {
-      atlas: `chr:${id}`, image: await writeWebp(packed.sheet, join(OUT, 'characters', `${id}.webp`)), json: writeJson(atlasJson(`${id}.webp`, packed), join(OUT, 'characters', `${id}.json`)),
-      size: CANVAS, foot: box.y + box.h, height: box.h, source: 'v1-pixelized', anims: {},
-      rotations: { south: 'rot_south', west: 'rot_west', east: 'rot_east', north: 'rot_north', 'south-west': 'rot_west', 'south-east': 'rot_east', 'north-west': 'rot_west', 'north-east': 'rot_east' },
-    };
-    defects.push(`${id}: no PixelLab art yet, so the v1 mentor was pixelized as a stand-in (front, sides, back only)`);
+  // Hats: the game id is `hat-<folder>`, except the Laurel Wreath, whose id must stay `hat-laurel`.
+  const hats = [];
+  for (const h of dirs('accessories/head')) {
+    const H = j(`accessories/head/${h}/hat-${h}.json`);
+    const views: Record<string, { image: string; off: [number, number]; w: number; h: number }> = {};
+    for (const v of H.views as any[]) {
+      const image = `avatar/hats/${h}-${v.view}.webp`;
+      views[v.view] = { image, off: [r1(v.off[0] * LAYER), r1(v.off[1] * LAYER)], ...(await img(`accessories/head/${h}/${v.file}`, image, { scale: LAYER })) };
+    }
+    const icon = `avatar/hats/${h}-icon.webp`;
+    await img(`accessories/head/${h}/${H.icon}`, icon, { w: HAT_ICON });
+    hats.push({ id: h === 'laurel-wreath' ? 'hat-laurel' : `hat-${h}`, art: h, rarity: H.rarity, rewardOnly: Boolean(H.rewardOnly), kind: H.kind, hairRule: H.hairRule, icon, views });
   }
-
-  // World map: the v1 painting of all 11 islands, reduced to 640×360 pixel art.
-  const map = join(V1, 'bg', 'world_map.webp');
-  if (existsSync(map)) {
-    claim(map, 'v1 world map (assets-src/v1), pixelized to 640×360');
-    const img = await loadImg(await (await import('sharp')).default(map).resize(640, 360, { kernel: 'lanczos3' }).png({ palette: true, colors: 64, dither: 0 }).toBuffer());
-    worldMap = await writeWebp(img, join(OUT, 'v1px', 'world_map.webp'));
-  } else defects.push('v1 world map not found in assets-src/v1');
+  hatsOut = { note: 'Generated. Rarity labels are drafts for review.', hats };
 }
 
-// ── Report ────────────────────────────────────────────────────────────────
-function walk(dir: string): string[] {
-  return readdirSync(dir).flatMap((f) => {
-    if (f === '.DS_Store') return [];
-    const p = join(dir, f);
-    return statSync(p).isDirectory() ? walk(p) : [p];
-  });
-}
-
-function writeReport(total: number) {
-  const files = walk(PACK).sort();
-  const L: string[] = [
-    '# Asset report',
-    '',
-    `Generated by \`tools/import-assets.ts\` on ${new Date().toISOString().slice(0, 10)}. Do not edit by hand.`,
-    '',
-    `Output: \`public/assets/\`, ${(total / 1024 / 1024).toFixed(2)} MB. Pixel art is drawn with nearest-neighbour filtering at whole-number scales: screens at 2× on the 640×360 canvas, sprites at 1×.`,
-    '',
-    '## Defects and rough spots',
-    '',
-    ...(defects.length ? defects.map((d) => `- ${d}`) : ['- none found']),
-    '- Each screen was generated separately, so paths don’t line up exactly at screen edges (pack README). Entry points in `rooms.json` place the player on each screen’s own path.',
-    '- Collision is not in the pack; the game ships a first pass in `src/data/rooms/` and the `?dev=1` editor refines it.',
-    '',
-    '## Gaps filled from the v1 art',
-    '',
-    'Pixelized from `assets-src/v1/` (smooth Meta AI art kept from the old build) with the same method as `_tools/make_monster_sheets.py`: trim, Lanczos downscale, alpha cut at 110, 40 colours, no dithering.',
-    '',
-    `- Pets: ${v1px.pets?.frames.join(', ') ?? 'skipped'} (32 px tall)`,
-    `- Bull Calf walk cycle: ${v1px.pet_bull_calf_walk ? '4 directions × 4 frames, 32 px' : 'skipped'}`,
-    `- Laurel Wreath icon: ${v1px.laurel_icon ? '32 px' : 'skipped'}`,
-    `- World map: ${worldMap ? '640×360, 64 colours' : 'skipped'}`,
-    `- Extra PixelLab characters (\`assets-src/pixellab/\`): ${Object.values(characters).filter((c) => c.source === 'pixellab-extra').length || 'none yet'}`,
-    '',
-    `## Every file in \`MoneyQuest Assets/\` (${files.length})`,
-    '',
-    '| File | Use | Notes |',
-    '|---|---|---|',
-  ];
-  const describeUnclaimed = (rel: string) =>
-    rel.startsWith('_work/') ? 'not used: working files from making the pack' :
-    rel.startsWith('_tools/') ? 'not used by the game: the script that made the monster sheets (its method is reused for the v1 gaps)' :
-    rel.startsWith('_to_delete/') ? 'not used: marked for deletion in the pack' :
-    rel.endsWith('.sh') ? 'not used: download script (images are already in the pack)' :
-    rel.endsWith('.md') || rel.endsWith('.txt') ? 'documentation (read; `_job_log.txt` is cited in docs/AI_USE.md)' : '**not used** (unexpected file)';
-  for (const f of files) {
-    const rel = relative(PACK, f);
-    const u = used.get(f);
-    L.push(`| \`${rel}\` | ${u ? u.use : describeUnclaimed(rel)} | ${u?.notes.join('; ') ?? ''} |`);
+// ── VFX strips ──
+let vfxOut: unknown;
+async function vfx(): Promise<void> {
+  const V = j('vfx/vfx-index.json');
+  const out: Record<string, unknown> = {};
+  for (const name of Object.keys(V.effects)) {
+    const m = j(`vfx/vfx-${name}.json`);
+    await img(`vfx/vfx-${name}.webp`, `vfx/${name}.webp`, { scale: 1 }, { q: 80 });
+    out[name] = { image: `vfx/${name}.webp`, frame: m.frameWidth, frames: m.frames, fps: m.fps, loop: m.loop, about: m.description };
   }
-  writeFileSync(REPORT, L.join('\n') + '\n');
+  vfxOut = out;
 }
 
-async function main() {
-  rmSync(OUT, { recursive: true, force: true });
-  mkdirSync(OUT, { recursive: true });
-  await importLocations();
-  await importMonsters();
-  await importCharacters();
-  await importTamed();
-  await importV1Gaps();
-  const manifest = {
-    note: 'Generated by tools/import-assets.ts. Do not edit by hand.',
-    basePath: 'assets/',
-    canvas: [640, 360],
-    locations, monsters, characters, v1px, worldMap, tamed,
-    totalBytes: bytes,
-  };
-  mkdirSync(dirname(MANIFEST), { recursive: true });
-  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1) + '\n');
-  writeReport(bytes);
-  console.log(`✓ ${Object.keys(locations).length} locations, ${Object.keys(monsters).length} monsters, ${Object.keys(characters).length} characters → public/assets (${(bytes / 1024 / 1024).toFixed(2)} MB)`);
-  if (defects.length) console.log(`  ${defects.length} defect note(s) in ASSET_REPORT.md`);
+// ── Reference copies and the UI kit's tokens ──
+function copies(): void {
+  mkdirSync(DOCS, { recursive: true });
+  const stamp = (name: string, text: string) => (name.endsWith('.py') ? `# Copied from ../assets_v2 by tools/import-assets.ts. Do not edit; reference only, never run by the game.\n${text}` : `<!-- Copied from ../assets_v2 by tools/import-assets.ts. Do not edit. -->\n${text}`);
+  for (const [from, to] of [['STYLE_GUIDE.md', 'STYLE_GUIDE.md'], ['AVATAR_UPDATE.md', 'AVATAR_UPDATE.md'], ['QA_REPORT.md', 'QA_REPORT.md'], ['avatars/unisex/_tools/overlay.py', 'overlay.py'], ['avatars/costume-sets/_tools/recolor.py', 'recolor.py'], ['accessories/_tools/unisex/fit2.py', 'fit2.py'], ['ui/README.md', 'UI_KIT.md']] as const)
+    writeFileSync(join(DOCS, to), stamp(to, readFileSync(join(SRC, from), 'utf8')));
+  copyFileSync(join(SRC, 'ui', 'tokens.json'), join(DATA, 'ui-tokens.json'));
+  copyFileSync(join(SRC, 'monsters', 'motion-spec.json'), join(DATA, 'motion.json'));
 }
 
-await main();
+const write = (name: string, data: unknown) => writeFileSync(join(DATA, name), JSON.stringify(data, null, 1) + '\n');
+
+mkdirSync(DATA, { recursive: true });
+await locations();
+await mapAndBattle();
+await creatures();
+await avatar();
+await vfx();
+copies();
+
+write('screens.json', { note: 'Generated from assets_v2: where each screen\'s props stand (640×360 stage px), its doors and overhang. Layouts the game edits live in src/data/rooms/.', locations: screensOut });
+write('world.json', worldOut);
+write('battle.json', battleOut);
+write('avatar.json', avatarOut);
+write('hats.json', hatsOut);
+write('vfx.json', vfxOut);
+write('creatures.json', { note: 'Generated. Monsters: mon/<species>/<look>-<view>.webp. Bosses and NPCs: views, a portrait and clips.', monsters: monstersOut, bosses: bossesOut, npcs: npcsOut });
+
+const total = Object.values(files).reduce((a, f) => a + f.bytes, 0);
+writeFileSync(join(root, 'src', 'assets', 'v2.json'), JSON.stringify({ note: 'Generated by tools/import-assets.ts. Do not edit by hand.', basePath: 'assets/v2/', stage: [640, 360], render: RENDER, props: propSizes, totalBytes: total, files }, null, 0) + '\n');
+
+// ── Report ──
+const groups: Record<string, [number, number]> = {};
+for (const [p, f] of Object.entries(files)) {
+  const g = p.split('/')[0]!;
+  (groups[g] ??= [0, 0])[0]++;
+  groups[g]![1] += f.bytes;
+}
+const mb = (n: number) => (n / 1e6).toFixed(2);
+const label: Record<string, string> = { loc: 'District and hub screens (ground and overhang)', props: 'Props', map: 'World map', battle: 'Battle backgrounds', mon: 'Monsters and pets (views and portraits)', boss: 'Bosses (views, portrait, idle and attack sheets)', npc: 'NPCs (views, portrait, talk sheet)', avatar: 'Avatar (clip sheets, hair, faces, hats)', vfx: 'VFX strips' };
+const firstLoad = Object.entries(files).filter(([p]) => p.startsWith('loc/ledgerhold/') || p.startsWith('props/ledgerhold/') || p.startsWith('avatar/') || p.startsWith('map/') || p.startsWith('npc/')).reduce((a, [, f]) => a + f.bytes, 0);
+writeFileSync(join(root, 'ASSET_REPORT.md'), [
+  '# Asset report',
+  '',
+  'Generated by `tools/import-assets.ts` from `../assets_v2` (read-only). Do not edit: re-run `npm run import:assets`.',
+  '',
+  `The art set holds about 1.4 GB of masters. The game ships **${Object.keys(files).length} files, ${mb(total)} MB**, as WebP at the sizes it draws (canvas 1280×720, stage 640×360).`,
+  '',
+  '| Group | Files | MB |',
+  '|---|---:|---:|',
+  ...Object.entries(groups).sort((a, b) => b[1][1] - a[1][1]).map(([g, [n, b]]) => `| ${label[g] ?? g} | ${n} | ${mb(b)} |`),
+  `| **Total** | **${Object.keys(files).length}** | **${mb(total)}** |`,
+  '',
+  `Art needed before the hub shows (Ledgerhold, the avatar, NPCs and the world map): about ${mb(firstLoad)} MB. Districts, monsters, bosses and battle art load when you go there.`,
+  '',
+  '## What is left out',
+  '',
+  '- Everything `manifest.json` marks `runtime: false`: sources, tools, green-screen masters, MP4 masters, review sheets and `_set-aside/`.',
+  '- The WebM clips. The game plays the 16-frame sprite sheets instead: WebM with transparency does not play in iPad Safari.',
+  '- Per-instance prop renders (`objects/NN-*.png`). Props are drawn from one image per prop type and placed from `objects.json`. The two arena arch halves have no prop image, so their placed renders are used.',
+  '- The 1080p and 4K world maps and the 2560 px battle backgrounds.',
+  '',
+  '## Notes',
+  '',
+  ...(notes.length ? notes.map((n) => `- ${n}`) : ['- None.']),
+  '',
+].join('\n'));
+console.log(`assets: ${Object.keys(files).length} files, ${mb(total)} MB (${encoded} encoded this run)`);

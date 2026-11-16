@@ -1,20 +1,31 @@
-// Zones for the world map. `at` is the island's centre on the 640×360 world map.
+// Vaultspire: the hub city Ledgerhold and its seven districts (PLAN.md §12, decision 2). `at` is the
+// place's pin on the 640×360 world map, from the art set's world-map data. The topic mapping is a
+// DRAFT for review.
 import type { Topic } from '../core/types.ts';
+import { WORLD } from './v2.ts';
 
-export interface Zone { id: string; name: string; topic: Topic | 'mixed'; bonus: boolean; at: [number, number]; ready: boolean }
+export interface Zone { id: string; name: string; topic: Topic | 'mixed'; bonus: boolean; at: [number, number]; boss: string | null; costume: string | null; ready: boolean }
 
+const at = (id: string): [number, number] => [WORLD.pins[id]!.x, WORLD.pins[id]!.y];
+const boss = (id: string) => `boss_${WORLD.pins[id]!.boss!.replace(/-/g, '_')}`;
+const district = (id: string, name: string, topic: Topic | 'mixed', costume: string): Zone => ({ id, name, topic, bonus: topic === 'mixed', at: at(id), boss: boss(id), costume, ready: true });
+
+export const HUB_ID = 'ledgerhold';
+/** The hub. Its only monster is the finale, the Debt Dragon, which asks mixed questions. */
+export const HUB: Zone = { id: HUB_ID, name: 'Ledgerhold', topic: 'mixed', bonus: false, at: at(HUB_ID), boss: 'boss_debt_dragon', costume: null, ready: true };
+export const FINALE = 'boss_debt_dragon';
+
+/** The districts in play order. Phish Fens is the mixed-review district (`bonus`). Each one's boss
+ *  also unlocks a costume colour set. */
 export const ZONES: Zone[] = [
-  { id: 'piggybank_village', name: 'Piggybank Village', topic: 'Spending and Saving', bonus: false, at: [237, 45], ready: true },
-  { id: 'borrowers_bridges', name: "Borrowers' Bridges", topic: 'Credit and Debt', bonus: false, at: [380, 45], ready: true },
-  { id: 'guildworks', name: 'Guildworks', topic: 'Employment and Income', bonus: false, at: [507, 55], ready: true },
-  { id: 'compound_orchard', name: 'Compound Orchard', topic: 'Investing', bonus: false, at: [110, 95], ready: true },
-  { id: 'stormwatch_coast', name: 'Stormwatch Coast', topic: 'Risk and Insurance', bonus: false, at: [70, 180], ready: true },
-  { id: 'crossroads_observatory', name: 'Crossroads Observatory', topic: 'Financial Decision Making', bonus: false, at: [567, 140], ready: true },
-  { id: 'sunfire_pass', name: 'Sunfire Pass', topic: 'mixed', bonus: true, at: [543, 225], ready: true },
-  { id: 'moonwell_cavern', name: 'Moonwell Cavern', topic: 'mixed', bonus: true, at: [160, 280], ready: true },
-  { id: 'astral_ruins', name: 'Astral Ruins', topic: 'mixed', bonus: true, at: [340, 303], ready: true },
-  { id: 'nebula_grove', name: 'Nebula Grove', topic: 'mixed', bonus: true, at: [533, 320], ready: true },
+  district('coinfall-docks', 'Coinfall Docks', 'Spending and Saving', 'coral-tide'),
+  district('the-sprawl', 'The Sprawl', 'Financial Decision Making', 'royal-amethyst'),
+  district('frostvault', 'Frostvault', 'Employment and Income', 'frost-guard'),
+  district('credit-citadel', 'Credit Citadel', 'Credit and Debt', 'shadow-rogue'),
+  district('compound-rift', 'Compound Rift', 'Investing', 'sunburst'),
+  district('the-exchange', 'The Exchange', 'Risk and Insurance', 'ember-knight'),
+  district('phish-fens', 'Phish Fens', 'mixed', 'forest-ranger'),
 ];
-export const ACADEMY_AT: [number, number] = [320, 165];
-export const zoneById = (id: string) => ZONES.find((z) => z.id === id)!;
+export const zoneById = (id: string): Zone => (id === HUB_ID ? HUB : ZONES.find((z) => z.id === id)!);
 export const BONUS_ZONES = ZONES.filter((z) => z.bonus).map((z) => z.id);
+export const placeName = (id: string) => (id === HUB_ID ? HUB.name : (ZONES.find((z) => z.id === id)?.name ?? id));

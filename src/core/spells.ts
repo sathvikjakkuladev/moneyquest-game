@@ -15,12 +15,12 @@ export const SPELLS: Record<SpellId, Spell> = {
   wise_choice: { id: 'wise_choice', name: 'Wise Choice', damage: 8, blurb: 'Removes one wrong answer next question.', color: 0xb197fc },
 };
 
-/** Spell unlocked by beating each topic zone's boss. */
+/** Spell unlocked by beating each topic district's boss: the spell that matches its topic. */
 export const ZONE_SPELL: Record<string, SpellId> = {
-  piggybank_village: 'save_shield',
-  borrowers_bridges: 'credit_cleanse',
-  guildworks: 'paycheck_strike',
-  compound_orchard: 'compound_burst',
-  stormwatch_coast: 'insurance_barrier',
-  crossroads_observatory: 'wise_choice',
+  'coinfall-docks': 'save_shield', // Spending and Saving
+  'the-sprawl': 'wise_choice', // Financial Decision Making
+  frostvault: 'paycheck_strike', // Employment and Income
+  'credit-citadel': 'credit_cleanse', // Credit and Debt
+  'compound-rift': 'compound_burst', // Investing
+  'the-exchange': 'insurance_barrier', // Risk and Insurance
 };

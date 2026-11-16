@@ -5,7 +5,7 @@ import type { Sample } from './interp.ts';
 import type { Face } from './protocol.ts';
 import type { SayKind } from './says.ts';
 
-export interface Remote { id: number; name: string; world: boolean; s: string; x: number; y: number; f: Face; h: string | null; p: string | null; b: boolean; samples: Sample[] }
+export interface Remote { id: number; name: string; world: boolean; s: string; x: number; y: number; f: Face; h: string | null; p: string | null; b: boolean; /** The look, as list indexes (core/look.ts); absent from an older server. */ a?: number[]; /** The pet's look: an index into the district list, or -1 for its home look. */ pl?: number; samples: Sample[] }
 export interface Report { s: string; x: number; y: number; f: Face; moving: boolean }
 
 export const bridge = {

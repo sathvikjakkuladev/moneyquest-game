@@ -1,0 +1,730 @@
+{
+ "note": "Generated. Rarity labels are drafts for review.",
+ "hats": [
+  {
+   "id": "hat-antlers",
+   "art": "antlers",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/antlers-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/antlers-front.webp",
+     "off": [
+      -13.9,
+      -56.2
+     ],
+     "w": 143,
+     "h": 101
+    },
+    "back": {
+     "image": "avatar/hats/antlers-back.webp",
+     "off": [
+      -4.2,
+      -50.1
+     ],
+     "w": 141,
+     "h": 104
+    }
+   }
+  },
+  {
+   "id": "hat-bandana",
+   "art": "bandana",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/bandana-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/bandana-front.webp",
+     "off": [
+      0.9,
+      -8.8
+     ],
+     "w": 123,
+     "h": 77
+    },
+    "back": {
+     "image": "avatar/hats/bandana-back.webp",
+     "off": [
+      14.1,
+      3.9
+     ],
+     "w": 101,
+     "h": 97
+    }
+   }
+  },
+  {
+   "id": "hat-bard-cap",
+   "art": "bard-cap",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/bard-cap-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/bard-cap-front.webp",
+     "off": [
+      -4.1,
+      -29.4
+     ],
+     "w": 139,
+     "h": 100
+    },
+    "back": {
+     "image": "avatar/hats/bard-cap-back.webp",
+     "off": [
+      -4.2,
+      -16
+     ],
+     "w": 119,
+     "h": 101
+    }
+   }
+  },
+  {
+   "id": "hat-beret",
+   "art": "beret",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/beret-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/beret-front.webp",
+     "off": [
+      -11.5,
+      -26
+     ],
+     "w": 139,
+     "h": 89
+    },
+    "back": {
+     "image": "avatar/hats/beret-back.webp",
+     "off": [
+      3.5,
+      -16.3
+     ],
+     "w": 126,
+     "h": 82
+    }
+   }
+  },
+  {
+   "id": "hat-bucket-hat",
+   "art": "bucket-hat",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/bucket-hat-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/bucket-hat-front.webp",
+     "off": [
+      -15.2,
+      -21.5
+     ],
+     "w": 148,
+     "h": 97
+    },
+    "back": {
+     "image": "avatar/hats/bucket-hat-back.webp",
+     "off": [
+      -0.9,
+      -8
+     ],
+     "w": 137,
+     "h": 91
+    }
+   }
+  },
+  {
+   "id": "hat-circlet",
+   "art": "circlet",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "ring",
+   "hairRule": "show",
+   "icon": "avatar/hats/circlet-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/circlet-front.webp",
+     "off": [
+      -0.6,
+      -1.7
+     ],
+     "w": 120,
+     "h": 54
+    },
+    "back": {
+     "image": "avatar/hats/circlet-back.webp",
+     "off": [
+      6.1,
+      -1.5
+     ],
+     "w": 119,
+     "h": 94
+    }
+   }
+  },
+  {
+   "id": "hat-crown",
+   "art": "crown",
+   "rarity": "legendary",
+   "rewardOnly": false,
+   "kind": "ring",
+   "hairRule": "show",
+   "icon": "avatar/hats/crown-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/crown-front.webp",
+     "off": [
+      -9.1,
+      -24.9
+     ],
+     "w": 122,
+     "h": 93
+    },
+    "back": {
+     "image": "avatar/hats/crown-back.webp",
+     "off": [
+      10,
+      -19.1
+     ],
+     "w": 115,
+     "h": 80
+    }
+   }
+  },
+  {
+   "id": "hat-flower-crown",
+   "art": "flower-crown",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "ring",
+   "hairRule": "show",
+   "icon": "avatar/hats/flower-crown-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/flower-crown-front.webp",
+     "off": [
+      -20.7,
+      -21.2
+     ],
+     "w": 147,
+     "h": 82
+    },
+    "back": {
+     "image": "avatar/hats/flower-crown-back.webp",
+     "off": [
+      -1.1,
+      -0.5
+     ],
+     "w": 130,
+     "h": 81
+    }
+   }
+  },
+  {
+   "id": "hat-fox-ears",
+   "art": "fox-ears",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/fox-ears-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/fox-ears-front.webp",
+     "off": [
+      -20.7,
+      -38.7
+     ],
+     "w": 139,
+     "h": 108
+    },
+    "back": {
+     "image": "avatar/hats/fox-ears-back.webp",
+     "off": [
+      -2.7,
+      -45
+     ],
+     "w": 144,
+     "h": 139
+    }
+   }
+  },
+  {
+   "id": "hat-frost-tiara",
+   "art": "frost-tiara",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/frost-tiara-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/frost-tiara-front.webp",
+     "off": [
+      0.7,
+      -34.2
+     ],
+     "w": 120,
+     "h": 85
+    },
+    "back": {
+     "image": "avatar/hats/frost-tiara-back.webp",
+     "off": [
+      6.6,
+      -32.6
+     ],
+     "w": 118,
+     "h": 86
+    }
+   }
+  },
+  {
+   "id": "hat-goggles",
+   "art": "goggles",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "goggles",
+   "hairRule": "show",
+   "icon": "avatar/hats/goggles-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/goggles-front.webp",
+     "off": [
+      -9.4,
+      -17.8
+     ],
+     "w": 135,
+     "h": 84
+    },
+    "back": {
+     "image": "avatar/hats/goggles-back.webp",
+     "off": [
+      14.1,
+      4.4
+     ],
+     "w": 101,
+     "h": 70
+    }
+   }
+  },
+  {
+   "id": "hat-halo",
+   "art": "halo",
+   "rarity": "legendary",
+   "rewardOnly": false,
+   "kind": "halo",
+   "hairRule": "show",
+   "icon": "avatar/hats/halo-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/halo-front.webp",
+     "off": [
+      13.4,
+      -37.9
+     ],
+     "w": 100,
+     "h": 46
+    },
+    "back": {
+     "image": "avatar/hats/halo-back.webp",
+     "off": [
+      14.7,
+      -28.9
+     ],
+     "w": 101,
+     "h": 133
+    }
+   }
+  },
+  {
+   "id": "hat-horned-helm",
+   "art": "horned-helm",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/horned-helm-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/horned-helm-front.webp",
+     "off": [
+      -19.2,
+      -40.5
+     ],
+     "w": 151,
+     "h": 136
+    },
+    "back": {
+     "image": "avatar/hats/horned-helm-back.webp",
+     "off": [
+      0.9,
+      -24.5
+     ],
+     "w": 133,
+     "h": 100
+    }
+   }
+  },
+  {
+   "id": "hat-laurel",
+   "art": "laurel-wreath",
+   "rarity": "legendary",
+   "rewardOnly": true,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/laurel-wreath-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/laurel-wreath-front.webp",
+     "off": [
+      -18.1,
+      -21
+     ],
+     "w": 140,
+     "h": 83
+    },
+    "back": {
+     "image": "avatar/hats/laurel-wreath-back.webp",
+     "off": [
+      4,
+      4.4
+     ],
+     "w": 123,
+     "h": 70
+    }
+   }
+  },
+  {
+   "id": "hat-moon-headband",
+   "art": "moon-headband",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/moon-headband-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/moon-headband-front.webp",
+     "off": [
+      -0.6,
+      -27.6
+     ],
+     "w": 116,
+     "h": 97
+    },
+    "back": {
+     "image": "avatar/hats/moon-headband-back.webp",
+     "off": [
+      4.3,
+      -28.7
+     ],
+     "w": 121,
+     "h": 126
+    }
+   }
+  },
+  {
+   "id": "hat-mushroom-cap",
+   "art": "mushroom-cap",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/mushroom-cap-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/mushroom-cap-front.webp",
+     "off": [
+      -13.6,
+      -32.3
+     ],
+     "w": 147,
+     "h": 96
+    },
+    "back": {
+     "image": "avatar/hats/mushroom-cap-back.webp",
+     "off": [
+      -3.7,
+      -15.7
+     ],
+     "w": 137,
+     "h": 121
+    }
+   }
+  },
+  {
+   "id": "hat-owl-crest",
+   "art": "owl-crest",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "band",
+   "hairRule": "show",
+   "icon": "avatar/hats/owl-crest-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/owl-crest-front.webp",
+     "off": [
+      0.4,
+      -51.4
+     ],
+     "w": 119,
+     "h": 96
+    },
+    "back": {
+     "image": "avatar/hats/owl-crest-back.webp",
+     "off": [
+      6.1,
+      -45.5
+     ],
+     "w": 116,
+     "h": 92
+    }
+   }
+  },
+  {
+   "id": "hat-ranger-hat",
+   "art": "ranger-hat",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/ranger-hat-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/ranger-hat-front.webp",
+     "off": [
+      -21.3,
+      -42.1
+     ],
+     "w": 159,
+     "h": 108
+    },
+    "back": {
+     "image": "avatar/hats/ranger-hat-back.webp",
+     "off": [
+      -6,
+      -31
+     ],
+     "w": 144,
+     "h": 103
+    }
+   }
+  },
+  {
+   "id": "hat-rune-beanie",
+   "art": "rune-beanie",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/rune-beanie-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/rune-beanie-front.webp",
+     "off": [
+      -2.5,
+      -37.9
+     ],
+     "w": 125,
+     "h": 107
+    },
+    "back": {
+     "image": "avatar/hats/rune-beanie-back.webp",
+     "off": [
+      14.1,
+      -28.4
+     ],
+     "w": 103,
+     "h": 111
+    }
+   }
+  },
+  {
+   "id": "hat-sailor-cap",
+   "art": "sailor-cap",
+   "rarity": "common",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/sailor-cap-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/sailor-cap-front.webp",
+     "off": [
+      -24.4,
+      -32.3
+     ],
+     "w": 140,
+     "h": 85
+    },
+    "back": {
+     "image": "avatar/hats/sailor-cap-back.webp",
+     "off": [
+      0.2,
+      -24.3
+     ],
+     "w": 137,
+     "h": 94
+    }
+   }
+  },
+  {
+   "id": "hat-scholar-cap",
+   "art": "scholar-cap",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/scholar-cap-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/scholar-cap-front.webp",
+     "off": [
+      -20,
+      -39.5
+     ],
+     "w": 164,
+     "h": 122
+    },
+    "back": {
+     "image": "avatar/hats/scholar-cap-back.webp",
+     "off": [
+      -20.8,
+      -43.4
+     ],
+     "w": 168,
+     "h": 141
+    }
+   }
+  },
+  {
+   "id": "hat-top-hat",
+   "art": "top-hat",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/top-hat-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/top-hat-front.webp",
+     "off": [
+      -12.8,
+      -61.4
+     ],
+     "w": 149,
+     "h": 124
+    },
+    "back": {
+     "image": "avatar/hats/top-hat-back.webp",
+     "off": [
+      -2.2,
+      -54.3
+     ],
+     "w": 134,
+     "h": 124
+    }
+   }
+  },
+  {
+   "id": "hat-tricorn",
+   "art": "tricorn",
+   "rarity": "rare",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/tricorn-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/tricorn-front.webp",
+     "off": [
+      -21,
+      -21.8
+     ],
+     "w": 148,
+     "h": 90
+    },
+    "back": {
+     "image": "avatar/hats/tricorn-back.webp",
+     "off": [
+      -8.1,
+      -12.9
+     ],
+     "w": 150,
+     "h": 97
+    }
+   }
+  },
+  {
+   "id": "hat-winged-helm",
+   "art": "winged-helm",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "cap",
+   "hairRule": "swap",
+   "icon": "avatar/hats/winged-helm-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/winged-helm-front.webp",
+     "off": [
+      -21.8,
+      -20.7
+     ],
+     "w": 160,
+     "h": 89
+    },
+    "back": {
+     "image": "avatar/hats/winged-helm-back.webp",
+     "off": [
+      -8.4,
+      -13.2
+     ],
+     "w": 147,
+     "h": 86
+    }
+   }
+  },
+  {
+   "id": "hat-wizard-hat",
+   "art": "wizard-hat",
+   "rarity": "epic",
+   "rewardOnly": false,
+   "kind": "brim",
+   "hairRule": "swap",
+   "icon": "avatar/hats/wizard-hat-icon.webp",
+   "views": {
+    "front": {
+     "image": "avatar/hats/wizard-hat-front.webp",
+     "off": [
+      -25,
+      -56.4
+     ],
+     "w": 169,
+     "h": 134
+    },
+    "back": {
+     "image": "avatar/hats/wizard-hat-back.webp",
+     "off": [
+      -13.3,
+      -50.9
+     ],
+     "w": 163,
+     "h": 125
+    }
+   }
+  }
+ ]
+}

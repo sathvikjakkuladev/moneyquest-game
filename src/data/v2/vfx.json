@@ -1,0 +1,114 @@
+{
+ "hit-spark": {
+  "image": "vfx/hit-spark.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Generic hit on a monster or boss (correct answer damage)."
+ },
+ "correct-burst": {
+  "image": "vfx/correct-burst.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Correct answer feedback. Acid green = success only."
+ },
+ "miss-puff": {
+  "image": "vfx/miss-puff.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 20,
+  "loop": false,
+  "about": "Wrong answer / missed attack. Neutral slate puff, never red."
+ },
+ "coin-burst": {
+  "image": "vfx/coin-burst.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Coins earned. Gold coins + acid green sparkles (money)."
+ },
+ "level-up": {
+  "image": "vfx/level-up.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 20,
+  "loop": false,
+  "about": "Level up / Money Check passed."
+ },
+ "heal": {
+  "image": "vfx/heal.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 18,
+  "loop": true,
+  "about": "Heal / restore (loops)."
+ },
+ "shield": {
+  "image": "vfx/shield.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 20,
+  "loop": false,
+  "about": "Shield / block."
+ },
+ "teleport": {
+  "image": "vfx/teleport.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 18,
+  "loop": false,
+  "about": "Waystone teleport arrive/leave."
+ },
+ "tame": {
+  "image": "vfx/tame.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 20,
+  "loop": false,
+  "about": "Bonus-zone monster tamed (becomes a pet)."
+ },
+ "fire-hit": {
+  "image": "vfx/fire-hit.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Hit by / from a FIRE-look creature."
+ },
+ "ice-hit": {
+  "image": "vfx/ice-hit.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Frostvault-style ice hit."
+ },
+ "lightning-hit": {
+  "image": "vfx/lightning-hit.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "The Exchange-style lightning hit."
+ },
+ "shatter": {
+  "image": "vfx/shatter.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 24,
+  "loop": false,
+  "about": "Monster defeated (matches motion-spec 'shatter')."
+ },
+ "boss-defeat": {
+  "image": "vfx/boss-defeat.webp",
+  "frame": 256,
+  "frames": 12,
+  "fps": 20,
+  "loop": false,
+  "about": "Boss defeated, big triple ring."
+ }
+}

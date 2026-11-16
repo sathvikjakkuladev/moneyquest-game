@@ -1,0 +1,26 @@
+{
+  "note": "MoneyQuest v2 UI tokens. Cool palette. Acid green = money and success ONLY. Gold = sharp accent ONLY (borders, star tips), never large fills or text on light. All text Fredoka >= 18px.",
+  "color": {
+    "navy-950": "#070F22", "navy-900": "#0B1630", "navy-800": "#12224A", "navy-700": "#1B3166",
+    "slate-600": "#3A4D73", "slate-400": "#8A9CC0", "slate-200": "#C7D3EA",
+    "glacier-50": "#F2F8FF", "glacier-200": "#D6F4FF",
+    "cyan-300": "#7DF3FF", "cyan-400": "#00E5FF", "cyan-600": "#00A9C2",
+    "violet-300": "#C3A6FF", "violet-400": "#965CFF", "violet-600": "#6B3BD6",
+    "acid": "#9CFF3A", "acid-ink": "#0B1630",
+    "gold": "#FFC83C",
+    "fire": "#FF8A1E"
+  },
+  "semantic": {
+    "bg": "navy-900", "surface": "navy-800", "surface-raised": "navy-700", "outline": "navy-950",
+    "text": "glacier-50", "text-muted": "slate-200", "focus": "cyan-300",
+    "primary": "cyan-400", "primary-ink": "navy-950",
+    "success": "acid", "money": "acid", "wrong": "violet-300", "accent": "gold", "danger-hp": "fire"
+  },
+  "font": { "family": "Fredoka, system-ui, sans-serif", "size-min": 18, "size-body": 20, "size-title": 28, "size-hero": 40, "weight-body": 500, "weight-bold": 700 },
+  "radius": { "sm": 8, "md": 14, "lg": 22, "pill": 999 },
+  "stroke": { "outline": 3, "thick": 4 },
+  "space": { "1": 4, "2": 8, "3": 12, "4": 16, "5": 24, "6": 32 },
+  "size": { "touch-min": 48, "answer-height": 64 },
+  "shadow": { "pop": "0 4px 0 #070F22", "pop-pressed": "0 1px 0 #070F22", "glow-cyan": "0 0 0 3px #7DF3FF", "glow-acid": "0 0 16px #9CFF3A88" },
+  "motion": { "fast": "120ms", "base": "200ms", "slow": "360ms", "ease": "cubic-bezier(.2,.9,.3,1.2)" }
+}

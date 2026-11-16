@@ -1,7 +1,7 @@
-// Overworld rooms: each location is a few connected screens. Layouts are game-side
-// (src/data/rooms/<zone>.json, 640×360), seeded from the pack's rooms.json plus collision.
+// Overworld rooms: each place is a grid of connected screens. Layouts are game-side
+// (src/data/rooms/<place>.json, 640×360), seeded from the art set's exits and collision
+// (tools/seed-rooms.ts). Where the props stand comes from src/data/v2/screens.json (generated).
 
-import type { Front } from '../core/fronts.ts';
 import type { Poly, Pt } from '../core/geometry.ts';
 import { canStand } from '../core/geometry.ts';
 
@@ -9,16 +9,12 @@ export type Facing = 'south' | 'north' | 'east' | 'west';
 export interface RoomExit { edge: 'left' | 'right' | 'top' | 'bottom'; range: [number, number]; to: string; enterAt: Pt | null }
 export interface RoomNpc { id: string; sprite: string; x: number; y: number; face: Facing }
 export interface RoomMonster { id: string; x: number; y: number }
-export interface Portal { at: Pt; color: string; to: string }
-export interface Screen { exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[]; portals?: Portal[]; fronts?: Front[] }
+/** `waystone`: where the screen's waystone stands (touching it opens the world map). */
+export interface Screen { name?: string; exits: RoomExit[]; entries: Record<string, Pt>; walk: Poly[]; block: Poly[]; npcs: RoomNpc[]; monsters: RoomMonster[]; waystone?: Pt }
 export interface Rooms { zone: string; start: string; screens: Record<string, Screen> }
 
 const files = import.meta.glob<Rooms>('./rooms/*.json', { eager: true, import: 'default' });
 export const ROOMS: Record<string, Rooms> = Object.fromEntries(Object.values(files).map((r) => [r.zone, r]));
-
-/** The bonus-zone portals on the Crossroads portal ring: stand in front of one to step through. */
-export const PORTAL_REACH = 34;
-export const portalSpot = (p: Portal): Pt => [p.at[0], 150];
 
 export const EXIT_STRIP = 14; // px along the screen edge that triggers an exit
 
@@ -31,7 +27,8 @@ export function exitAt(s: Screen, [x, y]: Pt): RoomExit | null {
   return null;
 }
 
-/** An exit's target: same-zone screen, another zone's screen ("zone/screen"), or the world map. */
+/** An exit's target: a screen of the same place, or another place's screen ("place/screen"). Places are
+ *  joined only by the world map, so today every exit stays inside its place. */
 export function exitTarget(zone: string, e: RoomExit): { kind: 'world' } | { kind: 'room'; zone: string; screen: string } {
   if (e.to === 'world_map') return { kind: 'world' };
   const [z, s] = e.to.includes('/') ? (e.to.split('/') as [string, string]) : [zone, e.to];
@@ -39,10 +36,10 @@ export function exitTarget(zone: string, e: RoomExit): { kind: 'world' } | { kin
 }
 
 /**
- * The player's feet stay this far from the top and side edges so the whole 64 px sprite stays on
- * screen, except where an exit leads off that edge.
+ * The player's feet stay this far from the top and side edges so the whole sprite (64 px plus hair
+ * or a hat) stays on screen, except where an exit leads off that edge.
  */
-export const EDGE_TOP = 58;
+export const EDGE_TOP = 66;
 export const EDGE_SIDE = 12;
 
 /** Can the player stand here: walkable, not blocked, and not hanging off the screen edge. */

@@ -1,6 +1,9 @@
 // Buying, equipping and reward-card prizes, as pure functions over a save slot.
 import { item } from '../data/items.ts';
 import { REWARD_ONLY_ITEMS } from '../rewards/redeem.ts';
+import { ZONES } from '../data/zones.ts';
+import type { Look } from './look.ts';
+import { cleanLook, costumeUnlocked } from './look.ts';
 import type { Slot } from './save.ts';
 
 export const SCROLL = 'insurance-scroll';
@@ -18,7 +21,7 @@ export function buy(s: Slot, id: string): BuyResult {
   return { ok: true, slot: { ...s, progress: { ...s.progress, coins: s.progress.coins - it.price }, inventory: { ...s.inventory, owned: [...s.inventory.owned, id] } } };
 }
 
-/** Buy an Insurance Scroll (one at a time) from the Stormwatch mentor. */
+/** Buy an Insurance Scroll (one at a time) from The Exchange's guide. */
 export function buyScroll(s: Slot): BuyResult {
   if (s.inventory.owned.includes(SCROLL)) return { ok: false, reason: 'owned' };
   if (s.progress.coins < SCROLL_PRICE) return { ok: false, reason: 'coins' };
@@ -36,4 +39,18 @@ export function grantReward(s: Slot, code: string, items: readonly string[]): Sl
   if (s.redeemed.includes(code)) return s;
   const owned = [...s.inventory.owned, ...items.filter((i) => !s.inventory.owned.includes(i))];
   return { ...s, redeemed: [...s.redeemed, code], inventory: { ...s.inventory, owned } };
+}
+
+/** Change the look (free). A costume colour set that isn't earned yet is ignored. */
+export function restyle(s: Slot, look: Look): Slot {
+  const next = cleanLook(look);
+  return { ...s, look: costumeUnlocked(next.costume, s.progress.zonesCleared) ? next : { ...next, costume: s.look.costume } };
+}
+
+/** Looks a captured monster can wear: its home look always, plus the look of every district cleared. */
+export const petLooks = (cleared: readonly string[]): string[] => ZONES.filter((z) => cleared.includes(z.id)).map((z) => z.id);
+/** Dress the pet in a district's look (null = its home look). Only looks that are unlocked. */
+export function setPetLook(s: Slot, look: string | null): Slot {
+  if (look !== null && !petLooks(s.progress.zonesCleared).includes(look)) return s;
+  return { ...s, inventory: { ...s.inventory, petLook: look } };
 }

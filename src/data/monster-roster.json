@@ -1,0 +1,44 @@
+{
+  "note": "The monsters of Vaultspire. Each one takes its battle rules (effect, damage) from one monster of the first build, named in `from`; `npm run import:monsters` merges this file with ../MoneyQuest Assets/monsters/monster_attacks.json into src/data/monster_attacks.json. Names come from the art set. The attack names, descriptions and lessons are AI DRAFTS for Sathvik to review.",
+  "draft": true,
+  "districts": {
+    "coinfall-docks": [
+      { "name": "Budget Breaker", "type": "regular", "from": "Spendling", "attack": "Budget Smash", "does": "Cracks your budget open and scoops up loose coins.", "lesson": "Spending without a plan drains your savings fast." },
+      { "name": "Subscription Swarm", "type": "regular", "from": "Jar Muncher", "attack": "Monthly Nibble", "does": "A cloud of tiny bills, each taking a small bite.", "lesson": "Small payments that repeat every month add up." },
+      { "name": "Overspend Kraken", "type": "boss", "from": "King Splurge", "attack": "Eight-Arm Spree", "does": "Grabs everything on the dock with all eight arms at once.", "lesson": "Big splurges wreck a budget.", "second_attack": { "attack": "Flash Sale Wave", "does": "A wave of BUY NOW signs rushes at you." } }
+    ],
+    "the-sprawl": [
+      { "name": "Impulse Wisp", "type": "regular", "from": "Impulse Magpie", "attack": "Shiny Flicker", "does": "Darts in the moment something shiny catches your eye.", "lesson": "Deciding in a hurry leads to choices you regret." },
+      { "name": "Splurge Hound", "type": "regular", "from": "Doubt Wraith", "attack": "Deal Chase", "does": "Runs off with one of your choices while you chase a bargain.", "lesson": "Make a plan and stick to it." },
+      { "name": "Splurge Peacock", "type": "boss", "from": "Chaos Sphinx", "attack": "Dazzle Fan", "does": "Spreads a dazzling tail to rush you into a snap decision.", "lesson": "Think before big decisions.", "second_attack": { "attack": "Trade-Off Tilt", "does": "Tips the scales so both sides meet in the middle." } }
+    ],
+    "frostvault": [
+      { "name": "Inflation Shade", "type": "regular", "from": "Inflation Balloon", "attack": "Price Creep", "does": "A cold fog that makes every price tag climb.", "lesson": "Inflation shrinks what your money can buy." },
+      { "name": "Overdraft Golem", "type": "regular", "from": "Tax Gremlin", "attack": "Fee Chip", "does": "Chips a slice off the coins you earned.", "lesson": "Take-home pay is less than gross pay, and spending more than you have brings fees." },
+      { "name": "Frostfang Mammoth", "type": "boss", "from": "Burnout Blaze", "attack": "Overtime Stampede", "does": "Charges harder every turn and wears itself out doing it.", "lesson": "Working nonstop burns you out.", "second_attack": { "attack": "Tusk Drop", "does": "One huge swing of its icy tusks." } }
+    ],
+    "credit-citadel": [
+      { "name": "Late Fee Raptor", "type": "regular", "from": "Late Fee Troll", "attack": "Late Swoop", "does": "Dives the moment a payment is overdue.", "lesson": "Paying late costs extra." },
+      { "name": "Minimum Payment Leech", "type": "regular", "from": "Interest Imp", "attack": "Interest Drain", "does": "Latches on and drains a little more every turn.", "lesson": "Paying only the minimum lets interest keep growing." },
+      { "name": "Collector Scorpion", "type": "boss", "from": "Loan Shark Lord", "attack": "Pincer Lock", "does": "Clamps one of your answers shut.", "lesson": "Bad loans trap you.", "second_attack": { "attack": "Stinger Flurry", "does": "Jabs three times in a row." } }
+    ],
+    "compound-rift": [
+      { "name": "APR Serpent", "type": "regular", "from": "Debt Slime", "attack": "Double Coil", "does": "Coils around itself until there are two of it.", "lesson": "Growth builds on growth, for savings and for debts alike." },
+      { "name": "Rug Pull Mimic", "type": "regular", "from": "Bubble Beetle", "attack": "Trapdoor Snap", "does": "Looks like treasure, swells up, then snaps.", "lesson": "If an investment promises quick riches, check it carefully. Bubbles pop." },
+      { "name": "Compound Leviathan", "type": "boss", "from": "Crash Treant", "attack": "Market Plunge", "does": "Dives and drags the whole rift down with it.", "lesson": "Markets drop, but patience recovers.", "second_attack": { "attack": "Slow Tide", "does": "A heavy current that slows you down." } }
+    ],
+    "the-exchange": [
+      { "name": "Hype Bull", "type": "regular", "from": "Hype Hornet", "attack": "FOMO Charge", "does": "Charges before you have had time to think.", "lesson": "Fear of missing out leads to risky choices." },
+      { "name": "Panic Bear", "type": "regular", "from": "Panic Bear", "attack": "Sell-Off Slam", "does": "A panicked swipe that knocks the power out of your next spell.", "lesson": "Panicking in a downturn locks in losses." },
+      { "name": "Volatility Roc", "type": "boss", "from": "Catastrophe Leviathan", "attack": "Perfect Storm", "does": "Brings the whole storm down on you at once.", "lesson": "Plan for the worst case. Insurance spreads the cost of a big loss.", "second_attack": { "attack": "Whirlwind", "does": "Spins the answer buttons around." } }
+    ],
+    "phish-fens": [
+      { "name": "Phish Lurker", "type": "regular", "from": "Scam Serpent", "attack": "Too Good To Be True", "does": "Dangles a glowing hint that points the wrong way.", "lesson": "If it sounds too good to be true, it is probably a scam." },
+      { "name": "Identity Wraith", "type": "regular", "from": "Moonbat", "attack": "Name Scramble", "does": "Steals the letters of one answer and jumbles them.", "lesson": "Keep your personal information private so nobody can pretend to be you." },
+      { "name": "Phish Queen", "type": "boss", "from": "Astral Colossus", "attack": "Web of Lies", "does": "Spins quietly, then springs the trap.", "lesson": "Scammers are patient. Stop and check before you click, share or pay." }
+    ],
+    "ledgerhold": [
+      { "name": "Debt Dragon", "type": "boss", "from": "Solar Wyrm", "attack": "Compound Flame", "does": "Fire that keeps burning after the blast.", "lesson": "Debt that is left alone keeps growing. Face it early, with a plan." }
+    ]
+  }
+}

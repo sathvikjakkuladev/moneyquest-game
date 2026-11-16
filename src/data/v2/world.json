@@ -1,0 +1,69 @@
+{
+ "image": "map/world.webp",
+ "pins": {
+  "ledgerhold": {
+   "x": 320,
+   "y": 216,
+   "r": 38.4,
+   "kind": "hub",
+   "boss": null,
+   "order": 0
+  },
+  "coinfall-docks": {
+   "x": 198.4,
+   "y": 304.2,
+   "r": 48,
+   "kind": "district",
+   "boss": "overspend-kraken",
+   "order": 1
+  },
+  "the-sprawl": {
+   "x": 134.4,
+   "y": 198,
+   "r": 48,
+   "kind": "district",
+   "boss": "splurge-peacock",
+   "order": 2
+  },
+  "frostvault": {
+   "x": 160,
+   "y": 90,
+   "r": 48,
+   "kind": "district",
+   "boss": "frostfang-mammoth",
+   "order": 3
+  },
+  "credit-citadel": {
+   "x": 320,
+   "y": 75.6,
+   "r": 48,
+   "kind": "district",
+   "boss": "collector-scorpion",
+   "order": 4
+  },
+  "compound-rift": {
+   "x": 480,
+   "y": 90,
+   "r": 48,
+   "kind": "district",
+   "boss": "compound-leviathan",
+   "order": 5
+  },
+  "the-exchange": {
+   "x": 505.6,
+   "y": 198,
+   "r": 48,
+   "kind": "district",
+   "boss": "volatility-roc",
+   "order": 6
+  },
+  "phish-fens": {
+   "x": 467.2,
+   "y": 302.4,
+   "r": 48,
+   "kind": "district",
+   "boss": "phish-queen",
+   "order": 7
+  }
+ }
+}

@@ -1,0 +1,1610 @@
+{
+ "note": "Generated. Sizes are export px: clip cells, head tracks [top, cx, w] per frame, and layers in head-template px.",
+ "skin": [
+  "#FCE3D0",
+  "#F6CDB0",
+  "#EDB98F",
+  "#DFA578",
+  "#CC8F62",
+  "#B77A4F",
+  "#9A6240",
+  "#7D4C30",
+  "#5E3824",
+  "#43281B"
+ ],
+ "eyes": [
+  {
+   "name": "brown",
+   "hex": "#6B4226"
+  },
+  {
+   "name": "hazel",
+   "hex": "#8A6A2F"
+  },
+  {
+   "name": "green",
+   "hex": "#3F9B4F"
+  },
+  {
+   "name": "blue",
+   "hex": "#3B7DD8"
+  },
+  {
+   "name": "grey",
+   "hex": "#8792A3"
+  },
+  {
+   "name": "amber",
+   "hex": "#C98A1E"
+  },
+  {
+   "name": "ice-blue",
+   "hex": "#A9E4FF"
+  },
+  {
+   "name": "violet",
+   "hex": "#8B5CF6"
+  },
+  {
+   "name": "cyan",
+   "hex": "#2EE6FF"
+  },
+  {
+   "name": "silver",
+   "hex": "#D5DCEB"
+  }
+ ],
+ "hairColours": [
+  {
+   "name": "black",
+   "hex": "#23232B"
+  },
+  {
+   "name": "dark-brown",
+   "hex": "#4A2F22"
+  },
+  {
+   "name": "brown",
+   "hex": "#7A4B2C"
+  },
+  {
+   "name": "auburn",
+   "hex": "#A2472A"
+  },
+  {
+   "name": "ginger",
+   "hex": "#D9742B"
+  },
+  {
+   "name": "blonde",
+   "hex": "#E8CF86"
+  },
+  {
+   "name": "platinum",
+   "hex": "#EEF0F2"
+  },
+  {
+   "name": "silver",
+   "hex": "#B9C2D6"
+  },
+  {
+   "name": "midnight-blue",
+   "hex": "#2B3A8C"
+  },
+  {
+   "name": "cyan",
+   "hex": "#49D8F2"
+  },
+  {
+   "name": "violet",
+   "hex": "#9B6CF2"
+  },
+  {
+   "name": "rose",
+   "hex": "#E889B8"
+  }
+ ],
+ "hairStyles": [
+  "curly-undercut",
+  "long-straight",
+  "box-braids",
+  "high-ponytail",
+  "spiky",
+  "afro",
+  "neat"
+ ],
+ "faces": [
+  "friendly",
+  "smirk",
+  "determined",
+  "gentle",
+  "cheerful",
+  "cool"
+ ],
+ "neat": 6,
+ "hairTintBase": 215,
+ "skinBase": [
+  221,
+  140,
+  93
+ ],
+ "templates": {
+  "front": {
+   "top": 5,
+   "cx": 57,
+   "w": 101.3
+  },
+  "back": {
+   "top": 4.8,
+   "cx": 63.9,
+   "w": 94.5
+  }
+ },
+ "clips": {
+  "attack": {
+   "image": "avatar/clips/attack.webp",
+   "cell": [
+    265,
+    261
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    151.2,
+    247.8
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     6.9,
+     138.3,
+     68.8
+    ],
+    [
+     14.1,
+     132.9,
+     69.3
+    ],
+    [
+     22.6,
+     126.6,
+     69.2
+    ],
+    [
+     23.1,
+     126.5,
+     69.1
+    ],
+    [
+     17.8,
+     164.3,
+     73.3
+    ],
+    [
+     17.8,
+     162.9,
+     72.8
+    ],
+    [
+     17.8,
+     162.9,
+     72.8
+    ],
+    [
+     17.8,
+     162.9,
+     72.8
+    ],
+    [
+     17.8,
+     162.9,
+     72.8
+    ],
+    [
+     17.7,
+     162.5,
+     72.9
+    ],
+    [
+     11.8,
+     151.3,
+     70.9
+    ],
+    [
+     6.7,
+     139.6,
+     69.1
+    ],
+    [
+     6.7,
+     138.4,
+     68.6
+    ],
+    [
+     6.7,
+     138.4,
+     68.6
+    ],
+    [
+     6.7,
+     138.4,
+     68.6
+    ],
+    [
+     6.7,
+     138.4,
+     68.6
+    ]
+   ]
+  },
+  "cheer": {
+   "image": "avatar/clips/cheer.webp",
+   "cell": [
+    192,
+    277
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    103.6,
+    272
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     30.8,
+     90.8,
+     68.6
+    ],
+    [
+     30.8,
+     90.8,
+     68.6
+    ],
+    [
+     30.8,
+     90.9,
+     68.7
+    ],
+    [
+     46.7,
+     100.6,
+     69.4
+    ],
+    [
+     8.2,
+     92.6,
+     67.9
+    ],
+    [
+     17,
+     93.6,
+     68.5
+    ],
+    [
+     47.8,
+     100.3,
+     69.8
+    ],
+    [
+     21.7,
+     95.1,
+     68.7
+    ],
+    [
+     9.6,
+     92.5,
+     68.3
+    ],
+    [
+     47.8,
+     100.9,
+     69.5
+    ],
+    [
+     46.9,
+     100.2,
+     69.5
+    ],
+    [
+     34.5,
+     93.3,
+     68.8
+    ],
+    [
+     30.8,
+     90.8,
+     68.6
+    ],
+    [
+     30.8,
+     90.8,
+     68.6
+    ],
+    [
+     30.8,
+     90.8,
+     68.6
+    ],
+    [
+     30.8,
+     90.8,
+     68.6
+    ]
+   ]
+  },
+  "defeat": {
+   "image": "avatar/clips/defeat.webp",
+   "cell": [
+    156,
+    253
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    89.6,
+    248.2
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     7,
+     76.8,
+     68.6
+    ],
+    [
+     8.5,
+     77.8,
+     69.1
+    ],
+    [
+     42,
+     92.2,
+     69.9
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     39.9,
+     90.8,
+     70
+    ],
+    [
+     32,
+     88.3,
+     69.5
+    ],
+    [
+     14.2,
+     80.4,
+     68.7
+    ],
+    [
+     7,
+     76.8,
+     68.6
+    ],
+    [
+     7,
+     76.4,
+     69.1
+    ],
+    [
+     7.7,
+     81.4,
+     69.3
+    ],
+    [
+     7,
+     76.8,
+     68.6
+    ]
+   ]
+  },
+  "hit": {
+   "image": "avatar/clips/hit.webp",
+   "cell": [
+    193,
+    270
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    108.5,
+    265
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     29.4,
+     99.1,
+     68.8
+    ],
+    [
+     17.7,
+     96.8,
+     68.9
+    ],
+    [
+     7,
+     95.7,
+     68.6
+    ],
+    [
+     28,
+     99.1,
+     69.3
+    ],
+    [
+     29.2,
+     97.6,
+     69.1
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ],
+    [
+     23.8,
+     95.7,
+     68.6
+    ]
+   ]
+  },
+  "idle": {
+   "image": "avatar/clips/idle.webp",
+   "cell": [
+    162,
+    254
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    106.1,
+    249.6
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     8.4,
+     93.3,
+     68.6
+    ],
+    [
+     8.4,
+     93.3,
+     68.6
+    ],
+    [
+     7.5,
+     93.3,
+     68.6
+    ],
+    [
+     6.8,
+     93.3,
+     68.6
+    ],
+    [
+     6.3,
+     93.3,
+     68.6
+    ],
+    [
+     7,
+     93.3,
+     68.6
+    ],
+    [
+     7.7,
+     93.3,
+     68.6
+    ],
+    [
+     8.4,
+     93.3,
+     68.6
+    ],
+    [
+     8.4,
+     93.3,
+     68.6
+    ],
+    [
+     7.7,
+     93.3,
+     68.6
+    ],
+    [
+     7,
+     93.3,
+     68.6
+    ],
+    [
+     6.3,
+     93.3,
+     68.6
+    ],
+    [
+     6.9,
+     93.3,
+     68.6
+    ],
+    [
+     7.7,
+     93.3,
+     68.6
+    ],
+    [
+     8.4,
+     93.3,
+     68.6
+    ],
+    [
+     8.4,
+     93.3,
+     68.6
+    ]
+   ]
+  },
+  "nod": {
+   "image": "avatar/clips/nod.webp",
+   "cell": [
+    132,
+    252
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    76.6,
+    247.8
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     8,
+     67.6,
+     69.4
+    ],
+    [
+     9.7,
+     69.5,
+     70.5
+    ],
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     10.4,
+     71.4,
+     71.5
+    ],
+    [
+     6.9,
+     64.4,
+     68.7
+    ],
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     9.5,
+     68.7,
+     70.4
+    ],
+    [
+     8.5,
+     66.9,
+     69.5
+    ],
+    [
+     6.7,
+     63.9,
+     68.6
+    ],
+    [
+     6.9,
+     64.6,
+     68.7
+    ],
+    [
+     10.4,
+     71.3,
+     70.9
+    ],
+    [
+     6.7,
+     64.1,
+     68.9
+    ],
+    [
+     6.7,
+     64.1,
+     68.9
+    ]
+   ]
+  },
+  "victory": {
+   "image": "avatar/clips/victory.webp",
+   "cell": [
+    324,
+    277
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    169,
+    272
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     30.8,
+     156.6,
+     68.6
+    ],
+    [
+     30.8,
+     156.6,
+     68.6
+    ],
+    [
+     31.5,
+     156.7,
+     68.8
+    ],
+    [
+     31.5,
+     147.5,
+     68.1
+    ],
+    [
+     31.5,
+     147.2,
+     67.9
+    ],
+    [
+     31.5,
+     147.2,
+     67.9
+    ],
+    [
+     42.7,
+     159.2,
+     68.6
+    ],
+    [
+     7.4,
+     147.8,
+     68.7
+    ],
+    [
+     7.5,
+     147.9,
+     68.4
+    ],
+    [
+     43.2,
+     159.5,
+     68.7
+    ],
+    [
+     32,
+     148.4,
+     68.9
+    ],
+    [
+     31.5,
+     147.2,
+     67.9
+    ],
+    [
+     31.5,
+     147.2,
+     67.9
+    ],
+    [
+     31.3,
+     147.6,
+     68.3
+    ],
+    [
+     30.8,
+     156.6,
+     68.6
+    ],
+    [
+     30.8,
+     156.6,
+     68.6
+    ]
+   ]
+  },
+  "walk": {
+   "image": "avatar/clips/walk.webp",
+   "cell": [
+    165,
+    266
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    94.5,
+    260.8
+   ],
+   "fps": 8,
+   "view": "front",
+   "head": [
+    [
+     19.6,
+     81.7,
+     68.6
+    ],
+    [
+     18.2,
+     81.8,
+     68.8
+    ],
+    [
+     14.6,
+     82.8,
+     69.3
+    ],
+    [
+     8,
+     82.1,
+     69.3
+    ],
+    [
+     9.3,
+     83.1,
+     69.1
+    ],
+    [
+     16.8,
+     81.6,
+     69.3
+    ],
+    [
+     12,
+     82.8,
+     69.3
+    ],
+    [
+     8.9,
+     82.9,
+     69.1
+    ],
+    [
+     12.4,
+     81.8,
+     69.2
+    ],
+    [
+     16.3,
+     83.7,
+     68.8
+    ],
+    [
+     12.8,
+     82,
+     69.2
+    ],
+    [
+     7.7,
+     82.3,
+     69.2
+    ],
+    [
+     11.1,
+     83.7,
+     68.8
+    ],
+    [
+     17.6,
+     81.6,
+     69.3
+    ],
+    [
+     20.3,
+     82.5,
+     69.3
+    ],
+    [
+     19.6,
+     81.7,
+     68.6
+    ]
+   ]
+  },
+  "walk-back": {
+   "image": "avatar/clips/walk-back.webp",
+   "cell": [
+    141,
+    257
+   ],
+   "frames": 16,
+   "cols": 4,
+   "foot": [
+    44.8,
+    252.4
+   ],
+   "fps": 8,
+   "view": "back",
+   "head": [
+    [
+     9.8,
+     70.5,
+     66.4
+    ],
+    [
+     10.7,
+     78.7,
+     66.5
+    ],
+    [
+     8.9,
+     76.7,
+     65.8
+    ],
+    [
+     7.9,
+     76.5,
+     65.8
+    ],
+    [
+     8.4,
+     82.5,
+     65.8
+    ],
+    [
+     11.4,
+     75.7,
+     65.6
+    ],
+    [
+     8.9,
+     80.4,
+     65.8
+    ],
+    [
+     7.5,
+     79.2,
+     65.1
+    ],
+    [
+     9.7,
+     74.3,
+     65.7
+    ],
+    [
+     11.4,
+     81.4,
+     65.8
+    ],
+    [
+     9.1,
+     73.7,
+     65.3
+    ],
+    [
+     9.6,
+     71.9,
+     65.9
+    ],
+    [
+     11,
+     78.4,
+     66.4
+    ],
+    [
+     8.6,
+     78.8,
+     66.1
+    ],
+    [
+     10.7,
+     72,
+     65.8
+    ],
+    [
+     10.3,
+     70.3,
+     66.5
+    ]
+   ]
+  }
+ },
+ "layers": {
+  "front": {
+   "hair-front": [
+    {
+     "i": 0,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-01-hair-front.webp",
+     "off": [
+      -25.9,
+      -21.5
+     ],
+     "w": 161,
+     "h": 95
+    },
+    {
+     "i": 3,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-04-hair-front.webp",
+     "off": [
+      -45.9,
+      -35.6
+     ],
+     "w": 178,
+     "h": 112
+    },
+    {
+     "i": 4,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-05-hair-front.webp",
+     "off": [
+      -32,
+      -32.6
+     ],
+     "w": 170,
+     "h": 106
+    },
+    {
+     "i": 6,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-07-hair-front.webp",
+     "off": [
+      4.2,
+      2
+     ],
+     "w": 114,
+     "h": 110
+    },
+    {
+     "i": 1,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-02-hair-front.webp",
+     "off": [
+      -21.9,
+      -6.8
+     ],
+     "w": 154,
+     "h": 172
+    },
+    {
+     "i": 2,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-03-hair-front.webp",
+     "off": [
+      -17.4,
+      -6.8
+     ],
+     "w": 154,
+     "h": 165
+    },
+    {
+     "i": 5,
+     "layer": "hair-front",
+     "image": "avatar/front/hair-front-view-06-hair-front.webp",
+     "off": [
+      -36.7,
+      -22.6
+     ],
+     "w": 190,
+     "h": 160
+    }
+   ],
+   "hair-back": [
+    {
+     "i": 0,
+     "layer": "hair-back",
+     "image": "avatar/front/hair-front-view-01-hair-back.webp",
+     "off": [
+      -20.9,
+      55.6
+     ],
+     "w": 151,
+     "h": 20
+    },
+    {
+     "i": 3,
+     "layer": "hair-back",
+     "image": "avatar/front/hair-front-view-04-hair-back.webp",
+     "off": [
+      -41.2,
+      55.6
+     ],
+     "w": 170,
+     "h": 40
+    },
+    {
+     "i": 4,
+     "layer": "hair-back",
+     "image": "avatar/front/hair-front-view-05-hair-back.webp",
+     "off": [
+      -22.3,
+      55.6
+     ],
+     "w": 147,
+     "h": 23
+    }
+   ],
+   "face": [
+    {
+     "i": 0,
+     "layer": "face",
+     "image": "avatar/front/face-front-01-face.webp",
+     "off": [
+      20.4,
+      14.2
+     ],
+     "w": 84,
+     "h": 79
+    },
+    {
+     "i": 1,
+     "layer": "face",
+     "image": "avatar/front/face-front-02-face.webp",
+     "off": [
+      20.7,
+      14.2
+     ],
+     "w": 84,
+     "h": 80
+    },
+    {
+     "i": 2,
+     "layer": "face",
+     "image": "avatar/front/face-front-03-face.webp",
+     "off": [
+      20.4,
+      14.2
+     ],
+     "w": 84,
+     "h": 78
+    },
+    {
+     "i": 3,
+     "layer": "face",
+     "image": "avatar/front/face-front-04-face.webp",
+     "off": [
+      20.7,
+      13.9
+     ],
+     "w": 84,
+     "h": 78
+    },
+    {
+     "i": 4,
+     "layer": "face",
+     "image": "avatar/front/face-front-05-face.webp",
+     "off": [
+      20.7,
+      13.9
+     ],
+     "w": 84,
+     "h": 85
+    },
+    {
+     "i": 5,
+     "layer": "face",
+     "image": "avatar/front/face-front-06-face.webp",
+     "off": [
+      20.5,
+      13.9
+     ],
+     "w": 84,
+     "h": 79
+    }
+   ],
+   "iris": [
+    {
+     "i": 0,
+     "layer": "iris",
+     "image": "avatar/front/face-front-01-iris.webp",
+     "off": [
+      46.1,
+      48.5
+     ],
+     "w": 55,
+     "h": 26
+    },
+    {
+     "i": 1,
+     "layer": "iris",
+     "image": "avatar/front/face-front-02-iris.webp",
+     "off": [
+      46.4,
+      50.8
+     ],
+     "w": 54,
+     "h": 25
+    },
+    {
+     "i": 2,
+     "layer": "iris",
+     "image": "avatar/front/face-front-03-iris.webp",
+     "off": [
+      46.7,
+      54.1
+     ],
+     "w": 55,
+     "h": 23
+    },
+    {
+     "i": 3,
+     "layer": "iris",
+     "image": "avatar/front/face-front-04-iris.webp",
+     "off": [
+      46.2,
+      47.4
+     ],
+     "w": 55,
+     "h": 26
+    },
+    {
+     "i": 4,
+     "layer": "iris",
+     "image": "avatar/front/face-front-05-iris.webp",
+     "off": [
+      46.5,
+      46.8
+     ],
+     "w": 55,
+     "h": 26
+    },
+    {
+     "i": 5,
+     "layer": "iris",
+     "image": "avatar/front/face-front-06-iris.webp",
+     "off": [
+      45.6,
+      52.7
+     ],
+     "w": 56,
+     "h": 21
+    }
+   ]
+  },
+  "back": {
+   "hair-front": [
+    {
+     "i": 0,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-01-hair-front.webp",
+     "off": [
+      -16.5,
+      -15.3
+     ],
+     "w": 150,
+     "h": 131
+    },
+    {
+     "i": 3,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-04-hair-front.webp",
+     "off": [
+      -29.4,
+      -28.8
+     ],
+     "w": 156,
+     "h": 149
+    },
+    {
+     "i": 4,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-05-hair-front.webp",
+     "off": [
+      -21.5,
+      -20.3
+     ],
+     "w": 157,
+     "h": 140
+    },
+    {
+     "i": 6,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-07-hair-front.webp",
+     "off": [
+      11.3,
+      1.6
+     ],
+     "w": 107,
+     "h": 105
+    },
+    {
+     "i": 1,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-02-hair-front.webp",
+     "off": [
+      -6.9,
+      -5.9
+     ],
+     "w": 125,
+     "h": 158
+    },
+    {
+     "i": 2,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-03-hair-front.webp",
+     "off": [
+      -8.3,
+      -5.8
+     ],
+     "w": 133,
+     "h": 154
+    },
+    {
+     "i": 5,
+     "layer": "hair-front",
+     "image": "avatar/back/hair-back-view-06-hair-front.webp",
+     "off": [
+      -21.5,
+      -13.3
+     ],
+     "w": 165,
+     "h": 145
+    }
+   ]
+  }
+ },
+ "costume": {
+  "groups": {
+   "cape": {
+    "h": [
+     212,
+     268
+    ],
+    "s": [
+     0.45,
+     1
+    ],
+    "v": [
+     0.16,
+     1
+    ]
+   },
+   "tunic": {
+    "h": [
+     192,
+     236
+    ],
+    "s": [
+     0.25,
+     0.5
+    ],
+    "v": [
+     0.42,
+     1
+    ]
+   },
+   "trim": {
+    "h": [
+     165,
+     202
+    ],
+    "s": [
+     0.45,
+     1
+    ],
+    "v": [
+     0.45,
+     1
+    ]
+   },
+   "light": {
+    "h": [
+     0,
+     360
+    ],
+    "s": [
+     0,
+     0.14
+    ],
+    "v": [
+     0.7,
+     1
+    ]
+   }
+  },
+  "order": [
+   "trim",
+   "light",
+   "cape",
+   "tunic"
+  ],
+  "neck": 1.15,
+  "sets": [
+   {
+    "id": "arcane-blue",
+    "name": "Arcane Blue",
+    "default": true,
+    "map": {}
+   },
+   {
+    "id": "ember-knight",
+    "name": "Ember Knight",
+    "map": {
+     "cape": {
+      "h": 356,
+      "s_mul": 1,
+      "v_mul": 1.15
+     },
+     "tunic": {
+      "h": 18,
+      "s_mul": 1.3,
+      "v_mul": 1
+     },
+     "trim": {
+      "h": 30,
+      "s_mul": 1,
+      "v_mul": 1
+     },
+     "light": {
+      "h": 40,
+      "s_add": 0.1,
+      "v_mul": 1
+     }
+    }
+   },
+   {
+    "id": "frost-guard",
+    "name": "Frost Guard",
+    "map": {
+     "cape": {
+      "h": 200,
+      "s_mul": 0.65,
+      "v_mul": 2.1
+     },
+     "tunic": {
+      "h": 205,
+      "s_mul": 0.7,
+      "v_mul": 1.45
+     },
+     "trim": {
+      "h": 190,
+      "s_mul": 0.35,
+      "v_mul": 1.05
+     },
+     "light": {
+      "h": 200,
+      "s_add": 0.04,
+      "v_mul": 1
+     }
+    }
+   },
+   {
+    "id": "forest-ranger",
+    "name": "Forest Ranger",
+    "map": {
+     "cape": {
+      "h": 140,
+      "s_mul": 0.9,
+      "v_mul": 1.2
+     },
+     "tunic": {
+      "h": 85,
+      "s_mul": 1.2,
+      "v_mul": 1
+     },
+     "trim": {
+      "h": 80,
+      "s_mul": 1,
+      "v_mul": 0.95
+     },
+     "light": {
+      "h": 50,
+      "s_add": 0.12,
+      "v_mul": 0.95
+     }
+    }
+   },
+   {
+    "id": "royal-amethyst",
+    "name": "Royal Amethyst",
+    "map": {
+     "cape": {
+      "h": 278,
+      "s_mul": 1,
+      "v_mul": 1.2
+     },
+     "tunic": {
+      "h": 265,
+      "s_mul": 1.1,
+      "v_mul": 1.05
+     },
+     "trim": {
+      "h": 320,
+      "s_mul": 0.8,
+      "v_mul": 1
+     },
+     "light": {
+      "h": 280,
+      "s_add": 0.04,
+      "v_mul": 1
+     }
+    }
+   },
+   {
+    "id": "sunburst",
+    "name": "Sunburst",
+    "map": {
+     "cape": {
+      "h": 32,
+      "s_mul": 1,
+      "v_mul": 2.4
+     },
+     "tunic": {
+      "h": 35,
+      "s_mul": 1.2,
+      "v_mul": 1.25
+     },
+     "trim": {
+      "h": 0,
+      "s_mul": 0,
+      "v_mul": 1
+     },
+     "light": {
+      "h": 45,
+      "s_add": 0.06,
+      "v_mul": 1
+     }
+    }
+   },
+   {
+    "id": "shadow-rogue",
+    "name": "Shadow Rogue",
+    "map": {
+     "cape": {
+      "h": 250,
+      "s_mul": 0.25,
+      "v_mul": 0.8
+     },
+     "tunic": {
+      "h": 240,
+      "s_mul": 0.3,
+      "v_mul": 0.65
+     },
+     "trim": {
+      "h": 275,
+      "s_mul": 0.9,
+      "v_mul": 1
+     },
+     "light": {
+      "h": 240,
+      "s_add": 0.02,
+      "v_mul": 0.62
+     }
+    }
+   },
+   {
+    "id": "coral-tide",
+    "name": "Coral Tide",
+    "map": {
+     "cape": {
+      "h": 178,
+      "s_mul": 1,
+      "v_mul": 1.35
+     },
+     "tunic": {
+      "h": 165,
+      "s_mul": 0.9,
+      "v_mul": 1.2
+     },
+     "trim": {
+      "h": 10,
+      "s_mul": 0.85,
+      "v_mul": 1
+     },
+     "light": {
+      "h": 30,
+      "s_add": 0.05,
+      "v_mul": 1
+     }
+    }
+   }
+  ]
+ }
+}

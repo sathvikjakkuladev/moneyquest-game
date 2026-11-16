@@ -1,0 +1,657 @@
+{
+ "note": "Generated. Monsters: mon/<species>/<look>-<view>.webp. Bosses and NPCs: views, a portrait and clips.",
+ "monsters": {
+  "apr-serpent": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "budget-breaker": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "hype-bull": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "identity-wraith": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "impulse-wisp": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "inflation-shade": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "late-fee-raptor": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "minimum-payment-leech": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "overdraft-golem": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "panic-bear": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "phish-lurker": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "rug-pull-mimic": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "splurge-hound": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  },
+  "subscription-swarm": {
+   "looks": [
+    "coinfall-docks",
+    "compound-rift",
+    "credit-citadel",
+    "fire",
+    "frostvault",
+    "phish-fens",
+    "the-exchange",
+    "the-sprawl"
+   ]
+  }
+ },
+ "bosses": {
+  "collector-scorpion": {
+   "clips": {
+    "idle": {
+     "image": "boss/collector-scorpion/idle.webp",
+     "cell": [
+      363,
+      409
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      184.3,
+      398.1
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/collector-scorpion/attack.webp",
+     "cell": [
+      614,
+      610
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      308.5,
+      515.2
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "compound-leviathan": {
+   "clips": {
+    "idle": {
+     "image": "boss/compound-leviathan/idle.webp",
+     "cell": [
+      343,
+      426
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      108.2,
+      392.3
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/compound-leviathan/attack.webp",
+     "cell": [
+      614,
+      502
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      245.1,
+      456.3
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "debt-dragon": {
+   "clips": {
+    "idle": {
+     "image": "boss/debt-dragon/idle.webp",
+     "cell": [
+      382,
+      404
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      183.7,
+      396.2
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/debt-dragon/attack.webp",
+     "cell": [
+      614,
+      400
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      352,
+      386.6
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "frostfang-mammoth": {
+   "clips": {
+    "idle": {
+     "image": "boss/frostfang-mammoth/idle.webp",
+     "cell": [
+      344,
+      415
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      135,
+      406.4
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/frostfang-mammoth/attack.webp",
+     "cell": [
+      531,
+      587
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      270.7,
+      508.8
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "overspend-kraken": {
+   "clips": {
+    "idle": {
+     "image": "boss/overspend-kraken/idle.webp",
+     "cell": [
+      378,
+      399
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      172.8,
+      391
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/overspend-kraken/attack.webp",
+     "cell": [
+      542,
+      557
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      218.9,
+      465.3
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "phish-queen": {
+   "clips": {
+    "idle": {
+     "image": "boss/phish-queen/idle.webp",
+     "cell": [
+      422,
+      409
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      156.8,
+      400
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/phish-queen/attack.webp",
+     "cell": [
+      518,
+      427
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      252.2,
+      419.2
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "splurge-peacock": {
+   "clips": {
+    "idle": {
+     "image": "boss/splurge-peacock/idle.webp",
+     "cell": [
+      339,
+      395
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      204.2,
+      385.9
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/splurge-peacock/attack.webp",
+     "cell": [
+      614,
+      535
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      335.4,
+      519.7
+     ],
+     "fps": 8
+    }
+   }
+  },
+  "volatility-roc": {
+   "clips": {
+    "idle": {
+     "image": "boss/volatility-roc/idle.webp",
+     "cell": [
+      527,
+      421
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      257.3,
+      412.8
+     ],
+     "fps": 8
+    },
+    "attack": {
+     "image": "boss/volatility-roc/attack.webp",
+     "cell": [
+      614,
+      551
+     ],
+     "frames": 16,
+     "cols": 4,
+     "foot": [
+      286.7,
+      512
+     ],
+     "fps": 8
+    }
+   }
+  }
+ },
+ "npcs": {
+  "arena-master": {
+   "talk": {
+    "image": "npc/arena-master/talk.webp",
+    "cell": [
+     129,
+     175
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     72.8,
+     171.8
+    ],
+    "fps": 8
+   }
+  },
+  "banker": {
+   "talk": {
+    "image": "npc/banker/talk.webp",
+    "cell": [
+     106,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     45,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "guide-coinfall-docks": {
+   "talk": {
+    "image": "npc/guide-coinfall-docks/talk.webp",
+    "cell": [
+     102,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     45.3,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "guide-compound-rift": {
+   "talk": {
+    "image": "npc/guide-compound-rift/talk.webp",
+    "cell": [
+     102,
+     165
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     48.5,
+     161.3
+    ],
+    "fps": 8
+   }
+  },
+  "guide-credit-citadel": {
+   "talk": {
+    "image": "npc/guide-credit-citadel/talk.webp",
+    "cell": [
+     103,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     43.8,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "guide-frostvault": {
+   "talk": {
+    "image": "npc/guide-frostvault/talk.webp",
+    "cell": [
+     99,
+     165
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     47,
+     161.3
+    ],
+    "fps": 8
+   }
+  },
+  "guide-phish-fens": {
+   "talk": {
+    "image": "npc/guide-phish-fens/talk.webp",
+    "cell": [
+     110,
+     171
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     52.3,
+     167.8
+    ],
+    "fps": 8
+   }
+  },
+  "guide-the-exchange": {
+   "talk": {
+    "image": "npc/guide-the-exchange/talk.webp",
+    "cell": [
+     103,
+     165
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     43.5,
+     161.3
+    ],
+    "fps": 8
+   }
+  },
+  "guide-the-sprawl": {
+   "talk": {
+    "image": "npc/guide-the-sprawl/talk.webp",
+    "cell": [
+     92,
+     165
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     52.5,
+     161.8
+    ],
+    "fps": 8
+   }
+  },
+  "mentor": {
+   "talk": {
+    "image": "npc/mentor/talk.webp",
+    "cell": [
+     100,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     37.8,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "pet-trader": {
+   "talk": {
+    "image": "npc/pet-trader/talk.webp",
+    "cell": [
+     114,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     58.3,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "quest-keeper": {
+   "talk": {
+    "image": "npc/quest-keeper/talk.webp",
+    "cell": [
+     89,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     39.5,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "shopkeeper": {
+   "talk": {
+    "image": "npc/shopkeeper/talk.webp",
+    "cell": [
+     104,
+     164
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     68.5,
+     160.8
+    ],
+    "fps": 8
+   }
+  },
+  "stylist": {
+   "talk": {
+    "image": "npc/stylist/talk.webp",
+    "cell": [
+     89,
+     167
+    ],
+    "frames": 16,
+    "cols": 4,
+    "foot": [
+     27.5,
+     163.8
+    ],
+    "fps": 8
+   }
+  }
+ }
+}

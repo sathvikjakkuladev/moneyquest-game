@@ -1,66 +1,86 @@
-// Other players on this screen: the same wizard sprite, with their hat and pet, moving smoothly
-// (drawn RENDER_DELAY ms in the past, interpolated). Only created when multiplayer is on.
+// Other players on this screen: their own look, hat and pet, moving smoothly (drawn RENDER_DELAY ms
+// in the past, interpolated). Only created when multiplayer is on. A classmate's look arrives as
+// list indexes; their art loads on demand and is dropped when the screen closes.
 import type * as Phaser from 'phaser';
+import type { Look } from '../core/look.ts';
+import { DEFAULT_LOOK, lookFromList } from '../core/look.ts';
+import { item } from '../data/items.ts';
+import { hatArt } from '../data/v2.ts';
+import { ZONES } from '../data/zones.ts';
 import { bridge } from '../net/bridge.ts';
 import { RENDER_DELAY, sampleAt } from '../net/interp.ts';
 import { FACES } from '../net/protocol.ts';
-import { item } from '../data/items.ts';
-import { addChar, pose } from './chars.ts';
-import { HAT_ART } from '../data/hats.ts';
-import { Hat } from './hats.ts';
-import { Follower, petArt, queuePet } from './pet.ts';
+import { Avatar, dropAvatars, OVERWORLD_CLIPS, queueAvatar } from './avatar.ts';
+import { SIZE } from './creature.ts';
+import { Follower, queuePet } from './pet.ts';
+import { whenLoaded } from './stage.ts';
 
-interface View {
-  sprite: Phaser.GameObjects.Sprite;
-  hat: Hat | null;
-  hatId: string | null;
+interface Seen {
+  avatar: Avatar | null;
+  style: string; // look + hat, as text, to spot changes
   pet: Follower | null;
-  petId: string | null;
+  petKey: string;
   last: { x: number; y: number };
 }
 
-const knownHat = (id: string | null) => !!id && item(id)?.kind === 'hat' && !!HAT_ART[item(id)!.art];
-const knownPet = (id: string | null) => !!id && item(id)?.kind === 'pet' && !!petArt(id);
+const knownHat = (id: string | null) => (id && hatArt(id) ? id : null);
+const knownPet = (id: string | null) => !!id && item(id)?.kind === 'pet';
+const petLook = (i: number | undefined) => (i !== undefined && i >= 0 ? (ZONES[i]?.id ?? null) : null);
 
 export class RemotePlayers {
   private scene: Phaser.Scene;
-  private charId: string;
-  private views = new Map<number, View>();
+  private views = new Map<number, Seen>();
+  private baked = new Set<string>();
 
-  constructor(scene: Phaser.Scene, charId: string) {
+  constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.charId = charId;
   }
 
   update(dtMs: number): void {
     const now = performance.now();
     for (const [id, r] of bridge.remotes) {
       let v = this.views.get(id);
-      if (!v) {
-        v = { sprite: addChar(this.scene, this.charId, r.x, r.y), hat: null, hatId: null, pet: null, petId: null, last: { x: r.x, y: r.y } };
-        this.views.set(id, v);
-      }
+      if (!v) this.views.set(id, (v = { avatar: null, style: '', pet: null, petKey: '', last: { x: r.x, y: r.y } }));
       const at = sampleAt(r.samples, now - RENDER_DELAY) ?? { x: r.x, y: r.y };
       const moving = Math.hypot(at.x - v.last.x, at.y - v.last.y) > 0.2;
       v.last = at;
-      v.sprite.setPosition(at.x, at.y).setDepth(at.y);
-      pose(v.sprite, this.charId, moving ? 'walk' : 'idle', FACES[r.f]);
 
-      if (r.h !== v.hatId) {
-        v.hat?.destroy();
-        v.hat = knownHat(r.h) ? new Hat(this.scene, v.sprite, r.h!) : null;
-        v.hatId = r.h;
+      const look: Look = lookFromList(r.a) ?? DEFAULT_LOOK;
+      const hat = knownHat(r.h);
+      const style = `${r.a?.join('.') ?? ''}|${hat ?? ''}`;
+      if (style !== v.style) {
+        v.style = style;
+        whenLoaded(this.scene, queueAvatar(this.scene, look, hat, OVERWORLD_CLIPS), () => {
+          const w = this.views.get(id);
+          if (!w || w.style !== style) return;
+          if (w.avatar) w.avatar.restyle(look, hat);
+          else w.avatar = new Avatar(this.scene, w.last.x, w.last.y, look, hat, SIZE.player);
+          for (const k of w.avatar.keys) this.baked.add(k);
+        });
       }
-      v.hat?.update();
+      if (v.avatar) {
+        const face = FACES[r.f];
+        v.avatar.sprite.setPosition(at.x, at.y).setDepth(at.y);
+        if (moving) v.avatar.show(face === 'north' ? 'walk-back' : 'walk', face === 'west');
+        else if (face === 'north') (v.avatar.show('walk-back'), v.avatar.sprite.anims.pause(v.avatar.sprite.anims.currentAnim?.frames[0]));
+        else v.avatar.show('idle', face === 'west');
+      }
 
-      if (r.p !== v.petId) {
+      const petKey = knownPet(r.p) ? `${r.p}|${petLook(r.pl) ?? ''}` : '';
+      if (petKey !== v.petKey) {
         v.pet?.destroy();
         v.pet = null;
-        v.petId = r.p;
-        if (knownPet(r.p)) this.loadPet(id, r.p!);
+        v.petKey = petKey;
+        if (petKey) {
+          const pl = petLook(r.pl);
+          whenLoaded(this.scene, queuePet(this.scene, r.p, pl), () => {
+            const w = this.views.get(id);
+            if (w && w.petKey === petKey && !w.pet) w.pet = new Follower(this.scene, r.p!, pl, [w.last.x, w.last.y]);
+          });
+        }
       }
       v.pet?.update([at.x, at.y], moving, dtMs);
-      bridge.labels.set(id, { x: at.x, y: at.y - v.sprite.displayHeight * v.sprite.originY - (v.hat ? 10 : 0) }); // above the hat
+      bridge.labels.set(id, { x: at.x, y: at.y - SIZE.player - (hat ? 18 : 8) }); // above the hair or hat
     }
     for (const [id, v] of this.views) if (!bridge.remotes.has(id)) this.remove(id, v);
   }
@@ -68,34 +88,21 @@ export class RemotePlayers {
   /** The classmate drawn at (x, y), the front-most one if they overlap. */
   hit(x: number, y: number): number | undefined {
     let best: [number, number] | undefined;
-    for (const [id, v] of this.views) if (v.sprite.getBounds().contains(x, y) && (!best || v.sprite.depth > best[1])) best = [id, v.sprite.depth];
+    for (const [id, v] of this.views) if (v.avatar && v.avatar.sprite.getBounds().contains(x, y) && (!best || v.avatar.sprite.depth > best[1])) best = [id, v.avatar.sprite.depth];
     return best?.[0];
   }
 
-  /** Pet art loads on demand (only the player's own pet is preloaded). */
-  private loadPet(id: number, petId: string): void {
-    const make = () => {
-      const v = this.views.get(id);
-      const art = petArt(petId);
-      if (v && v.petId === petId && art && this.scene.textures.exists(art.key)) v.pet = new Follower(this.scene, petId, [v.last.x, v.last.y]);
-    };
-    const art = petArt(petId)!;
-    if (this.scene.textures.exists(art.key)) return make();
-    queuePet(this.scene, petId);
-    this.scene.load.once('complete', make);
-    this.scene.load.start();
-  }
-
-  private remove(id: number, v: View): void {
-    v.sprite.destroy();
-    v.hat?.destroy();
+  private remove(id: number, v: Seen): void {
+    v.avatar?.destroy();
     v.pet?.destroy();
     this.views.delete(id);
     bridge.labels.delete(id);
   }
 
-  destroy(): void {
+  /** `keep`: baked textures still in use (the player's own). */
+  destroy(keep: ReadonlySet<string> = new Set()): void {
     for (const [id, v] of this.views) this.remove(id, v);
     bridge.labels.clear();
+    dropAvatars(this.scene, [...this.baked].filter((k) => !keep.has(k)));
   }
 }

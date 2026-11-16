@@ -1,32 +1,35 @@
-// Cosmetics: hats (worn on the wizard) and pets (follow you, small battle assist). The shop arrives
-// in Phase 4; prices are drafts. The Laurel Wreath and Bull Calf are reward-card prizes only and can
-// never be bought (src/rewards/redeem.ts REWARD_ONLY_ITEMS, tested).
+// Cosmetics: hats (worn on the head) and pets (follow you, small battle assist). PLAN.md §12:
+// hats are bought with coins, priced by rarity; pets are the monsters you have beaten. The Laurel
+// Wreath and Bull Calf are reward-card prizes only and can never be bought
+// (src/rewards/redeem.ts REWARD_ONLY_ITEMS, tested). Prices and rarity labels are DRAFTS.
 
 import { MONSTERS } from '../core/monsters.ts';
+import type { Rarity } from './v2.ts';
+import { HATS } from './v2.ts';
 
-export interface Item { id: string; kind: 'hat' | 'pet'; name: string; price: number | null; art: string; legendary?: boolean; tamed?: boolean }
+export interface Item { id: string; kind: 'hat' | 'pet'; name: string; price: number | null; art: string; rarity?: Rarity; legendary?: boolean; tamed?: boolean }
+
+export const RARITY_PRICE: Record<Rarity, number> = { common: 40, rare: 80, epic: 140, legendary: 220 };
+const HAT_NAMES: Record<string, string> = { 'hat-laurel': 'Laurel Wreath', 'hat-top-hat': 'Banker Top Hat', 'hat-wizard-hat': 'Star Wizard Hat', 'hat-crown': 'Coin Crown' };
+const title = (s: string) => s.split('-').map((w) => w[0]!.toUpperCase() + w.slice(1)).join(' ');
+const ORDER: Rarity[] = ['common', 'rare', 'epic', 'legendary'];
+
+/** The Bull Calf: the Hype Bull in its fire look, which nothing else in the game uses. */
+export const BULL_CALF = { species: 'hype-bull', look: 'fire', scale: 0.85 };
 
 export const ITEMS: Item[] = [
-  { id: 'hat-laurel', kind: 'hat', name: 'Laurel Wreath', price: null, art: 'laurel' },
-  { id: 'hat-top', kind: 'hat', name: 'Banker Top Hat', price: 70, art: 'top' },
-  { id: 'hat-wizard', kind: 'hat', name: 'Star Wizard Hat', price: 90, art: 'wizard' },
-  { id: 'hat-crown', kind: 'hat', name: 'Coin Crown', price: 140, art: 'crown' },
-  { id: 'pet-bull', kind: 'pet', name: 'Bull Calf', price: null, art: 'pet_bull_calf', legendary: true },
-  { id: 'pet-coin-sprite', kind: 'pet', name: 'Coin Sprite', price: 60, art: 'pet_coin_sprite' },
-  { id: 'pet-sapling-fox', kind: 'pet', name: 'Sapling Fox', price: 80, art: 'pet_sapling_fox' },
-  { id: 'pet-star-kitten', kind: 'pet', name: 'Star Kitten', price: 80, art: 'pet_star_kitten' },
-  { id: 'pet-gem-turtle', kind: 'pet', name: 'Gem Turtle', price: 100, art: 'pet_gem_turtle' },
-  { id: 'pet-piggy-dragonling', kind: 'pet', name: 'Piggy Dragonling', price: 120, art: 'pet_piggy_dragonling' },
-  { id: 'pet-vault-bot', kind: 'pet', name: 'Vault Bot', price: 120, art: 'pet_vault_bot' },
-  { id: 'pet-professor-owl', kind: 'pet', name: 'Professor Owl', price: 150, art: 'pet_professor_owl', legendary: true },
+  ...[...HATS].sort((a, b) => ORDER.indexOf(a.rarity) - ORDER.indexOf(b.rarity) || a.art.localeCompare(b.art)).map((h): Item => ({ id: h.id, kind: 'hat', name: HAT_NAMES[h.id] ?? title(h.art), price: h.rewardOnly ? null : RARITY_PRICE[h.rarity], art: h.art, rarity: h.rarity })),
+  { id: 'pet-bull', kind: 'pet', name: 'Bull Calf', price: null, art: BULL_CALF.species, legendary: true },
 ];
-/** Bonus-zone monsters tamed on their first defeat become pets: `tame:<monster id>` (bosses are legendary). */
+
+/** A captured monster as a pet: `tame:<monster id>` (bosses are legendary). */
 export const tameId = (monsterId: string) => `tame:${monsterId}`;
+export const tamedMonster = (petId: string) => (petId.startsWith('tame:') ? petId.slice(5) : null);
 
 export function item(id: string): Item | undefined {
   if (id.startsWith('tame:')) {
     const m = MONSTERS[id.slice(5)];
-    return m ? { id, kind: 'pet', name: m.name, price: null, art: m.id, legendary: m.boss, tamed: true } : undefined;
+    return m ? { id, kind: 'pet', name: m.name, price: null, art: m.art, legendary: m.boss, tamed: true } : undefined;
   }
   return ITEMS.find((i) => i.id === id);
 }

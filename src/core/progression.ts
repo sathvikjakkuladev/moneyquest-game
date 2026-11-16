@@ -8,7 +8,10 @@ export function levelFor(xp: number): number {
   return l;
 }
 
-export const TOPIC_ZONE_ORDER = ['piggybank_village', 'borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory'] as const;
+/** The six topic districts in play order (PLAN.md §12). Phish Fens, the mixed district, comes after them. */
+export const TOPIC_ZONE_ORDER = ['coinfall-docks', 'the-sprawl', 'frostvault', 'credit-citadel', 'compound-rift', 'the-exchange'] as const;
+export const MIXED_ZONE = 'phish-fens';
+export const ALL_DISTRICTS = [...TOPIC_ZONE_ORDER, MIXED_ZONE] as const;
 
 /** Topic zones open in order: each opens when the previous zone's boss is beaten. */
 export function zoneOpen(zone: string, cleared: readonly string[]): boolean {

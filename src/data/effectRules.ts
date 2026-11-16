@@ -1,5 +1,7 @@
 // What each monster attack's special effect does, as data (PLAN.md §3, from the archive's approved
-// effect table). Attack names, effect text and damage come from monster_attacks.json; this file only
+// effect table). Attack names, effect text and damage come from monster_attacks.json; each Vaultspire
+// monster keeps the rule of the first-build monster it takes its mechanics from (monster-roster.json,
+// PLAN.md §12). This file only
 // maps each attack to a rule, so it can be reviewed on its own. One entry per attack, in JSON order
 // (a boss's second attack is index 1). ★ marks a rule that interprets or simplifies the text.
 
@@ -81,52 +83,34 @@ export type EffectRule =
   | { kind: 'hydra'; split: number[] };
 
 export const EFFECT_RULES: Record<string, EffectRule[]> = {
-  // Piggybank Village: Spending and Saving
-  mon_spendling: [{ kind: 'stealCoins', amount: 5 }],
-  mon_impulse_magpie: [{ kind: 'slowStrike', seconds: 10 }],
-  mon_jar_muncher: [{ kind: 'eatShield', elseCoins: 3 }], // Save Shield isn't unlocked yet here, so it usually takes coins
-  boss_king_splurge: [{ kind: 'multiHit', hits: 2 }, { kind: 'rushNextTurn', seconds: 8, explorerBonus: 4 }],
-  // Borrowers' Bridges: Credit and Debt
-  mon_debt_slime: [{ kind: 'split', turns: 3 }],
-  mon_interest_imp: [{ kind: 'rampOnMiss', step: 2 }],
-  mon_late_fee_troll: [{ kind: 'latePenalty', seconds: 15, extra: 5 }],
-  boss_loan_shark_lord: [{ kind: 'lockAnswer' }, { kind: 'multiHit', hits: 3 }],
-  // Guildworks: Employment and Income
-  mon_tax_gremlin: [{ kind: 'potTax', percent: 20 }],
-  mon_slacker_golem: [{ kind: 'napNext' }],
-  mon_gig_goblin: [{ kind: 'randomDamage', min: 4, max: 14 }],
-  boss_burnout_blaze: [{ kind: 'burnRamp', step: 3, selfDamage: 3 }, { kind: 'plain' }],
-  // Compound Orchard: Investing
-  mon_hype_hornet: [{ kind: 'attacksFirst' }],
-  mon_bubble_beetle: [{ kind: 'bubble', popAt: 2 }],
+  // Coinfall Docks: Spending and Saving
+  mon_budget_breaker: [{ kind: 'stealCoins', amount: 5 }],
+  mon_subscription_swarm: [{ kind: 'eatShield', elseCoins: 3 }], // Save Shield isn't unlocked yet here, so it usually takes coins
+  boss_overspend_kraken: [{ kind: 'multiHit', hits: 2 }, { kind: 'rushNextTurn', seconds: 8, explorerBonus: 4 }],
+  // The Sprawl: Financial Decision Making
+  mon_impulse_wisp: [{ kind: 'slowStrike', seconds: 10 }],
+  mon_splurge_hound: [{ kind: 'fogAnswer' }],
+  boss_splurge_peacock: [{ kind: 'riddle' }, { kind: 'balanceHp' }],
+  // Frostvault: Employment and Income
+  mon_inflation_shade: [{ kind: 'inflation', percent: 10 }],
+  mon_overdraft_golem: [{ kind: 'potTax', percent: 20 }],
+  boss_frostfang_mammoth: [{ kind: 'burnRamp', step: 3, selfDamage: 3 }, { kind: 'plain' }],
+  // Credit Citadel: Credit and Debt
+  mon_late_fee_raptor: [{ kind: 'latePenalty', seconds: 15, extra: 5 }],
+  mon_minimum_payment_leech: [{ kind: 'rampOnMiss', step: 2 }],
+  boss_collector_scorpion: [{ kind: 'lockAnswer' }, { kind: 'multiHit', hits: 3 }],
+  // Compound Rift: Investing
+  mon_apr_serpent: [{ kind: 'split', turns: 3 }],
+  mon_rug_pull_mimic: [{ kind: 'bubble', popAt: 2 }],
+  boss_compound_leviathan: [{ kind: 'hitsPet', elseExtra: 4 }, { kind: 'slow', turns: 2 }],
+  // The Exchange: Risk and Insurance
+  mon_hype_bull: [{ kind: 'attacksFirst' }],
   mon_panic_bear: [{ kind: 'weakenSpell', percent: 50 }],
-  boss_crash_treant: [{ kind: 'hitsPet', elseExtra: 4 }, { kind: 'slow', turns: 2 }],
-  // Stormwatch Coast: Risk and Insurance
-  mon_risk_squall: [{ kind: 'multiHit', hits: 2, chance: 0.25 }],
-  mon_mishap_crab: [{ kind: 'breakShieldUninsured', extra: 3 }],
-  mon_flood_eel: [{ kind: 'removeBuff' }],
-  boss_catastrophe_leviathan: [{ kind: 'catastrophe', insuredDamage: 6 }, { kind: 'shuffleAnswers' }],
-  // Crossroads Observatory: Financial Decision Making
-  mon_scam_serpent: [{ kind: 'fakeHint' }],
-  mon_inflation_balloon: [{ kind: 'inflation', percent: 10 }],
-  mon_doubt_wraith: [{ kind: 'fogAnswer' }],
-  boss_chaos_sphinx: [{ kind: 'riddle' }, { kind: 'balanceHp' }],
-  // Bonus zones (mixed review). Their bosses have a single attack.
-  mon_ember_jackal: [{ kind: 'burn', damage: 3, turns: 2 }],
-  mon_sunscale_basilisk: [{ kind: 'glare' }],
-  mon_cinder_scarab: [{ kind: 'halfSpells' }],
-  boss_solar_wyrm: [{ kind: 'burn', damage: 5, turns: 2 }],
-  mon_starmoth: [{ kind: 'napNext', chance: 0.3 }],
-  mon_nebula_lynx: [{ kind: 'crit', chance: 0.25, mult: 1.5 }],
-  mon_void_sprout: [{ kind: 'removeBuff' }],
-  boss_galaxy_stag: [{ kind: 'rampOnMiss', step: 4 }],
-  mon_rune_golem: [{ kind: 'runeShield', percent: 50 }],
-  mon_relic_wraith: [{ kind: 'blockSpell' }],
-  mon_comet_hound: [{ kind: 'attacksFirst' }],
-  boss_astral_colossus: [{ kind: 'everyNth', n: 3, mult: 2 }],
-  mon_moonbat: [{ kind: 'scramble' }],
-  mon_crystal_crawler: [{ kind: 'multiHit', hits: 3 }],
-  mon_tide_specter: [{ kind: 'healSelf', amount: 6 }],
-  // Lunar Hydra: 7 hits split 2/2/3 across three heads (PLAN.md §3).
-  boss_lunar_hydra: [{ kind: 'hydra', split: [2, 2, 3] }],
+  boss_volatility_roc: [{ kind: 'catastrophe', insuredDamage: 6 }, { kind: 'shuffleAnswers' }],
+  // Phish Fens: mixed review. Its boss has a single attack.
+  mon_phish_lurker: [{ kind: 'fakeHint' }],
+  mon_identity_wraith: [{ kind: 'scramble' }],
+  boss_phish_queen: [{ kind: 'everyNth', n: 3, mult: 2 }],
+  // The finale, at Ledgerhold's arena gate: mixed review, a single attack.
+  boss_debt_dragon: [{ kind: 'burn', damage: 5, turns: 2 }],
 };

@@ -1,0 +1,152 @@
+{
+ "note": "All monster/pet motion is code-driven (no video). Sprites are bottom-center anchored. Times in ms, distances in px at 1080p display height.",
+ "displayHeight1080": {
+  "explore_pet": 120,
+  "battle": 300,
+  "boss": "see bosses"
+ },
+ "idle": {
+  "breathe": {
+   "scaleY": [
+    1.0,
+    1.035
+   ],
+   "scaleX": [
+    1.0,
+    0.985
+   ],
+   "period": 1600,
+   "ease": "sine-in-out",
+   "origin": "bottom-center"
+  },
+  "bob": {
+   "y": [
+    0,
+    -4
+   ],
+   "period": 1600,
+   "phase": 0.25
+  }
+ },
+ "follow": {
+  "note": "pet trails the player by 70-110px along the path history",
+  "hop": {
+   "height": 10,
+   "period": 420,
+   "squash": {
+    "onLand": [
+     1.08,
+     0.92
+    ],
+    "ms": 90
+   }
+  },
+  "faceBy": "left/right sprite from velocity x; front/back from velocity y"
+ },
+ "attack": {
+  "windup": {
+   "dx": -14,
+   "scale": [
+    1.0,
+    0.95
+   ],
+   "ms": 140,
+   "ease": "quad-out"
+  },
+  "lunge": {
+   "dx": 70,
+   "ms": 130,
+   "ease": "quad-in"
+  },
+  "impact": {
+   "hold": 60,
+   "screenShake": {
+    "px": 4,
+    "ms": 120
+   }
+  },
+  "recover": {
+   "ms": 240,
+   "ease": "back-out"
+  }
+ },
+ "hit": {
+  "flash": {
+   "color": "#FFFFFF",
+   "alpha": 0.85,
+   "pulses": 2,
+   "ms": 70
+  },
+  "knockback": {
+   "dx": -20,
+   "ms": 160,
+   "ease": "quad-out"
+  },
+  "shake": {
+   "px": 3,
+   "ms": 180
+  }
+ },
+ "shatter": {
+  "note": "defeat/capture",
+  "crack": {
+   "ms": 180,
+   "whiteLines": true
+  },
+  "shards": {
+   "count": [
+    8,
+    12
+   ],
+   "source": "voronoi cut of current sprite",
+   "velocity": [
+    220,
+    420
+   ],
+   "gravity": 900,
+   "spin": [
+    -540,
+    540
+   ],
+   "fadeMs": 650
+  },
+  "coins": {
+   "count": 8,
+   "color": "#9CFF3A",
+   "sparkle": true,
+   "arc": {
+    "height": [
+     60,
+     120
+    ]
+   },
+   "flyToWalletMs": 600
+  },
+  "captureOrb": {
+   "color": "#8FE9FF",
+   "ms": 500
+  }
+ },
+ "lookExtras": {
+  "fire": {
+   "particles": "embers",
+   "color": [
+    "#FFB23A",
+    "#FF6A1A"
+   ],
+   "rate": 10
+  },
+  "compound-rift": {
+   "particles": "orbiting rock bits",
+   "count": 4
+  },
+  "phish-fens": {
+   "particles": "fog wisps",
+   "alpha": 0.35
+  },
+  "coinfall-docks": {
+   "particles": "rain drips",
+   "rate": 4
+  }
+ }
+}

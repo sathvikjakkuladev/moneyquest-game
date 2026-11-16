@@ -1,0 +1,17 @@
+{
+ "floorTop": 0.7,
+ "feetY": 309.6,
+ "playerX": 153.6,
+ "enemyX": 473.6,
+ "hudTop": 50.4,
+ "backgrounds": {
+  "coinfall-docks": "battle/coinfall-docks.webp",
+  "compound-rift": "battle/compound-rift.webp",
+  "credit-citadel": "battle/credit-citadel.webp",
+  "frostvault": "battle/frostvault.webp",
+  "ledgerhold-arena": "battle/ledgerhold-arena.webp",
+  "phish-fens": "battle/phish-fens.webp",
+  "the-exchange": "battle/the-exchange.webp",
+  "the-sprawl": "battle/the-sprawl.webp"
+ }
+}

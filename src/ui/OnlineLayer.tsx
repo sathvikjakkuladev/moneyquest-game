@@ -8,6 +8,7 @@ import { bridge, ME, useNet } from '../net/bridge.ts';
 import type { Said } from '../net/bridge.ts';
 import { BUBBLE_MS, EMOTES, PHRASE_GROUPS, PHRASES, SAY_COOLDOWN_MS, sayText } from '../net/says.ts';
 import { sfx } from '../audio.ts';
+import { useSave } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
 import type { Stage } from './useStage.ts';
 
@@ -196,6 +197,8 @@ function Picker() {
 
 /** Tap a classmate: mute them on this device, or report them to the teacher. */
 function PlayerMenu({ id, name, world }: { id: number; name: string; world: boolean }) {
+  // Open-world guests have no teacher: their reports go to the MoneyQuest safety team only.
+  const inClass = useSave((s) => (s.active === null ? false : !!s.slots[s.active]?.online));
   const hidden = useNet((s) => s.hidden.includes(name));
   const reported = useNet((s) => s.reported.includes(id));
   const [confirm, setConfirm] = useState(false);
@@ -214,10 +217,10 @@ function PlayerMenu({ id, name, world }: { id: number; name: string; world: bool
           <button className="btn btn-quiet" onClick={close} aria-label="Close">✕</button>
         </div>
         {reported ? (
-          <p className="text-lg" role="status">Thanks for telling us. {world ? 'Your teacher and the safety team' : 'Your teacher'} will see your report. You won’t see {name}’s emotes or phrases any more.</p>
+          <p className="text-lg" role="status">Thanks for telling us. {!inClass ? 'The MoneyQuest safety team' : world ? 'Your teacher and the safety team' : 'Your teacher'} will see your report. You won’t see {name}’s emotes or phrases any more.</p>
         ) : confirm ? (
           <>
-            <p className="text-lg">{world ? `Report ${name}? ${name} is from another class. Your teacher, their teacher and the MoneyQuest safety team will see what ${name} said recently.` : `Report ${name} to your teacher? Your teacher will see what ${name} said recently.`}</p>
+            <p className="text-lg">{!inClass ? `Report ${name}? The MoneyQuest safety team will see what ${name} said recently.` : world ? `Report ${name}? ${name} is from another class. Your teacher, their teacher and the MoneyQuest safety team will see what ${name} said recently.` : `Report ${name} to your teacher? Your teacher will see what ${name} said recently.`}</p>
             <div className="flex flex-wrap gap-2">
               <button className="btn btn-danger" onClick={report}>Report</button>
               <button className="btn btn-quiet" onClick={() => setConfirm(false)}>Cancel</button>
@@ -229,7 +232,7 @@ function PlayerMenu({ id, name, world }: { id: number; name: string; world: bool
               {hidden ? `🔈 Unmute ${name}` : `🔇 Mute ${name}`}
             </button>
             <p className="text-lg">Muting hides {name}’s emotes and phrases on this device until you close the game.</p>
-            {world && <p className="text-lg">🌍 {name} is from another class.</p>}
+            {world && inClass && <p className="text-lg">🌍 {name} is from another class.</p>}
             <button className="btn btn-danger" onClick={() => setConfirm(true)}>🚩 {world ? 'Report' : 'Report to your teacher'}</button>
           </>
         )}

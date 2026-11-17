@@ -5,7 +5,7 @@ import { hashPassword, newSalt, sameString } from '../src/crypto.ts';
 import { originAllowed } from '../src/http.ts';
 import { limitFor, LIMITS } from '../src/limits.ts';
 import { handle } from '../src/index.ts';
-import { CLASS_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
+import { CLASS_IDLE_MS, GUEST_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
 import { ORIGIN, testEnv } from './d1.ts';
 import type { Env } from '../src/env.ts';
 import { makeCode, MAX_SERIAL } from '../../src/rewards/rewardCodes.ts';
@@ -523,5 +523,39 @@ describe('retention', () => {
     n = await purge(env.DB, T0 + CLASS_IDLE_MS + 1000);
     expect(n.classes).toBe(1);
     expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM members').first()).toEqual({ n: 0 });
+  });
+});
+
+describe('open world guests', () => {
+  it('anyone gets a guest token and a generated name, a limited number per IP per hour', async () => {
+    const env = testEnv();
+    const g = await call(env, 'POST', '/api/guest', {});
+    expect(g.status).toBe(200);
+    expect(isGeneratedName(g.body.name as string)).toBe(true);
+    const row = await env.DB.prepare('SELECT token_hash, public_name FROM guests').first<{ token_hash: string; public_name: string }>();
+    expect(row!.public_name).toBe(g.body.name);
+    expect(row!.token_hash).not.toContain(g.body.token as string); // only the hash is stored
+    for (let i = 1; i < LIMITS.guest.max; i++) expect((await call(env, 'POST', '/api/guest', {})).status).toBe(200);
+    expect((await call(env, 'POST', '/api/guest', {})).status).toBe(429);
+  });
+  it('reports about guests reach the admin, who can block them on every screen', async () => {
+    const kicks: { name: string; body: unknown }[] = [];
+    const env = testEnv({ WORLD: { idFromName: (n: string) => n, get: (n: string) => ({ fetch: async (_u: string, i: RequestInit) => (kicks.push({ name: n, body: JSON.parse(i.body as string) }), new Response(null, { status: 204 })) }) } as unknown as DurableObjectNamespace });
+    await call(env, 'POST', '/api/guest', {});
+    const g = await env.DB.prepare('SELECT id, public_name FROM guests').first<{ id: string; public_name: string }>();
+    await env.DB.prepare('INSERT INTO reports (id, world, history, created_at, reporter_guest, target_guest) VALUES (?, 1, ?, ?, ?, ?)').bind('0b5c6a2e-0000-4000-8000-0000000000bb', '[]', T0, g!.id, g!.id).run();
+    const admin = (await call(env, 'POST', '/api/teacher/signup', { email: 'admin@nhsqa.org', password: 'correct horse battery' }, undefined, T0, { 'CF-Connecting-IP': '192.0.2.99' })).body.token as string;
+    const list = (await call(env, 'GET', '/api/admin/reports', undefined, admin)).body.reports as { target: { id: string; name: string; guest: boolean; blocked: boolean } }[];
+    expect(list[0]!.target).toMatchObject({ id: g!.id, name: g!.public_name, guest: true, blocked: false });
+    expect((await call(env, 'POST', `/api/admin/guests/${g!.id}/world`, { blocked: true }, admin)).status).toBe(200);
+    expect(kicks.length).toBeGreaterThan(8);
+    expect(kicks[0]!.body).toEqual({ kind: 'kick', memberId: `g:${g!.id}` });
+    expect(await env.DB.prepare('SELECT blocked FROM guests').first()).toEqual({ blocked: 1 });
+  });
+  it('guests not seen for 90 days are deleted', async () => {
+    const env = testEnv();
+    await call(env, 'POST', '/api/guest', {});
+    expect((await purge(env.DB, T0 + GUEST_IDLE_MS - 1000)).guests).toBe(0);
+    expect((await purge(env.DB, T0 + GUEST_IDLE_MS + 1000)).guests).toBe(1);
   });
 });

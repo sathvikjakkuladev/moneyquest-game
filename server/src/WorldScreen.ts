@@ -10,6 +10,7 @@ import type { Env } from './env.ts';
 import type { Out } from './hub.ts';
 import type { WConn } from './worldHub.ts';
 import { WorldHub } from './worldHub.ts';
+import { GUEST, isGuest } from './guests.ts';
 
 interface Attachment { pid: number; screen: string; conn: WConn | null }
 
@@ -66,17 +67,27 @@ export class WorldScreen extends DurableObject<Env> {
       const m = await this.env.DB.prepare(
         `SELECT m.id, m.class_id, m.public_name, m.muted, m.world_muted, c.world_mode FROM members m JOIN classes c ON c.id = m.class_id WHERE m.token_hash = ?`,
       ).bind(await sha256(msg.token)).first<{ id: string; class_id: string; public_name: string; muted: number; world_muted: number; world_mode: number }>();
-      if (!m) return this.close(ws, CLOSE.notMember, 'Not in a class');
-      if (!m.world_mode || m.world_muted) return this.close(ws, CLOSE.noWorld, 'World mode is off');
+      let who: { id: string; class_id: string; name: string; muted: number };
+      if (m) {
+        if (!m.world_mode || m.world_muted) return this.close(ws, CLOSE.noWorld, 'World mode is off');
+        who = { id: m.id, class_id: m.class_id, name: worldName(m.id, m.public_name), muted: m.muted };
+      } else {
+        // Not in a class: an open-world guest. Each guest is its own "class" here, so everyone sees them.
+        const g = await this.env.DB.prepare('SELECT id, public_name, blocked FROM guests WHERE token_hash = ?').bind(await sha256(msg.token)).first<{ id: string; public_name: string; blocked: number }>();
+        if (!g) return this.close(ws, CLOSE.notMember, 'Not in a class');
+        if (g.blocked) return this.close(ws, CLOSE.noWorld, 'World mode is off');
+        await this.env.DB.prepare('UPDATE guests SET last_seen = ? WHERE id = ?').bind(now, g.id).run();
+        who = { id: GUEST + g.id, class_id: GUEST + g.id, name: g.public_name, muted: 0 };
+      }
       // One connection per student here too.
       for (const other of this.ctx.getWebSockets()) {
         const oa = other.deserializeAttachment() as Attachment | null;
-        if (other !== ws && oa?.conn?.memberId === m.id) {
+        if (other !== ws && oa?.conn?.memberId === who.id) {
           this.send(hub.leave(oa.pid));
           this.close(other, CLOSE.replaced, 'Opened somewhere else');
         }
       }
-      const out = hub.hello(a.pid, { id: m.id, class_id: m.class_id, name: worldName(m.id, m.public_name), muted: m.muted }, msg, now);
+      const out = hub.hello(a.pid, who, msg, now);
       this.saveAll();
       this.send(out);
       return;
@@ -88,8 +99,12 @@ export class WorldScreen extends DurableObject<Env> {
     if (r.close) return this.close(ws, CLOSE.policy, 'Too many bad messages');
     if (r.report) {
       // World reports go to the NHSQA admin view and to both students' teachers.
-      await this.env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, world, history, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)')
-        .bind(crypto.randomUUID(), a.conn.memberId, a.conn.classId, r.report.targetMemberId, r.report.targetClassId, JSON.stringify(r.report.history), now)
+      // Guests have no member or class row, so they're stored in their own columns.
+      const side = (memberId: string, classId: string) => (isGuest(memberId) ? [null, null, memberId.slice(GUEST.length)] : [memberId, classId, null]);
+      const [rid, rclass, rguest] = side(a.conn.memberId, a.conn.classId);
+      const [tid, tclass, tguest] = side(r.report.targetMemberId, r.report.targetClassId);
+      await this.env.DB.prepare('INSERT INTO reports (id, reporter_id, reporter_class, target_id, target_class, world, history, created_at, reporter_guest, target_guest) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?)')
+        .bind(crypto.randomUUID(), rid, rclass, tid, tclass, JSON.stringify(r.report.history), now, rguest, tguest)
         .run();
     }
     if (hub.dirty.size && !this.timer) this.timer = setTimeout(() => this.flush(), BATCH_MS);

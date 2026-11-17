@@ -10,6 +10,8 @@ export const LIMITS = {
   /** 20 wrong class or device codes per IP per 10 minutes (class codes have 729 million combinations). */
   join: { max: 20, windowMs: 10 * 60_000, lockMs: 10 * 60_000 },
   /** 240 progress uploads per student per hour (the game sends one per battle, a few seconds apart at most). */
+  /** 60 new open-world guests per IP per hour (a school shares one IP, so it allows a few classes). */
+  guest: { max: 60, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
   progress: { max: 240, windowMs: 60 * 60_000, lockMs: 10 * 60_000 },
 } satisfies Record<string, Limit>;
 

@@ -2,13 +2,14 @@
 // Every request is checked against the origin allowlist; see PLAN.md §10. The Worker entry point
 // (with the Durable Object classes) is worker.ts, so tests can import this without Cloudflare APIs.
 import { changePassword, login, logout, me, signup } from './auth.ts';
-import { resetPassword, resolveWorldReport, teachers, worldBlock, worldReports } from './admin.ts';
+import { guestBlock, resetPassword, resolveWorldReport, teachers, worldBlock, worldReports } from './admin.ts';
 import { classDetail, createClass, deleteClass, deviceCode, joinConfirm, joinOptions, leave, listClasses, memberMe, muteMember, rejoin, removeMember, resolveReport, setNames, updateClass } from './classes.ts';
 import type { Env } from './env.ts';
 import { corsHeaders, HttpError, json, originAllowed } from './http.ts';
 import { classInfo, uploadProgress } from './progress.ts';
 import { purge } from './retention.ts';
 import { redeemCode } from './world.ts';
+import { createGuest } from './guests.ts';
 import { validScreen } from '../../src/net/protocol.ts';
 import { MAX_SHARDS } from '../../src/net/world.ts';
 
@@ -35,6 +36,8 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['GET', /^\/api\/admin\/reports$/, worldReports],
   ['POST', /^\/api\/admin\/reports\/([0-9a-f-]{36})\/resolve$/, resolveWorldReport],
   ['POST', /^\/api\/admin\/members\/([0-9a-f-]{36})\/world$/, worldBlock],
+  ['POST', /^\/api\/admin\/guests\/([0-9a-f-]{36})\/world$/, guestBlock],
+  ['POST', /^\/api\/guest$/, createGuest],
   ['POST', /^\/api\/redeem$/, redeemCode],
   ['POST', /^\/api\/progress$/, uploadProgress],
   ['GET', /^\/api\/class$/, classInfo],

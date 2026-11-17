@@ -511,7 +511,7 @@ function Admin({ token }: { token: string }) {
 
 interface WorldReport {
   id: string; at: number; history: ReportInfo['history'];
-  target: { id: string; name: string; blocked: boolean; teacher: string | null; className: string | null } | null;
+  target: { id: string; name: string; blocked: boolean; teacher: string | null; className: string | null; guest?: boolean } | null;
   reporter: { name: string; teacher: string | null } | null;
 }
 
@@ -545,7 +545,7 @@ function WorldReports({ token }: { token: string }) {
               )}
               <div className="flex flex-wrap gap-2">
                 {r.target && (
-                  <button className="btn btn-danger" onClick={() => void act(() => api(`/api/admin/members/${r.target!.id}/world`, { body: { blocked: !r.target!.blocked }, token }))}>
+                  <button className="btn btn-danger" onClick={() => void act(() => api(`/api/admin/${r.target!.guest ? 'guests' : 'members'}/${r.target!.id}/world`, { body: { blocked: !r.target!.blocked }, token }))}>
                     {r.target.blocked ? `Let ${r.target.name} back into world mode` : `Block ${r.target.name} from world mode`}
                   </button>
                 )}

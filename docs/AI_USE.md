@@ -17,6 +17,7 @@ updated at the end of every build phase.
 | Monster effect rules (`src/data/effectRules.ts`) | **Claude Code**, from the effect table the student approved | Approved the rules |
 | Room layouts (`src/data/rooms/*.json`): seeded from the art set's exits and collision; NPC, monster and waystone placement | **Claude Code** (`tools/seed-rooms.ts`) | Playtests the result |
 | Multiplayer server (`server/`), the /teacher page and the class-join flow | **Claude Code**, from the student's multiplayer brief (`MULTIPLAYER_PROMPT.md`) and decisions | Wrote the brief, made the decisions (server address, sign-in, world-mode default, leaderboards, retention, names, reports), tests each phase |
+| Open world for players without a class (guest tokens, `server/src/guests.ts`, `src/net/session.ts`) and its privacy-policy wording | **Claude Code**, at the student's request (2026-11-17); policy text drafted for NHSQA to review | Chose the open world over class-only world mode, deploys the server |
 | Public-name word lists (`src/net/names.ts`) | **Claude Code**, drafted for student review | Reviews the words |
 | Emotes and preset phrases (`src/net/says.ts`) | **Claude Code**, drafted for student review | Reviews the wording |
 | Privacy policy and teacher notice (`public/privacy/`, `public/teacher-notice/`) | **Claude Code**, drafted for NHSQA to review; not legal advice | NHSQA reviews them (contact: nhsqa01@gmail.com) |

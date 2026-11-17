@@ -22,8 +22,8 @@ export interface ConnEvents {
   world?: (on: boolean) => void;
 }
 
-/** A world screen to join instead of the class room. */
-export interface WorldTarget { screen: string }
+/** A world screen to join instead of the class room. A guest (no class) has only this connection. */
+export interface WorldTarget { screen: string; guest?: boolean }
 
 export class ClassConnection {
   private url: string;
@@ -63,7 +63,8 @@ export class ClassConnection {
   }
   private setStatus(st: 'connecting' | 'online' | 'offline' | 'off' | 'full'): void {
     if (this.world) useNet.setState({ worldStatus: st === 'offline' ? 'connecting' : st });
-    else if (st !== 'full') useNet.setState({ status: st });
+    // A guest's world connection is their only one, so it also drives the main status (the say button).
+    if ((!this.world || this.world.guest) && st !== 'full') useNet.setState({ status: st });
   }
 
   private open(): void {
@@ -90,6 +91,7 @@ export class ClassConnection {
       if (this.world) {
         if (e.code === CLOSE.full && this.shard + 1 < MAX_SHARDS) return this.shard++, this.open(); // try the next shard
         if (e.code === CLOSE.full) return this.stop(), this.setStatus('full'); // every shard of this screen is busy
+        if (this.world.guest && e.code === CLOSE.notMember) return this.stop(), this.events.notMember(); // the guest token is gone: get a new one
         if (e.code === CLOSE.noWorld || e.code === CLOSE.notMember || e.code === CLOSE.replaced) return this.stop();
         return this.retry();
       }

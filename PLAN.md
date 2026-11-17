@@ -915,6 +915,30 @@ On Sathvik's request, carried over from the first build onto the new art (branch
 
 **Needs Sathvik:** playtest the spell balance (costs and damage) and the effects on a Chromebook.
 
+### The open world: everyone online without a class code (done 2026-11-17)
+
+Sathvik asked for everyone who opens the game to share one world, not only classes with codes, and
+chose the open-world option (guests with no teacher) over turning world mode on for every class.
+
+- **Guests.** A save that hasn't joined a class (and isn't set to "Play offline") asks the server for
+  a guest token (`POST /api/guest`, 60 per IP per hour) and gets a generated name. The token is kept on
+  the device (`localStorage` `mq-guest`), shared by every class-less save there; the server keeps only
+  its hash, the name and when it was last used (migration `0003_open_world.sql`).
+- **One world.** Guests connect to the same `WorldScreen` shards as world-mode classes. Each guest
+  counts as its own class there, so everyone sees everyone (the nearest 15, shards of 40). Classes with
+  world mode off still see only classmates, as before.
+- **Safety.** Emotes and preset phrases only, the same rate limits, local mute and report. Reports
+  about or from guests go to the NHSQA admin view (`reporter_guest`, `target_guest`), which can block a
+  guest from the open world on every screen at once (`/api/admin/guests/:id/world`). Guests unused for
+  90 days are deleted by the daily clean-up. Privacy policy (draft) updated.
+- **Tests:** 3 new server tests (guest tokens and limit, admin block, retention) and a new
+  multiplayer e2e test (`openworld.spec.ts`): two guests see each other, a world-mode class sees them,
+  a wave reaches the other guest. All multiplayer e2e tests pass against the local server.
+
+**Needs Sathvik:** apply migration 0003 and deploy the server (staging, then production) as in
+`server/README.md`. Until then guests just play alone (the game retries quietly every minute).
+NHSQA should review the privacy policy change: players with no teacher are now online by default.
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

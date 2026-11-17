@@ -5,6 +5,7 @@
 import { requireTeacher } from './auth.ts';
 import { worldName } from '../../src/net/world.ts';
 import { setWorld } from './world.ts';
+import { kickGuest } from './guests.ts';
 import { hashPassword, newSalt, PBKDF2_ITERATIONS, randomBytes } from './crypto.ts';
 import { makeClassCode } from '../../src/net/codes.ts';
 import type { Env } from './env.ts';
@@ -45,12 +46,14 @@ export async function worldReports(req: Request, env: Env, now: number) {
   await requireAdmin(req, env, now);
   const { results } = await env.DB.prepare(
     `SELECT r.id, r.created_at, r.history, r.target_id, t.public_name AS target_name, t.world_muted AS blocked, tt.email AS target_teacher, ct.name AS target_class,
-            r.reporter_id, m.public_name AS reporter_name, tr.email AS reporter_teacher
+            r.reporter_id, m.public_name AS reporter_name, tr.email AS reporter_teacher,
+            r.target_guest, gt.public_name AS tg_name, gt.blocked AS tg_blocked, r.reporter_guest, gr.public_name AS rg_name
      FROM reports r
+     LEFT JOIN guests gt ON gt.id = r.target_guest LEFT JOIN guests gr ON gr.id = r.reporter_guest
      LEFT JOIN members t ON t.id = r.target_id LEFT JOIN classes ct ON ct.id = r.target_class LEFT JOIN teachers tt ON tt.id = ct.teacher_id
      LEFT JOIN members m ON m.id = r.reporter_id LEFT JOIN classes cr ON cr.id = r.reporter_class LEFT JOIN teachers tr ON tr.id = cr.teacher_id
      WHERE r.world = 1 AND r.resolved = 0 ORDER BY r.created_at DESC LIMIT 200`,
-  ).all<{ id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; blocked: number | null; target_teacher: string | null; target_class: string | null; reporter_id: string | null; reporter_name: string | null; reporter_teacher: string | null }>();
+  ).all<{ id: string; created_at: number; history: string; target_id: string | null; target_name: string | null; blocked: number | null; target_teacher: string | null; target_class: string | null; reporter_id: string | null; reporter_name: string | null; reporter_teacher: string | null; target_guest: string | null; tg_name: string | null; tg_blocked: number | null; reporter_guest: string | null; rg_name: string | null }>();
   const hist = (s: string) => {
     try {
       const v: unknown = JSON.parse(s);
@@ -62,8 +65,10 @@ export async function worldReports(req: Request, env: Env, now: number) {
   return {
     reports: results.map((r) => ({
       id: r.id, at: r.created_at, history: hist(r.history),
-      target: r.target_id && r.target_name ? { id: r.target_id, name: worldName(r.target_id, r.target_name), blocked: !!r.blocked, teacher: r.target_teacher, className: r.target_class } : null,
-      reporter: r.reporter_id && r.reporter_name ? { name: worldName(r.reporter_id, r.reporter_name), teacher: r.reporter_teacher } : null,
+      target: r.target_id && r.target_name ? { id: r.target_id, name: worldName(r.target_id, r.target_name), blocked: !!r.blocked, teacher: r.target_teacher, className: r.target_class, guest: false }
+        : r.target_guest && r.tg_name ? { id: r.target_guest, name: r.tg_name, blocked: !!r.tg_blocked, teacher: null, className: 'Open world (no class)', guest: true } : null,
+      reporter: r.reporter_id && r.reporter_name ? { name: worldName(r.reporter_id, r.reporter_name), teacher: r.reporter_teacher }
+        : r.reporter_guest && r.rg_name ? { name: r.rg_name, teacher: null } : null,
     })),
   };
 }
@@ -85,5 +90,16 @@ export async function worldBlock(req: Request, env: Env, now: number, memberId: 
   await env.DB.prepare('UPDATE members SET world_muted = ? WHERE id = ?').bind(body.blocked ? 1 : 0, memberId).run();
   const on = await env.DB.prepare('SELECT world_mode FROM classes WHERE id = ?').bind(m.class_id).first<{ world_mode: number }>();
   await setWorld(env, m.class_id, memberId, !body.blocked && !!on?.world_mode);
+  return { ok: true, blocked: body.blocked };
+}
+
+/** Block (or unblock) an open-world guest. Blocked guests play on alone. */
+export async function guestBlock(req: Request, env: Env, now: number, guestId: string) {
+  await requireAdmin(req, env, now);
+  const body = await readJson(req);
+  if (typeof body.blocked !== 'boolean') throw new HttpError(400, 'bad-request', 'Bad request.');
+  const r = await env.DB.prepare('UPDATE guests SET blocked = ? WHERE id = ?').bind(body.blocked ? 1 : 0, guestId).run();
+  if (!r.meta.changes) throw new HttpError(404, 'no-guest', 'That player isn’t in the open world any more.');
+  if (body.blocked) await kickGuest(env, guestId);
   return { ok: true, blocked: body.blocked };
 }

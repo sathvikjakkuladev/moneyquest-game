@@ -21,6 +21,7 @@ import { WorldButtons } from './ui/WorldButtons.tsx';
 import { devMode } from './core/unlocks.ts';
 import { DevPanel } from './dev/DevPanel.tsx';
 import { MapEditor } from './dev/MapEditor.tsx';
+import { BOSS_DEMO, BossDemo } from './dev/BossDemo.tsx';
 
 // Multiplayer is only built when VITE_MP_URL is set (a build-time constant): without it these are
 // null, the code is dropped from the bundle, and the game makes no requests.
@@ -87,7 +88,8 @@ export function App() {
       <div className="pointer-events-none absolute" style={{ left: stage.left, top: stage.top, width: stage.width, bottom: 0 }}>
         <div className="absolute inset-x-0 top-0" style={{ height: stage.height }}>
           {screen === 'boot' && <p className="title-text absolute inset-x-0 top-[58%] text-center text-3xl">Loading…</p>}
-          {screen === 'title' && newSlot === null && (
+          {BOSS_DEMO && (screen === 'title' || (screen === 'play' && kind === 'room')) && <BossDemo />}
+          {!BOSS_DEMO && screen === 'title' && newSlot === null && (
             <div className="pointer-events-auto h-full">
               <Title onNew={(i) => (useSession.getState().setScreen('onboarding'), setNewSlot(i))} />
             </div>

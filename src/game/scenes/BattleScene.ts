@@ -12,6 +12,7 @@ import { Avatar, BATTLE_CLIPS, queueAvatar } from '../avatar.ts';
 import { addCreature, breathe, monsterImage, petImage, SIZE } from '../creature.ts';
 import type { VfxName } from '../fx.ts';
 import { burst, coinsFly, queueVfx, shieldRing, tween, vfx, wait } from '../fx.ts';
+import { chargeFx, CLIP_ATTACKS, makeAttackTextures, playAttackFx, playSpellFx } from '../attackFx.ts';
 import { reducedMotion } from '../motion.ts';
 import { queue, queueSheet, STAGE_H, STAGE_W, stageCamera } from '../stage.ts';
 
@@ -24,6 +25,15 @@ const BG_SCALE = 1.5;
 const VFX_USED: VfxName[] = ['hit-spark', 'coin-burst', 'capture-sparkle', 'level-up-rays', 'heal-swirl', 'shield-bubble', 'spell-cast', 'spell-projectile', 'spell-impact', 'hurt-flash', 'defeat-poof'];
 
 /** Animates battle events from the session store, then tells it when they're done. */
+/** Boss clips drawn facing right (away from the player), so the battle mirrors them. */
+const FACES_RIGHT: Record<string, ('idle' | 'attack')[]> = {
+  'debt-dragon': ['idle'],
+  'compound-leviathan': ['idle'],
+  'splurge-peacock': ['idle'],
+  'volatility-roc': ['idle'],
+  'frostfang-mammoth': ['idle', 'attack'],
+};
+
 export class BattleScene extends Phaser.Scene {
   private player!: Avatar;
   /** A regular monster is one image moved by code; a boss plays its idle and attack clips. */
@@ -73,6 +83,7 @@ export class BattleScene extends Phaser.Scene {
     const s = slot();
     this.fast = reducedMotion(s.settings.reducedMotion);
     stageCamera(this);
+    makeAttackTextures(this);
     this.add.image(STAGE_W / 2, STAGE_H, this.bg).setOrigin(0.5, 1).setDisplaySize(STAGE_W * BG_SCALE, STAGE_H * BG_SCALE).setDepth(-1000);
 
     this.player = new Avatar(this, PLAYER_X, FEET, s.look, s.inventory.hat, SIZE.playerBattle);
@@ -88,7 +99,8 @@ export class BattleScene extends Phaser.Scene {
       // Bosses play their idle clip: scale it so the body is bossBattle px from head to feet.
       for (const [name, c] of Object.entries(this.clips!)) if (!this.anims.exists(c.image)) this.anims.create({ key: c.image, frames: this.anims.generateFrameNumbers(c.image, { start: 0, end: c.frames - 1 }), frameRate: name === 'idle' ? 7 : 12, repeat: name === 'idle' ? -1 : 0 });
       this.foeScale = SIZE.bossBattle / idle.foot[1];
-      this.foe = this.add.sprite(FOE_X, FEET, idle.image, 0).setOrigin(idle.foot[0] / idle.cell[0], idle.foot[1] / idle.cell[1]).setScale(this.foeScale).setDepth(FEET);
+      this.foe = this.add.sprite(FOE_X, FEET, idle.image, 0).setScale(this.foeScale).setDepth(FEET);
+      this.faceClip('idle', b.monster.art);
       if (!this.fast) (this.foe as Phaser.GameObjects.Sprite).play(idle.image);
       this.foeTop = FEET - SIZE.bossBattle;
     } else {
@@ -121,21 +133,53 @@ export class BattleScene extends Phaser.Scene {
     return wait(this, ms).then(() => this.player.show('idle'));
   }
 
-  /** The monster's attack: a boss plays its attack clip; a regular monster lunges (motion spec). */
-  private async foeAttack(): Promise<void> {
+  /** Turns a boss's clip to face the player (on the left): some clips were drawn facing right. The
+   *  foot point is mirrored too, so the boss stays standing on the same spot. */
+  private faceClip(kind: 'idle' | 'attack', art = this.foeArt): void {
+    this.foeArt = art;
+    const c = this.clips?.[kind];
+    if (!c || !(this.foe instanceof Phaser.GameObjects.Sprite)) return;
+    const flip = (FACES_RIGHT[art] ?? []).includes(kind);
+    const ox = c.foot[0] / c.cell[0];
+    this.foe.setFlipX(flip).setOrigin(flip ? 1 - ox : ox, c.foot[1] / c.cell[1]);
+  }
+  private foeArt = '';
+
+  /** A boss's attack clip, played once, then back to idle. */
+  private async playClip(): Promise<void> {
     const f = this.foe;
     const atk = this.clips?.attack, idle = this.clips?.idle;
-    if (this.fast) return wait(this, 120);
-    if (atk && idle && f instanceof Phaser.GameObjects.Sprite) {
-      f.setTexture(atk.image, 0).setOrigin(atk.foot[0] / atk.cell[0], atk.foot[1] / atk.cell[1]).play(atk.image);
-      await wait(this, (atk.frames / 12) * 1000);
-      f.setTexture(idle.image, 0).setOrigin(idle.foot[0] / idle.cell[0], idle.foot[1] / idle.cell[1]).play(idle.image);
+    if (!atk || !idle || !(f instanceof Phaser.GameObjects.Sprite)) return;
+    f.setTexture(atk.image, 0);
+    this.faceClip('attack');
+    f.play(atk.image);
+    await wait(this, (atk.frames / 12) * 1000);
+    f.setTexture(idle.image, 0);
+    this.faceClip('idle');
+    f.play(idle.image);
+  }
+
+  /** The monster's attack: every attack has its own effect (attackFx.ts). Some boss attacks play
+   *  the boss's attack clip inside the effect; the others move the boss or monster by code. */
+  private async foeAttack(name: string, hit: number, of: number): Promise<void> {
+    const f = this.foe;
+    if (this.fast) {
+      // Reduced motion: no flying effects, flashes or shaking; a boss still plays its clip once.
+      if (hit === 1 && this.clips?.attack) await this.playClip();
+      else await wait(this, 120);
       return;
     }
-    const a = motion.attack;
-    await tween(this, { targets: f, x: FOE_X + 14, duration: a.windup.ms, ease: 'Quad.easeOut' });
-    await tween(this, { targets: f, x: FOE_X - 70, duration: a.lunge.ms, ease: 'Quad.easeIn' });
-    await tween(this, { targets: f, x: FOE_X, duration: a.recover.ms, ease: 'Quad.easeOut' });
+    // The breathing idle would fight the attack's own squash and stretch, so it pauses meanwhile.
+    const idle = this.tweens.getTweensOf(f);
+    idle.forEach((t) => t.pause());
+    const sx = f.scaleX, sy = f.scaleY;
+    if (!this.clips) f.setScale(this.foeScale);
+    const foeMid = (FEET + this.foeTop) / 2;
+    const clip = this.clips?.attack && CLIP_ATTACKS.has(name) && hit === 1 ? () => this.playClip() : undefined;
+    await playAttackFx({ scene: this, foe: f, player: this.player.sprite, from: [FOE_X, foeMid], to: [PLAYER_X, FEET - SIZE.playerBattle / 2], feet: FEET, boss: !!this.clips, hit, of, clip }, name);
+    f.setPosition(FOE_X, FEET).setAngle(0).setAlpha(1);
+    if (!this.clips) f.setScale(sx, sy);
+    idle.forEach((t) => t.resume());
   }
 
   private async foeHurt(): Promise<void> {
@@ -163,9 +207,24 @@ export class BattleScene extends Phaser.Scene {
       case 'cast': {
         sfx('cast');
         const colour = SPELLS[e.spell].color;
-        void vfx(this, 'spell-cast', PLAYER_X, playerMid, 120, { fast: f, tint: colour, depth: FEET - 1 });
-        await this.act('attack', 420);
-        await vfx(this, 'spell-projectile', PLAYER_X + 40, playerMid, 80, { fast: f, tint: colour, move: [FOE_X - 30, foeMid] });
+        if (f) {
+          void vfx(this, 'spell-cast', PLAYER_X, playerMid, 120, { fast: f, tint: colour, depth: FEET - 1 });
+          await this.act('attack', 420);
+          await vfx(this, 'spell-projectile', PLAYER_X + 40, playerMid, 80, { fast: f, tint: colour, move: [FOE_X - 30, foeMid] });
+          return;
+        }
+        // Each spell has its own effect; the wizard plays the cast clip while it gathers.
+        void this.act('attack', 700);
+        await playSpellFx({ scene: this, caster: this.player.sprite, target: this.foe as Phaser.GameObjects.Image, from: [PLAYER_X + 14, playerMid], to: [FOE_X, foeMid], feet: FEET, boss: !!this.clips }, e.spell);
+        return;
+      }
+      case 'charging': {
+        // A right answer that banks a charge: light pulls into the wizard, and a ring grows per charge.
+        sfx('cast');
+        const colour = SPELLS[e.spell].color;
+        if (!f) chargeFx(this, PLAYER_X, playerMid, colour, e.charge);
+        s.float(PLAYER_X, playerMid - 70, `Charge ${e.charge}/${e.cost}`, 'info');
+        await this.act('attack', 380);
         return;
       }
       case 'monsterHurt':
@@ -185,7 +244,7 @@ export class BattleScene extends Phaser.Scene {
         return;
       case 'attack':
         if (e.hit === 1) s.float(320, 40, `${e.name}!`, 'info');
-        await this.foeAttack();
+        await this.foeAttack(e.name, e.hit, e.of);
         return;
       case 'playerHurt':
         if (this.bubble) {

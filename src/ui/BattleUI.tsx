@@ -141,14 +141,27 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
   if (b.phase === 'intro') return <div className="panel w-[min(60rem,100%)] p-3 text-center text-2xl font-bold" aria-live="polite">{b.monster.name} appears!</div>;
 
   const dmg = spellDamage(b.state, b.spell, b.monster);
+  const cost = SPELLS[b.spell].cost;
+  const charge = Math.min(b.state.charge, cost - 1);
+  const charging = b.events.find((e): e is Extract<typeof e, { type: 'charging' }> => e.type === 'charging');
   return (
     <div className={`panel card-in flex w-[min(62rem,100%)] flex-col gap-2 ${compact ? 'p-2' : 'p-3'}`}>
       {spells.length > 1 && (
         <div className="flex items-center gap-2" role="group" aria-label="Spell">
           <button className="btn btn-quiet px-3" onClick={() => cycle(-1)} disabled={!asking} aria-label="Previous spell (Q)">◂</button>
-          <p className="flex-1 text-center text-lg leading-tight" aria-live="polite">
-            <strong>{SPELLS[b.spell].name}</strong> · {dmg} damage <span className="hidden sm:inline">· {SPELLS[b.spell].blurb}</span>
-          </p>
+          <div className="flex-1 text-center text-lg leading-tight" aria-live="polite">
+            <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              <strong>{SPELLS[b.spell].name}</strong> · {dmg} damage · {cost === 1 ? '1 right answer' : `${cost} right answers`}
+              {cost > 1 && (
+                <span className="flex items-center gap-1" role="img" aria-label={`Charged ${charge} of ${cost}`}>
+                  {Array.from({ length: cost }, (_, i) => (
+                    <span key={i} className="inline-block h-3 w-3 rounded-full border-2" style={{ borderColor: hex(SPELLS[b.spell].color), background: i < charge ? hex(SPELLS[b.spell].color) : 'transparent', boxShadow: i < charge ? `0 0 8px ${hex(SPELLS[b.spell].color)}` : undefined }} />
+                  ))}
+                </span>
+              )}
+            </p>
+            <p className="hidden sm:block">{SPELLS[b.spell].blurb}{cost > 1 && (charge > 0 ? ` Charged ${charge}/${cost}.` : ' The monster hits you while you charge.')}</p>
+          </div>
           <button className="btn btn-quiet px-3" onClick={() => cycle(1)} disabled={!asking} aria-label="Next spell (E)">▸</button>
         </div>
       )}
@@ -193,7 +206,10 @@ function Card({ b, compact }: { b: Battle; compact: boolean }) {
           );
         })}
       </div>
-      {b.phase === 'resolving' && b.last === 'right' && <p className="text-xl font-bold t-good" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
+      {b.phase === 'resolving' && b.last === 'right' && !charging && <p className="text-xl font-bold t-good" aria-live="assertive">✓ Right! {SPELLS[b.spell].name}!</p>}
+      {b.phase === 'resolving' && b.last === 'right' && charging && (
+        <p className="text-xl font-bold t-good" aria-live="assertive">✓ Right! Charging {SPELLS[charging.spell].name} ({charging.charge}/{charging.cost})… {b.monster.name} strikes while you charge!</p>
+      )}
       {b.phase === 'resolving' && b.last === 'wrong' && <p className="text-xl font-bold t-bad" aria-live="assertive">{b.picked === -1 ? '⏱ Time is up!' : '✗ Not quite.'} {b.monster.name} attacks!</p>}
       {b.phase === 'resolving' && (b.last === 'slow' || b.last === 'opening') && <p className="text-xl font-bold t-bad" aria-live="assertive">⏱ {b.monster.name} struck first! Keep going.</p>}
       {showWhy && (
@@ -268,3 +284,5 @@ function Result({ b }: { b: Battle }) {
     </div>
   );
 }
+
+const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;

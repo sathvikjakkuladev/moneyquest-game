@@ -889,6 +889,32 @@ phases are in, as a series of commits on `assets-v2`.
 
 ---
 
+### Attack effects, charged spells and boss facing (done 2026-11-17)
+
+On Sathvik's request, carried over from the first build onto the new art (branch `features-on-v2`).
+
+- **Monster attacks.** `src/game/attackFx.ts` gives every attack in `monster_attacks.json` its own
+  code-drawn effect (particles, shockwaves, trails and outlined icons drawn on canvases at load),
+  tied to what the monster is: the Kraken's tentacles and price-tag wave, the Peacock's eye-spot
+  dazzle and balance scale, the Mammoth's frost charge and ice spikes, the Scorpion's chains and
+  padlock and tail jabs, the Leviathan's crashing chart line and slow current, the Roc's storm and
+  tornado, the Phish Queen's web, the Debt Dragon's lingering violet fire, and one per regular
+  monster. A boss plays its attack clip inside one of its attacks and moves by code in the other, so
+  its two attacks never look alike; later hits of a multi-hit attack play a short version.
+- **Spells.** Each spell has its own effect (rune circle, then a beam, orbs, a whirlpool, a coin rain,
+  growing orbs, lightning or crossing slashes). Reduced motion keeps the art set's plain VFX strips.
+- **Charged spells.** Spells cost 1–3 right answers (`cost` in `spells.ts`): Budget Beam fires at
+  once; bigger spells hit much harder, but the monster gets a free hit after each charging answer, and
+  a wrong answer keeps the charge. The card shows the cost and charge pips.
+- **Boss facing.** Clips drawn facing right (Debt Dragon, Peacock, Leviathan, Roc idle; Mammoth idle
+  and attack) are mirrored in battle so every boss faces the player.
+- **Boss demo.** `VITE_BOSS_DEMO=1` builds a picker for any fight with every spell (`src/dev/BossDemo.tsx`);
+  it is not in the normal build.
+- **Tests:** typecheck clean; unit tests pass, including the charged-spell rules and a test that every
+  attack and every spell has an effect.
+
+**Needs Sathvik:** playtest the spell balance (costs and damage) and the effects on a Chromebook.
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

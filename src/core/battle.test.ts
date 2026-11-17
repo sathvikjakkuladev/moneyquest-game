@@ -32,6 +32,9 @@ function run(s: BattleState, m: MonsterDef, answers: boolean[], spells: SpellId[
 // The engine's tests run against the frozen first-build monsters (battleFixtures.ts), so every rule
 // kind stays tested whether or not a monster in today's roster uses it.
 const M = fixture;
+/** Pre-charged, so the next right answer fires any spell straight away (tests of what a spell does). */
+const ready = (s: BattleState): BattleState => ({ ...s, charge: 9 });
+const casts = (events: BattleEvent[]) => events.filter((e) => e.type === 'cast').map((e) => (e as { damage: number }).damage);
 
 describe('monster data', () => {
   it('has the 22 Vaultspire monsters with art: two and a boss per district, and the Debt Dragon', () => {
@@ -88,34 +91,55 @@ describe('core rules', () => {
   });
 });
 
+describe('charging spells', () => {
+  it('Budget Beam fires on 1 right answer; bigger spells need 2 or 3, and the monster hits you while you charge', () => {
+    const one = run(start('mon_spendling', { wallet: 0 }), M('mon_spendling'), [true]);
+    expect([casts(one.events), one.s.playerHp]).toEqual([[10], 100]);
+    const two = run(start('mon_spendling', { wallet: 0 }), M('mon_spendling'), [true, true], ['save_shield', 'save_shield']);
+    expect(two.events.filter((e) => e.type === 'charging')).toEqual([{ type: 'charging', spell: 'save_shield', charge: 1, cost: 2 }]);
+    expect([casts(two.events), two.s.playerHp, two.s.charge]).toEqual([[24], 92, 0]); // one free hit of 8 while charging
+    const three = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, true, true], Array(3).fill('insurance_barrier'));
+    expect([casts(three.events), three.events.filter((e) => e.type === 'playerHurt').length]).toEqual([[42], 2]);
+  });
+  it('a wrong answer keeps the charge', () => {
+    const r = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, false, true], Array(3).fill('save_shield'));
+    expect(casts(r.events)).toEqual([24]);
+  });
+  it('a spell does more damage per answer the more it costs', () => {
+    const s = start('mon_spendling');
+    expect(spellDamage(s, 'save_shield') / 2).toBeGreaterThan(spellDamage(s, 'budget_beam'));
+    expect(spellDamage(s, 'insurance_barrier') / 3).toBeGreaterThan(spellDamage(s, 'save_shield') / 2);
+  });
+});
+
 describe('spells', () => {
-  it('Save Shield blocks 8 of the next hit', () => {
-    const r = run(start('mon_spendling', { wallet: 0 }), M('mon_spendling'), [true, false], ['save_shield']);
+  it('Save Shield blocks 12 of the next hit', () => {
+    const r = run(ready(start('mon_spendling', { wallet: 0 })), M('mon_spendling'), [true, false], ['save_shield']);
     expect([r.s.playerHp, r.s.shield]).toEqual([100, 0]);
   });
-  it('Paycheck Strike adds 3 coins to the pot', () => {
-    expect(run(start('mon_spendling'), M('mon_spendling'), [true], ['paycheck_strike']).s.pot).toBe(5);
+  it('Paycheck Strike adds 6 coins to the pot', () => {
+    expect(run(ready(start('mon_spendling')), M('mon_spendling'), [true], ['paycheck_strike']).s.pot).toBe(8);
   });
-  it('Compound Burst grows +3 per right answer in a row, and resets on a miss', () => {
-    const r = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, true, true], ['compound_burst', 'compound_burst', 'compound_burst']);
-    expect(r.events.filter((e) => e.type === 'cast').map((e) => (e as { damage: number }).damage)).toEqual([6, 9, 12]);
-    const miss = run(r.s, M('boss_king_splurge'), [false, true], [, 'compound_burst'] as SpellId[]);
-    expect(miss.events.filter((e) => e.type === 'cast').map((e) => (e as { damage: number }).damage)).toEqual([6]);
+  it('Compound Burst grows +3 per right answer in a row, and the streak resets on a miss', () => {
+    const r = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, true, true], Array(3).fill('compound_burst'));
+    expect(casts(r.events)).toEqual([34 + 6]);
+    const miss = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, false, true, true], Array(4).fill('compound_burst'));
+    expect(casts(miss.events)).toEqual([34 + 3]);
   });
   it('Insurance Barrier blocks the next hit over 12 entirely, but not small ones', () => {
-    const big = run(start('boss_king_splurge'), M('boss_king_splurge'), [true, false], ['insurance_barrier']); // 16, then 16
+    const big = run(ready(start('boss_king_splurge')), M('boss_king_splurge'), [true, false], ['insurance_barrier']); // 16, then 16
     expect(big.s.playerHp).toBe(100 - 16);
-    const small = run(start('mon_spendling', { wallet: 0 }), M('mon_spendling'), [true, false], ['insurance_barrier']); // 8
+    const small = run(ready(start('mon_spendling', { wallet: 0 })), M('mon_spendling'), [true, false], ['insurance_barrier']); // 8
     expect([small.s.playerHp, small.s.barrier]).toEqual([92, true]);
   });
   it('Wise Choice removes a wrong answer next question; Credit Cleanse clears debuffs', () => {
-    const w = run(start('mon_spendling'), M('mon_spendling'), [true], ['wise_choice']);
+    const w = run(ready(start('mon_spendling')), M('mon_spendling'), [true], ['wise_choice']);
     expect(beginTurn(w.s, M('mon_spendling')).state.now.removeOption).toBe(true);
-    const weak = run(start('mon_panic_bear'), M('mon_panic_bear'), [false, true], [, 'credit_cleanse'] as SpellId[]);
+    const weak = run(ready(start('mon_panic_bear')), M('mon_panic_bear'), [false, true], [, 'credit_cleanse'] as SpellId[]);
     expect(weak.s.weaken).toBeNull(); // Panic Bear's weaken was used up by the cleanse cast itself…
     const lock = run(start('boss_loan_shark_lord'), M('boss_loan_shark_lord'), [false]);
     expect(lock.s.next.lock).toBe(true);
-    const cleansed = answer(lock.s, M('boss_loan_shark_lord'), true, 'credit_cleanse', { rng: seeded(1) });
+    const cleansed = answer(ready(lock.s), M('boss_loan_shark_lord'), true, 'credit_cleanse', { rng: seeded(1) });
     expect(cleansed.state.next.lock).toBeUndefined(); // …and the chain is gone
   });
 });
@@ -133,8 +157,8 @@ describe('Piggybank Village effects', () => {
   });
   it('Jar Muncher eats a shield, else 3 coins', () => {
     expect(run(start('mon_jar_muncher', { wallet: 20 }), M('mon_jar_muncher'), [false]).s.wallet).toBe(17);
-    const r = run(start('mon_jar_muncher', { wallet: 20 }), M('mon_jar_muncher'), [true, false], ['save_shield']);
-    expect([r.s.playerHp, r.s.wallet, r.events.some((e) => e.type === 'shieldEaten')]).toEqual([98, 20, true]);
+    const r = run(ready(start('mon_jar_muncher', { wallet: 20 })), M('mon_jar_muncher'), [true, false], ['save_shield']);
+    expect([r.s.playerHp, r.s.wallet, r.events.some((e) => e.type === 'shieldEaten')]).toEqual([100, 20, true]); // the 12 shield soaks the whole bite
   });
   it('King Splurge: double hit, then an 8 s rush (Explorer: +4 instead)', () => {
     const k = M('boss_king_splurge');
@@ -175,8 +199,8 @@ describe("Borrowers' Bridges effects", () => {
 
 describe('Guildworks effects', () => {
   it('Tax Gremlin takes 20% of the pot', () => {
-    const r = run(start('mon_tax_gremlin'), M('mon_tax_gremlin'), [true, true, true, true, false], ['paycheck_strike', 'paycheck_strike', 'paycheck_strike', 'paycheck_strike']);
-    expect(r.s.pot).toBe(20 - 4);
+    const r = run(ready(start('mon_tax_gremlin')), M('mon_tax_gremlin'), [true, true, true, false], ['paycheck_strike']);
+    expect(r.s.pot).toBe(12 - 2);
   });
   it('Slacker Golem: next right answer only wakes you', () => {
     const m = M('mon_slacker_golem');
@@ -235,13 +259,13 @@ describe('Stormwatch Coast effects', () => {
   });
   it('Mishap Crab breaks your shield and hits +3, unless insured', () => {
     const m = M('mon_mishap_crab');
-    const bare = run(start('mon_mishap_crab'), m, [true, false], ['save_shield']);
+    const bare = run(ready(start('mon_mishap_crab')), m, [true, false], ['save_shield']);
     expect(bare.s.playerHp).toBe(88);
-    const insured = run(start('mon_mishap_crab', { insured: true }), m, [true, false], ['save_shield']);
-    expect(insured.s.playerHp).toBe(99);
+    const insured = run(ready(start('mon_mishap_crab', { insured: true })), m, [true, false], ['save_shield']);
+    expect(insured.s.playerHp).toBe(100);
   });
   it('Flood Eel washes away a buff', () => {
-    const r = run(start('mon_flood_eel'), M('mon_flood_eel'), [true, false], ['insurance_barrier']);
+    const r = run(ready(start('mon_flood_eel')), M('mon_flood_eel'), [true, false], ['insurance_barrier']);
     expect(r.s.barrier).toBe(false);
   });
   it('Catastrophe Leviathan: 22, or the 6-point deductible if insured (scroll used up); then shuffles answers', () => {
@@ -249,7 +273,7 @@ describe('Stormwatch Coast effects', () => {
     expect(run(start('boss_catastrophe_leviathan'), m, [false]).s.playerHp).toBe(78);
     const scroll = run(start('boss_catastrophe_leviathan', { insured: true }), m, [false]);
     expect([scroll.s.playerHp, scroll.s.insured, scroll.s.scrollUsed]).toEqual([94, false, true]);
-    const barrier = run(start('boss_catastrophe_leviathan'), m, [true, false], ['insurance_barrier']);
+    const barrier = run(ready(start('boss_catastrophe_leviathan')), m, [true, false], ['insurance_barrier']);
     expect(barrier.s.playerHp).toBe(94);
     expect(beginTurn(run(scroll.s, m, [false]).s, m).state.now.shuffle).toBe(true);
   });
@@ -287,7 +311,7 @@ describe('bonus-zone effects', () => {
     const a = run(start('mon_ember_jackal'), m, [false]); // 9
     const b = run(a.s, m, [true, true]); // burns 3 + 3
     expect(b.s.playerHp).toBe(100 - 9 - 6);
-    expect(run(a.s, m, [true, true], ['credit_cleanse']).s.playerHp).toBe(100 - 9 - 3);
+    expect(run(ready(a.s), m, [true, true], ['credit_cleanse']).s.playerHp).toBe(100 - 9 - 3);
     expect(run(start('boss_solar_wyrm'), M('boss_solar_wyrm'), [false, true]).s.playerHp).toBe(100 - 20 - 5);
   });
   it('Sunscale Basilisk glares (answers late next turn); Moonbat scrambles an answer', () => {

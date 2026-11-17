@@ -47,6 +47,7 @@ export interface BattleState {
   insured: boolean; // holding an Insurance Scroll
   scrollUsed: boolean;
   streak: number; // right answers in a row (Compound Burst)
+  charge: number; // right answers banked toward the chosen spell's cost (kept on a wrong answer)
   // Your debuffs (Credit Cleanse removes them)
   weaken: number | null; // next spell does this % damage
   slowTurns: number;
@@ -66,6 +67,7 @@ export interface BattleState {
 
 export type BattleEvent =
   | { type: 'cast'; spell: SpellId; damage: number }
+  | { type: 'charging'; spell: SpellId; charge: number; cost: number }
   | { type: 'monsterHurt'; amount: number; hp: number }
   | { type: 'potUp'; amount: number; pot: number }
   | { type: 'shieldUp'; amount: number }
@@ -100,7 +102,7 @@ export function startBattle(s: BattleSetup): BattleState {
     monsterId: s.monster.id, boss: s.monster.boss, explorer: s.band === 'K-5', level: s.level,
     hp: maxHp, maxHp, playerHp: playerMaxHp, playerMaxHp, wallet: s.wallet, coinsTaken: 0, pot: 0, potRate: 1,
     nextAttack: 0, turn: 0, now: {}, next: {},
-    shield: 0, barrier: false, insured: !!s.insured, scrollUsed: false, streak: 0,
+    shield: 0, barrier: false, insured: !!s.insured, scrollUsed: false, streak: 0, charge: 0,
     weaken: null, slowTurns: 0, bonusHit: 0, burnLeft: 0, burnDamage: 0,
     ramp: 0, split: false, blaze: 0, bubble: 0, petBonus: s.petBonus ?? 0, petOut: false, rematch: !!s.rematch, outcome: 'fighting',
   };
@@ -153,7 +155,19 @@ export function beginTurn(state: BattleState, m: MonsterDef): { state: BattleSta
 /** Right answer: cast. Wrong answer (or a rush timer running out): the monster attacks. */
 export function answer(state: BattleState, m: MonsterDef, right: boolean, spell: SpellId, ctx: AnswerCtx): Step {
   if (state.outcome !== 'fighting') return { state, events: [] };
-  return right ? cast(state, spell, m) : attack(state, m, ctx);
+  if (!right) return attack(state, m, ctx); // the charge is kept
+  if (!state.now.nap && state.charge + 1 < SPELLS[spell].cost) return chargeUp(state, spell, m);
+  return cast({ ...state, charge: 0 }, spell, m);
+}
+
+/** A right answer that doesn't finish charging: it banks a charge, and the monster gets a free hit meanwhile. */
+function chargeUp(state: BattleState, spell: SpellId, m: MonsterDef): Step {
+  const charge = state.charge + 1;
+  let s: BattleState = { ...state, charge, pot: state.pot + POT_PER_RIGHT, streak: state.streak + 1, bubble: Math.max(0, state.bubble - 1) };
+  const events: BattleEvent[] = [{ type: 'charging', spell, charge, cost: SPELLS[spell].cost }, { type: 'potUp', amount: POT_PER_RIGHT, pot: s.pot }];
+  const a = m.attacks[s.nextAttack % m.attacks.length]!;
+  s = strike({ ...s, nextAttack: s.nextAttack + 1 }, a, 1, 1, events);
+  return { state: s, events };
 }
 
 /** A slow-strike timer ran out: one free hit, and the question stays open. */
@@ -207,8 +221,8 @@ function cast(state: BattleState, spell: SpellId, m: MonsterDef): Step {
         events.push({ type: 'shieldUp', amount: s.shield });
         break;
       case 'paycheck_strike':
-        s = { ...s, pot: s.pot + 3 };
-        events.push({ type: 'potUp', amount: 3, pot: s.pot });
+        s = { ...s, pot: s.pot + SPELLS.paycheck_strike.coins! };
+        events.push({ type: 'potUp', amount: SPELLS.paycheck_strike.coins!, pot: s.pot });
         break;
       case 'insurance_barrier':
         s = { ...s, barrier: true };

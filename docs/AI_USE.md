@@ -13,6 +13,7 @@ updated at the end of every build phase.
 | Question fixes (`src/data/question-overrides.json`, 98 entries) | **Claude Code**, drafted for student review | Reviews and approves every change |
 | Mentor tips and NPC lines (`src/data/dialogue.ts`) | **Claude Code**, drafted for student review | Reviews for accuracy |
 | Spell effects drawn in code (the first build's code-drawn hats were replaced by the art set's hats) | **Claude Code** | Approved the look |
+| Monster attack effects and spell effects drawn in code (`src/game/attackFx.ts`: one effect per attack and per spell); charged-spell costs and damage (`src/core/spells.ts`) | **Claude Code**, from the student's requests (2026-11-17) | Asked for them, chose "spells cost more" and "charge is kept", playtests the look and balance |
 | Monster effect rules (`src/data/effectRules.ts`) | **Claude Code**, from the effect table the student approved | Approved the rules |
 | Room layouts (`src/data/rooms/*.json`): seeded from the art set's exits and collision; NPC, monster and waystone placement | **Claude Code** (`tools/seed-rooms.ts`) | Playtests the result |
 | Multiplayer server (`server/`), the /teacher page and the class-join flow | **Claude Code**, from the student's multiplayer brief (`MULTIPLAYER_PROMPT.md`) and decisions | Wrote the brief, made the decisions (server address, sign-in, world-mode default, leaderboards, retention, names, reports), tests each phase |

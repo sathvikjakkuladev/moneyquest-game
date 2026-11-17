@@ -22,6 +22,9 @@ test('classmates on the same screen see each other move; other screens see nobod
   expect((await net(C.page)).people).toEqual([]);
   await expect(B.page.getByRole('listitem').filter({ hasText: ma!.publicName })).toBeVisible();
   await expect(B.page.getByText('AliceNick')).toHaveCount(0); // nicknames never travel
+  // Each player's look travels as numbers only, so classmates draw them as they chose.
+  const aLook = await A.page.evaluate(() => { const l = (window as unknown as { __mq: { save: () => { slots: { look: Record<string, number> }[]; active: number } } }).__mq.save(); const x = l.slots[l.active]!.look; return [x.skin, x.eyes, x.hair, x.hairColour, x.face, x.costume]; });
+  await expect.poll(async () => (await net(B.page)).remotes[0]!.look).toEqual(aLook);
 
   // A walks right; B sees A's position follow.
   const before = (await net(B.page)).remotes[0]!.x;

@@ -842,6 +842,53 @@ The load script (Phase 6) measures the real numbers. It projects 10, 100 and 1,0
 
 ---
 
+### assets_v2 rebuild — the game on the new art (done 2026-11-17)
+
+Run in one cloud session with the inputs copied in from Sathvik's Mac, on Sathvik's instruction to use
+my recommendations for the eight decisions (§12) and not stop between phases. All five suggested
+phases are in, as a series of commits on `assets-v2`.
+
+- **Importer and rendering.** `tools/import-assets.ts` reads `../assets_v2` and exports the runtime set:
+  942 WebP files, 27.6 MB (screens at 1280×720, props, 14 species × their looks, 8 bosses with idle and
+  attack sheets, 14 NPCs with talk sheets, avatar clips, hair and face layers, 25 hats, VFX strips,
+  world map, battle backgrounds), plus the data under `src/data/v2/` and reference copies of the art
+  set's docs and scripts in `docs/assets_v2/`. The canvas draws the 640×360 stage at 1280×720, smooth.
+  The production build is 31 MB in all; about 4.8 MB of art is needed before Ledgerhold shows.
+- **World.** `tools/seed-rooms.ts` seeds `src/data/rooms/<place>.json` for Ledgerhold (9 screens) and
+  the 7 districts (2×2 each) from the art set's exits, spawns and collision, and places NPCs, monsters
+  and waystones. Places are joined only by the world map (HUD 🗺️ button or a waystone), which
+  teleports you to the place's waystone. Props are sprites sorted by their anchor; the `fronts`
+  system is gone. NPCs move their mouths (talk clip) while they speak. Tests flood-fill every screen to
+  check nothing is walled off.
+- **Battles.** New battle backgrounds; bosses play their idle and attack clips, regular monsters move
+  by the motion spec; the art set's VFX strips for casts, hits, shields, coins, defeat and capture.
+  `tools/import-monsters.ts` regenerates `monster_attacks.json` for the 22 Vaultspire monsters from
+  `src/data/monster-roster.json` (draft names and text) and the old pack's mechanics.
+- **Avatar and shop.** The layered avatar is baked per look (skin, costume colour set, hair, face,
+  hat) from each clip's head track, ported from `overlay.py`, `recolor.py` and `fit2.py`. Character
+  creator in the opening flow and at the Stylist (free); Shopkeeper Bix sells 24 hats by rarity, with
+  a try-on preview. Save version 4 with a v3 → v4 migration (tested).
+- **Pets, multiplayer, cleanup.** The first win over any monster captures it; pets are chosen in the
+  Bag or from Keeper Pip, and can wear a cleared district's look. The look travels as six indexes
+  (`a`) and a pet-look index (`pl`), validated on both sides; the server's screen list is updated.
+  Old pixel art, the PixelLab extras, the code-drawn hats and the old importer are removed.
+- **UI.** The art set's navy UI kit, scoped to the game (`.mq-game`); axe finds no serious problems.
+- **Tests:** typecheck clean; 135 unit tests and the server tests pass; all e2e tests pass, including
+  the multiplayer ones against the local server (`MP_E2E=1`).
+
+**Needs Sathvik:**
+- **Redeploy the multiplayer server** (`wrangler deploy` for staging, then production) before this
+  branch goes live: the old server doesn't know the new screen names, so classes wouldn't see each
+  other. Single-player works either way.
+- **Review the drafts:** monster names' attack text and lessons (`monster-roster.json`), the
+  topic-to-district mapping, guide tips and NPC lines (`dialogue.ts`), hat rarities and prices.
+- **Playtest on a Chromebook and an iPad.** Headless Chrome (software graphics) draws few frames a
+  second with the 1280×720 canvas, so the 60 fps budget still has to be checked on real hardware.
+- Known art issues carried from `QA_REPORT.md`: the ranger hat looks like the wizard hat; small hair
+  flecks on the bandana, beret and tricorn; big hair can hide raised hands in the cheer clip.
+
+---
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

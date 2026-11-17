@@ -12,13 +12,16 @@ updated at the end of every build phase.
 | Question bank: 180 questions with answers and explanations (`make-bank-question-bank.csv`) | **Claude** (Anthropic) | Chose the topics and grade bands, reviewed the questions |
 | Question fixes (`src/data/question-overrides.json`, 98 entries) | **Claude Code**, drafted for student review | Reviews and approves every change |
 | Mentor tips and NPC lines (`src/data/dialogue.ts`) | **Claude Code**, drafted for student review | Reviews for accuracy |
-| Hat pixel art (`src/data/hats.ts`) and spell effects | Drawn in code by **Claude Code** | Chose the hats and approved the look |
+| Spell effects drawn in code (the first build's code-drawn hats were replaced by the art set's hats) | **Claude Code** | Approved the look |
 | Monster effect rules (`src/data/effectRules.ts`) | **Claude Code**, from the effect table the student approved | Approved the rules |
-| Scenery layering: the outlines and footprints in `src/data/rooms/*.json` (which parts of each screen draw over the player) | **Claude Code**, traced by checking each screen | Reported the problem; playtests the result |
+| Room layouts (`src/data/rooms/*.json`): seeded from the art set's exits and collision; NPC, monster and waystone placement | **Claude Code** (`tools/seed-rooms.ts`) | Playtests the result |
 | Multiplayer server (`server/`), the /teacher page and the class-join flow | **Claude Code**, from the student's multiplayer brief (`MULTIPLAYER_PROMPT.md`) and decisions | Wrote the brief, made the decisions (server address, sign-in, world-mode default, leaderboards, retention, names, reports), tests each phase |
 | Public-name word lists (`src/net/names.ts`) | **Claude Code**, drafted for student review | Reviews the words |
 | Emotes and preset phrases (`src/net/says.ts`) | **Claude Code**, drafted for student review | Reviews the wording |
 | Privacy policy and teacher notice (`public/privacy/`, `public/teacher-notice/`) | **Claude Code**, drafted for NHSQA to review; not legal advice | NHSQA reviews them (contact: nhsqa01@gmail.com) |
+| Vaultspire art set (`../assets_v2`: screens, props, monsters, bosses, NPCs, the avatar, hats, VFX, UI kit; the 2026-11-16 rebuild) | **Higgsfield** (GPT Image 2 for images, Seedance for the clips), directed by **Claude**; cut-outs, recolours and packing by scripts Claude wrote | Chose the style ("Style A"), approved every set of prompts and reviewed the results |
+| Monster names come from the art set; their attack text and lessons (`src/data/monster-roster.json`) | **Claude Code**, drafted for student review | Reviews for accuracy |
+| Topic-to-district mapping, hat rarities and prices, colour-set names | **Claude Code**, drafted for student review | Reviews and can change them |
 | Game code, build tools, tests, documentation (`game/`) | **Claude Code** (Anthropic) | Wrote the design brief, made the gameplay decisions, playtests each phase |
 | Reward-card codes (`src/rewards/rewardCodes.ts`, `rewardSecret.ts`) | Copied unchanged from the student's earlier MakeBank project (also built with Claude Code) | Printed and handed out the 110 cards |
 
@@ -26,6 +29,8 @@ updated at the end of every build phase.
 
 - Font: [Fredoka](https://fonts.google.com/specimen/Fredoka) (SIL Open Font License), bundled locally.
 - Libraries: Phaser, React, Zustand, Tailwind CSS, Vite, Vitest, Playwright, sharp (all open source).
+- The old pixel art (PixelLab and pixelized Meta AI art) is no longer shipped; it stays in git history
+  and in `assets-src/v1/`.
 
 ## How accuracy is checked
 

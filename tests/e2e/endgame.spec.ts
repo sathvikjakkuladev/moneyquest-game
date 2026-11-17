@@ -1,18 +1,21 @@
-// The end of the main game: Money Check 2 from the Headmaster, the CSV export, the portals opening,
-// and taming a bonus-zone monster.
+// The end of the main game: Money Check 2 from the Headmaster, the CSV export, Phish Fens opening on
+// the world map, the Debt Dragon's gate, and capturing a monster there.
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const TOPICS = ['Spending and Saving', 'Credit and Debt', 'Employment and Income', 'Investing', 'Risk and Insurance', 'Financial Decision Making'];
 const pre = { date: '2026-11-07', band: 'K-5', form: 'A', perTopic: Object.fromEntries(TOPICS.map((t, i) => [t, i % 2])), total: 3 };
+const DISTRICTS = ['coinfall-docks', 'the-sprawl', 'frostvault', 'credit-citadel', 'compound-rift', 'the-exchange'];
+const BEATEN = ['mon_budget_breaker', 'mon_subscription_swarm', 'boss_overspend_kraken', 'mon_impulse_wisp', 'mon_splurge_hound', 'boss_splurge_peacock', 'mon_inflation_shade', 'mon_overdraft_golem', 'boss_frostfang_mammoth', 'mon_late_fee_raptor', 'mon_minimum_payment_leech', 'boss_collector_scorpion', 'mon_apr_serpent', 'mon_rug_pull_mimic', 'boss_compound_leviathan', 'mon_hype_bull', 'mon_panic_bear', 'boss_volatility_roc'];
 const save = JSON.stringify({
-  version: 2,
+  version: 4,
   state: {
-    version: 2, active: 0, slots: [{
+    version: 4, active: 0, slots: [{
       nickname: 'EndFox', band: 'K-5', createdAt: '2026-11-07T00:00:00Z',
-      progress: { level: 6, xp: 1600, coins: 200, defeated: [], zonesCleared: ['piggybank_village', 'borrowers_bridges', 'guildworks', 'compound_orchard', 'stormwatch_coast', 'crossroads_observatory'], spells: ['budget_beam', 'save_shield', 'credit_cleanse', 'paycheck_strike', 'compound_burst', 'insurance_barrier', 'wise_choice'], spell: 'budget_beam', tamed: [] },
-      inventory: { owned: [], hat: null, pet: null }, questions: { bags: {}, last: {}, drawn: {}, misses: [], accuracy: {} },
-      moneyCheck: { firstForm: 'A', pre, post: null }, redeemed: [], settings: { readAloud: false, reducedMotion: true },
+      progress: { level: 6, xp: 1600, coins: 200, coinsEarned: 900, defeated: BEATEN, zonesCleared: DISTRICTS, spells: ['budget_beam', 'save_shield', 'credit_cleanse', 'paycheck_strike', 'compound_burst', 'insurance_barrier', 'wise_choice'], spell: 'budget_beam', tamed: BEATEN },
+      inventory: { owned: BEATEN.map((m) => `tame:${m}`), hat: null, pet: null, petLook: null }, look: { skin: 3, eyes: 0, hair: 0, hairColour: 1, face: 0, costume: 0 },
+      questions: { bags: {}, last: {}, drawn: {}, misses: [], accuracy: {} },
+      moneyCheck: { firstForm: 'A', pre, post: null }, redeemed: [], settings: { readAloud: false, reducedMotion: true, playOffline: false }, online: null,
     }, null, null],
   },
 });
@@ -27,27 +30,29 @@ async function closeDialogue(page: Page) {
   while ((await d.isVisible()) && (await d.getByRole('button', { name: /Next|OK/ }).isVisible())) await d.getByRole('button', { name: /Next|OK/ }).click();
 }
 
-test('Money Check 2, CSV export, portals and taming', async ({ page }) => {
+test('Money Check 2, CSV export, Phish Fens and capturing', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript((s) => localStorage.getItem('moneyquest-save') || localStorage.setItem('moneyquest-save', s), save);
   await page.goto('./?e2e');
   await page.getByRole('button', { name: 'Play' }).click();
 
-  // Portals stay sealed before Money Check 2.
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'crossroads_observatory', screen: 'portal_ring', entry: 'from_crossroads' }));
-  await expect(page.getByRole('dialog', { name: /Stargazer Sol/ })).toBeVisible(); // first-visit hello
-  await closeDialogue(page);
-  await teleport(page, 250, 175);
-  await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(400);
-  await page.keyboard.up('ArrowUp');
-  await expect(page.getByRole('dialog', { name: /says/ })).toContainText('Money Check 2');
+  type Go = { __mq: { session: () => { go: (r: object) => void } } };
+  // Phish Fens stays locked on the world map before Money Check 2.
+  await page.evaluate(() => (window as unknown as Go).__mq.session().go({ kind: 'world' }));
+  await expect(page.getByRole('button', { name: /Phish Fens, opens after six bosses and Money Check 2/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^The Exchange, cleared/ })).toBeEnabled();
+
+  // The Debt Dragon sleeps until every district boss is beaten; the Arena Master says how many are left.
+  await page.evaluate(() => (window as unknown as Go).__mq.session().go({ kind: 'room', zone: 'ledgerhold', screen: '0-1' }));
+  await teleport(page, 382, 250);
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('dialog', { name: /Arena Master/ })).toContainText('1 to go');
   await closeDialogue(page);
 
-  // The Headmaster offers Money Check 2.
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'coin_academy', screen: 'library', entry: 'from_great_hall' }));
-  await teleport(page, 450, 215);
+  // The Headmaster, in the plaza, offers Money Check 2.
+  await page.evaluate(() => (window as unknown as Go).__mq.session().go({ kind: 'room', zone: 'ledgerhold', screen: '1-1' }));
+  await teleport(page, 392, 262);
   await page.keyboard.press('Space');
   await page.getByRole('button', { name: 'Take Money Check 2' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
@@ -69,15 +74,14 @@ test('Money Check 2, CSV export, portals and taming', async ({ page }) => {
   expect(lines[2]).toMatch(/^EndFox,post,\d{4}-\d{2}-\d{2},K-5,B,/);
   await page.getByRole('button', { name: 'Close' }).click();
 
-  // Now the purple portal leads to Nebula Grove.
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'crossroads_observatory', screen: 'portal_ring', entry: 'from_crossroads' }));
-  await teleport(page, 110, 185);
-  await page.keyboard.down('ArrowUp');
-  await expect.poll(() => mq(page, '(h) => h.where().screen'), { timeout: 8000 }).toBe('forest_portal');
-  await page.keyboard.up('ArrowUp');
+  // Now Phish Fens is open: travel there, and its guide says hello.
+  await page.getByRole('button', { name: 'World map' }).click();
+  await page.getByRole('button', { name: /^Phish Fens/ }).click();
+  await expect(page.getByRole('dialog', { name: /Marshwarden Ines/ })).toBeVisible();
+  await closeDialogue(page);
 
-  // Beat Starmoth: it's tamed.
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (id: string, b: object) => void } } }).__mq.session().fight('mon_starmoth', { kind: 'room', zone: 'nebula_grove', screen: 'forest_portal' }));
+  // Beat the Phish Lurker: its questions mix the topics, and the win captures it.
+  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (id: string, b: object) => void } } }).__mq.session().fight('mon_phish_lurker', { kind: 'room', zone: 'phish-fens', screen: '1-0' }));
   for (let i = 0; i < 12; i++) {
     await expect.poll(() => mq<string>(page, '(h) => h.session().battle?.phase')).toMatch(/^(ask|won|right|explain)$/);
     const phase = await mq<string>(page, '(h) => h.session().battle?.phase');
@@ -90,9 +94,9 @@ test('Money Check 2, CSV export, portals and taming', async ({ page }) => {
     const pos = await mq<number>(page, `(h) => h.session().battle.order.indexOf(${right})`);
     await page.keyboard.press(String(pos + 1));
   }
-  await expect(page.getByText(/Starmoth is tamed/)).toBeVisible();
+  await expect(page.getByText(/Phish Lurker joins you/)).toBeVisible();
   const slot = await page.evaluate(() => JSON.parse(localStorage.getItem('moneyquest-save')!).state.slots[0]);
-  expect(slot.progress.tamed).toEqual(['mon_starmoth']);
-  expect(slot.inventory.owned).toContain('tame:mon_starmoth');
+  expect(slot.progress.tamed).toEqual([...BEATEN, 'mon_phish_lurker']);
+  expect(slot.inventory.owned).toContain('tame:mon_phish_lurker');
   expect(errors).toEqual([]);
 });

@@ -62,7 +62,7 @@ test('emotes and phrases, mute, report, teacher mute and remove, play offline', 
   await tp.getByRole('button', { name: 'Open Room 7' }).click();
   const report = tp.getByRole('list', { name: 'Reports' }).getByRole('listitem').filter({ hasText: 'was reported by' });
   await expect(report).toContainText(`${ma!.publicName} was reported by ${mb!.publicName}`);
-  await expect(report).toContainText('“Hi!” · Piggybank Village · Plaza');
+  await expect(report).toContainText('“Hi!” · Ledgerhold · Central Plaza');
   await expect(report).toContainText('👋 (Wave)');
   await report.getByRole('button', { name: `Mute ${ma!.publicName}` }).click();
   await expect(tp.getByRole('button', { name: `Unmute ${ma!.publicName}` }).first()).toBeVisible();

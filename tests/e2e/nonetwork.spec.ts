@@ -44,7 +44,7 @@ test('no requests to other sites, no class features, no CSP violations', async (
   await page.getByRole('button', { name: 'Done' }).click();
 
   // A battle (Phaser effects, audio) and walking about.
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_spendling', { kind: 'room', zone: 'piggybank_village', screen: 'market' }));
+  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_budget_breaker', { kind: 'room', zone: 'coinfall-docks', screen: '1-0' }));
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { session: () => { battle: { phase: string } | null } } }).__mq.session().battle?.phase)).toBe('ask');
   await page.keyboard.press('1');
   await page.waitForTimeout(1500);

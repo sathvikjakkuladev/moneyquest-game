@@ -3,6 +3,9 @@
 import { expect } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 
+/** The tests' screen names, on Ledgerhold: the plaza and the hat shop's street. */
+const SCREEN: Record<string, string> = { plaza: '1-1', market: '1-0' };
+
 export const MP = process.env.MP_URL ?? 'http://localhost:8787'; // MP_URL: run against staging
 export const ORIGIN = 'http://localhost:5173';
 export type Net = {
@@ -61,7 +64,7 @@ export async function player(browser: Browser, nickname: string, online: object 
   await page.addInitScript((s) => localStorage.getItem('moneyquest-save') || localStorage.setItem('moneyquest-save', s), saveWith(nickname, online));
   await page.goto('./?e2e');
   await page.getByRole('button', { name: 'Play' }).click();
-  await page.evaluate(([screen, at]) => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'piggybank_village', screen, at }), [screen, at] as const);
+  await page.evaluate(([screen, at]) => (window as unknown as { __mq: { session: () => { go: (r: object) => void } } }).__mq.session().go({ kind: 'room', zone: 'ledgerhold', screen, at }), [SCREEN[screen] ?? screen, at] as const);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { where: () => { at: unknown } } }).__mq.where().at !== null)).toBe(true);
   const d = page.getByRole('dialog', { name: /says/ });
   await d.waitFor({ timeout: 4000 }).catch(() => {}); // the mentor's hello runs on the game's clock, so it can be late

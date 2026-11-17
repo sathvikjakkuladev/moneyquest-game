@@ -8,7 +8,8 @@ import { MP_URL } from '../net/config.ts';
 import type { CheckSummary } from '../net/progress.ts';
 import { EMOTES, PHRASES } from '../net/says.ts';
 import { TOPICS } from '../core/types.ts';
-import { ZONES } from '../data/zones.ts';
+import { LOCATIONS } from '../data/v2.ts';
+import { placeName, ZONES } from '../data/zones.ts';
 import { averages, classCsv } from './report.ts';
 
 interface TeacherInfo { email: string; admin: boolean; mustChange: boolean }
@@ -205,11 +206,16 @@ function Classes({ token, email, admin, onSignedOut }: { token: string; email: s
 }
 
 const when = (t: number) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const place = (screen: string) => screen.split('/').map((w) => w.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())).join(' · ');
+const words = (s: string) => s.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+/** "coinfall-docks/1-0" → "Coinfall Docks · Wilds". */
+const place = (screen: string) => {
+  const [zone = '', s = ''] = screen.split('/');
+  return `${placeName(zone)} · ${words(LOCATIONS[zone]?.screens[s]?.name ?? s)}`;
+};
 const said = (h: ReportInfo['history'][number]) => (h.kind === 'emote' ? `${EMOTES[h.i]?.e ?? '?'} (${EMOTES[h.i]?.label ?? 'unknown emote'})` : `“${PHRASES[h.i] ?? 'unknown phrase'}”`);
 
 const REFRESH_MS = 30_000;
-const zoneName = (id: string) => ZONES.find((z) => z.id === id)?.name ?? id;
+const zoneName = (id: string) => (id === 'ledgerhold' ? 'the Debt Dragon (Ledgerhold)' : placeName(id));
 const MAIN_ZONES = ZONES.filter((z) => !z.bonus).map((z) => z.id);
 const num = (n: number | null) => (n === null ? '–' : n.toFixed(1));
 
@@ -362,7 +368,7 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
                       {m.muted ? ' · emotes and phrases off' : ''}{m.deviceCodeWaiting ? ' · device code waiting' : ''}
                     </p>
                     <p className="text-lg">
-                      {p ? <>Level {p.level} · 🪙 {p.coinsEarned} earned · {main} of {MAIN_ZONES.length} zones · {acc === null ? 'no questions yet' : `${acc}% correct`} · Money Check {p.mcPre ? `${p.mcPre.total}/12` : '–'} → {p.mcPost ? `${p.mcPost.total}/12` : '–'}</> : 'No progress yet.'}
+                      {p ? <>Level {p.level} · 🪙 {p.coinsEarned} earned · {main} of {MAIN_ZONES.length} topic districts · {acc === null ? 'no questions yet' : `${acc}% correct`} · Money Check {p.mcPre ? `${p.mcPre.total}/12` : '–'} → {p.mcPost ? `${p.mcPost.total}/12` : '–'}</> : 'No progress yet.'}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -373,7 +379,7 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
                 </div>
                 {p && (
                   <details className="text-lg">
-                    <summary className="cursor-pointer font-semibold">Accuracy by topic and zones</summary>
+                    <summary className="cursor-pointer font-semibold">Accuracy by topic, and districts cleared</summary>
                     <table className="mt-1 w-full text-left">
                       <thead><tr><th className="font-semibold">Topic</th><th className="font-semibold">Accuracy</th><th className="font-semibold">Check 1</th><th className="font-semibold">Check 2</th></tr></thead>
                       <tbody>
@@ -383,7 +389,7 @@ function ClassView({ token, classId, onBack, onSignedOut }: { token: string; cla
                         })}
                       </tbody>
                     </table>
-                    <p className="mt-1">Zones cleared: {p.zones.length ? p.zones.map(zoneName).join(', ') : 'none yet'}.</p>
+                    <p className="mt-1">Districts cleared: {p.zones.length ? p.zones.map(zoneName).join(', ') : 'none yet'}.</p>
                   </details>
                 )}
               </li>

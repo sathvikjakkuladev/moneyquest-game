@@ -5,13 +5,13 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const save = JSON.stringify({
-  version: 2,
+  version: 4,
   state: {
-    version: 2, active: 0, slots: [{
+    version: 4, active: 0, slots: [{
       nickname: 'AxeFox', band: 'K-5', createdAt: '2026-11-07T00:00:00Z',
-      progress: { level: 2, xp: 120, coins: 200, defeated: [], zonesCleared: ['piggybank_village'], spells: ['budget_beam', 'save_shield'], spell: 'budget_beam', tamed: [] },
-      inventory: { owned: ['hat-laurel'], hat: 'hat-laurel', pet: null }, questions: { bags: {}, last: {}, drawn: {}, misses: [], accuracy: { 'Spending and Saving': { answered: 6, correct: 4 } } },
-      moneyCheck: { firstForm: 'A', pre: null, post: null }, redeemed: [], settings: { readAloud: false, reducedMotion: true },
+      progress: { level: 2, xp: 120, coins: 200, coinsEarned: 200, defeated: ['mon_budget_breaker'], zonesCleared: ['coinfall-docks'], spells: ['budget_beam', 'save_shield'], spell: 'budget_beam', tamed: ['mon_budget_breaker'] },
+      inventory: { owned: ['hat-laurel', 'tame:mon_budget_breaker'], hat: 'hat-laurel', pet: 'tame:mon_budget_breaker', petLook: null }, look: { skin: 5, eyes: 2, hair: 3, hairColour: 4, face: 2, costume: 1 }, questions: { bags: {}, last: {}, drawn: {}, misses: [], accuracy: { 'Spending and Saving': { answered: 6, correct: 4 } } },
+      moneyCheck: { firstForm: 'A', pre: null, post: null }, redeemed: [], settings: { readAloud: false, reducedMotion: true, playOffline: false }, online: null,
     }, null, null],
   },
 });
@@ -36,6 +36,9 @@ test('no serious accessibility problems on the main screens', async ({ page }) =
   await axe(page, 'nickname');
   await page.getByLabel('Nickname').fill('Keys');
   await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Make your wizard' })).toBeVisible();
+  await axe(page, 'character creator');
+  await page.getByRole('button', { name: 'Next' }).click();
   await axe(page, 'level');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
@@ -51,7 +54,7 @@ test('no serious accessibility problems on the main screens', async ({ page }) =
   await axe(page, 'settings');
   await page.getByRole('button', { name: 'Save and quit' }).click();
   await page.getByRole('button', { name: 'Play' }).first().click();
-  for (const [panel, name] of [['shop', 'Shop'], ['bag', 'Your bag'], ['progress', 'Progress'], ['redeem', 'Redeem a card']] as const) {
+  for (const [panel, name] of [['shop', 'Hats'], ['bag', 'Your bag'], ['pets', 'Your pets'], ['style', 'Stylist'], ['progress', 'Progress'], ['redeem', 'Redeem a card']] as const) {
     await page.evaluate((p) => (window as unknown as { __mq: { session: () => { setPanel: (x: string) => void } } }).__mq.session().setPanel(p), panel);
     await expect(page.getByRole('dialog', { name: new RegExp(name) })).toBeVisible();
     await axe(page, panel);
@@ -59,10 +62,10 @@ test('no serious accessibility problems on the main screens', async ({ page }) =
     await page.evaluate(() => (window as unknown as { __mq: { session: () => { setPanel: (x: null) => void } } }).__mq.session().setPanel(null));
   }
   await go(page, { kind: 'world' });
-  await expect(page.getByRole('button', { name: /Piggybank Village/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Coinfall Docks/ })).toBeVisible();
   await axe(page, 'world map');
 
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_spendling', { kind: 'room', zone: 'piggybank_village', screen: 'market' }));
+  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_subscription_swarm', { kind: 'room', zone: 'coinfall-docks', screen: '1-0' }));
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { session: () => { battle: { phase: string } | null } } }).__mq.session().battle?.phase)).toBe('ask');
   await axe(page, 'battle card');
   const wrong = await page.evaluate(() => ((window as unknown as { __mq: { correct: () => number } }).__mq.correct() + 1) % 4);
@@ -75,7 +78,7 @@ test('every button is at least 48 px and text at least 18 px on the battle card'
   await page.addInitScript((s) => localStorage.getItem('moneyquest-save') || localStorage.setItem('moneyquest-save', s), save);
   await page.goto('./?e2e');
   await page.getByRole('button', { name: 'Play' }).click();
-  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_spendling', { kind: 'room', zone: 'piggybank_village', screen: 'market' }));
+  await page.evaluate(() => (window as unknown as { __mq: { session: () => { fight: (i: string, b: object) => void } } }).__mq.session().fight('mon_subscription_swarm', { kind: 'room', zone: 'coinfall-docks', screen: '1-0' }));
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mq: { session: () => { battle: { phase: string } | null } } }).__mq.session().battle?.phase)).toBe('ask');
   const sizes = await page.evaluate(() =>
     [...document.querySelectorAll('button')].filter((b) => b.offsetParent).map((b) => {

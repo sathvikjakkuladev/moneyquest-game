@@ -56,7 +56,7 @@ test('progress, class goal, leaderboard, dashboard, device codes', async ({ brow
   const row = T.page.getByRole('list', { name: 'Students' }).getByRole('listitem').filter({ hasText: ma!.publicName });
   await expect(row).toContainText('🪙 500 earned');
   await expect(row).toContainText('Money Check 6/12 → –');
-  await expect(row).toContainText('🟢 Online · Piggybank Village · Plaza');
+  await expect(row).toContainText('🟢 Online · Ledgerhold · Central Plaza');
   await expect(T.page.getByText('6.0 / 12')).toBeVisible();
   await expect(T.page.getByText('AliceNick')).toHaveCount(0);
 

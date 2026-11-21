@@ -939,6 +939,22 @@ chose the open-world option (guests with no teacher) over turning world mode on 
 `server/README.md`. Until then guests just play alone (the game retries quietly every minute).
 NHSQA should review the privacy policy change: players with no teacher are now online by default.
 
+### Smoother avatar walk and cleaner hair (done 2026-11-21)
+
+Sathvik found the walk awkward (fast, hopping steps; the back walk swaying) and the hair a little off.
+No new art: all of it is in how the avatar is baked (`src/game/avatarBake.ts`).
+
+- **Walk.** The walk clips came from generated video, so the body hopped and drifted. Baking now
+  holds each frame's planted foot on the ground and keeps the head (front walk) or the body (back walk)
+  on one line, with a small even bob; the near-still frames at the ends are left out of the loop
+  (`clipOrder`), and both walks play at 9 fps instead of 14, since each loop holds about six steps.
+  Walking sideways (which mirrors the front walk; there is no side view) leans 5° into the direction.
+- **Hair.** The front and back hair pieces meet along a straight cut with soft edges, which showed as a
+  see-through line beside the face; the back piece's cut edge is made solid and tucked 2 px under the
+  front piece. The bald head's teal rim light, which peeked out by the ears, is blended into the outline.
+- **Tests:** typecheck clean; unit tests pass; all browser tests pass run one at a time (two timed out
+  once with parallel workers on a slow machine, and passed when rerun).
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

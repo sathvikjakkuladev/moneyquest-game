@@ -318,7 +318,7 @@ export class RoomScene extends Phaser.Scene {
   /** The avatar is drawn from the front and the back: walking sideways mirrors the front walk. */
   private pose(moving: boolean): void {
     const a = this.player!;
-    if (moving) return a.show(this.face === 'north' ? 'walk-back' : 'walk', this.face === 'west');
+    if (moving) return a.show(this.face === 'north' ? 'walk-back' : 'walk', this.face === 'west', false, this.face === 'east' || this.face === 'west');
     if (this.face === 'north') {
       a.show('walk-back');
       a.sprite.anims.pause(a.sprite.anims.currentAnim?.frames[0]);

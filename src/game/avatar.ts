@@ -24,7 +24,7 @@ export function bakeAvatar(scene: Phaser.Scene, look: Look, hatId: string | null
   const tex = scene.textures.addCanvas(key, b.canvas)!;
   for (let f = 0; f < b.frames; f++) tex.add(f, 0, (f % b.cols) * b.cellW, Math.floor(f / b.cols) * b.cellH, b.cellW, b.cellH);
   const { rate, loop } = clipRate(clip);
-  scene.anims.create({ key, frames: Array.from({ length: b.frames }, (_, f) => ({ key, frame: f })), frameRate: rate, repeat: loop ? -1 : 0 });
+  scene.anims.create({ key, frames: b.order.map((f) => ({ key, frame: f })), frameRate: rate, repeat: loop ? -1 : 0 });
   tex.customData = { ox: b.ox, oy: b.oy };
   return key;
 }
@@ -49,6 +49,8 @@ export class Avatar {
   private hatId: string | null;
   private tall: number;
   private now: ClipName | null = null;
+  private lean = 0;
+  private leanTween: Phaser.Tweens.Tween | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, look: Look, hatId: string | null, tall: number, first: ClipName = 'idle') {
     this.scene = scene;
@@ -71,9 +73,17 @@ export class Avatar {
   }
 
   /** Play a clip (looping clips keep running if already playing). `flip` mirrors it. */
-  show(clip: ClipName, flip = false, restart = false): void {
+  show(clip: ClipName, flip = false, restart = false, side = false): void {
     const s = this.sprite;
     s.setFlipX(flip);
+    // Walking sideways, the front walk leans a little into the direction of travel (the origin is on
+    // the feet, so the body tips forward rather than sliding along upright).
+    const lean = clip === 'walk' && side ? (flip ? -5 : 5) : 0;
+    if (lean !== this.lean) {
+      this.lean = lean;
+      this.leanTween?.stop();
+      this.leanTween = this.scene.tweens.add({ targets: s, angle: lean, duration: 120, ease: 'Sine.easeOut' });
+    }
     if (this.now === clip && !restart) return;
     if (!this.ready(clip)) return;
     const key = this.bake(clip);

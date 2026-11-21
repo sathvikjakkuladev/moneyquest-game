@@ -48,11 +48,11 @@ export function AvatarView({ look, hat, clip = 'idle', tall = 110, label }: { lo
       g.clearRect(0, 0, c.width, c.height);
       g.drawImage(b.canvas, (f % b.cols) * b.cellW, Math.floor(f / b.cols) * b.cellH, b.cellW, b.cellH, 0, 0, b.cellW, b.cellH);
     };
-    draw(0);
+    draw(b.order[0]!);
     if (calm) return;
     const { rate } = clipRate(clip);
-    let f = 0;
-    const t = setInterval(() => draw((f = (f + 1) % b.frames)), 1000 / rate);
+    let i = 0;
+    const t = setInterval(() => draw(b.order[(i = (i + 1) % b.order.length)]!), 1000 / rate);
     return () => clearInterval(t);
   }, [ready, key, tall, calm]); // eslint-disable-line react-hooks/exhaustive-deps
   return <canvas ref={ref} role="img" aria-label={label} style={{ height: (tall * 1.45) | 0, width: 'auto', maxWidth: '100%' }} data-render={RENDER} />;

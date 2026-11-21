@@ -61,7 +61,7 @@ export class RemotePlayers {
       if (v.avatar) {
         const face = FACES[r.f];
         v.avatar.sprite.setPosition(at.x, at.y).setDepth(at.y);
-        if (moving) v.avatar.show(face === 'north' ? 'walk-back' : 'walk', face === 'west');
+        if (moving) v.avatar.show(face === 'north' ? 'walk-back' : 'walk', face === 'west', false, face === 'east' || face === 'west');
         else if (face === 'north') (v.avatar.show('walk-back'), v.avatar.sprite.anims.pause(v.avatar.sprite.anims.currentAnim?.frames[0]));
         else v.avatar.show('idle', face === 'west');
       }

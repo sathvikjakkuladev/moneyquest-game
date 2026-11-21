@@ -18,7 +18,20 @@ const PAD_X = 34, PAD_TOP = 64;
 export type ClipName = 'idle' | 'walk' | 'walk-back' | 'attack' | 'hit' | 'cheer' | 'nod' | 'victory' | 'defeat';
 export const OVERWORLD_CLIPS: ClipName[] = ['idle', 'walk', 'walk-back'];
 export const BATTLE_CLIPS: ClipName[] = ['idle', 'attack', 'hit', 'victory', 'defeat'];
-const LOOPS: Partial<Record<ClipName, number>> = { idle: 8, walk: 14, 'walk-back': 14 };
+// The walk clips pack about six steps into 16 frames, so they play slowly to keep the steps calm.
+const LOOPS: Partial<Record<ClipName, number>> = { idle: 8, walk: 9, 'walk-back': 9 };
+
+// The walk clips were cut from generated video, so the body drifts sideways, hops up and down out
+// of step and pauses at the start. Baking steadies them: each frame is moved so the head stays on one
+// line (the back walk: the body, which sways more than the head) and the planted foot stays on the
+// ground, a small even bob replaces the random one, and the near-still frames at the ends of the
+// walk are left out of the loop.
+const STEADY: Partial<Record<ClipName, { order: number[]; bob: number; body?: boolean }>> = {
+  walk: { order: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], bob: 0.012 },
+  'walk-back': { order: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], bob: 0.01, body: true },
+};
+/** The frames a clip plays, in order. */
+export const clipOrder = (clip: ClipName): number[] => STEADY[clip]?.order ?? Array.from({ length: clipOf(clip).frames }, (_, i) => i);
 
 export const clipOf = (name: ClipName): Clip => AVATAR.clips[name]!;
 const viewOf = (name: ClipName) => clipOf(name).view ?? 'front';
@@ -65,6 +78,14 @@ function colour(get: Get, kind: string, l: Layer, look: Look): CanvasImageSource
     if (kind === 'iris') fill(im.data, hexRgb(AVATAR.eyes[look.eyes]!.hex));
     else if (kind === 'face') reskin(im.data, hexRgb(AVATAR.skin[look.skin]!), AVATAR.skinBase);
     else tint(im.data, hexRgb(AVATAR.hairColours[look.hairColour]!.hex), AVATAR.hairTintBase);
+    // The hair was split into front and back pieces along a straight line, and both edges of that
+    // cut are soft, so a see-through line showed beside the face. The back piece's cut edge is made
+    // solid here, and it's drawn 2 px higher (below) so it tucks under the front piece.
+    if (kind === 'hair-back') {
+      const w = c.width, d = im.data;
+      for (let y = 0; y < 3; y++) for (let x = 0; x < w; x++) d[(y * w + x) * 4 + 3] = Math.max(d[(y * w + x) * 4 + 3]!, d[(3 * w + x) * 4 + 3]!);
+      for (let y = 0; y < 3; y++) for (let x = 0; x < w; x++) if (d[(3 * w + x) * 4 + 3]! > 0) for (let ch = 0; ch < 3; ch++) d[(y * w + x) * 4 + ch] = d[(3 * w + x) * 4 + ch]!;
+    }
     g.putImageData(im, 0, 0);
     return c;
   }
@@ -73,7 +94,7 @@ function colour(get: Get, kind: string, l: Layer, look: Look): CanvasImageSource
 
 /** How a loaded image is fetched: Phaser's texture manager in the game, an image cache in React. */
 export type Get = (rel: string) => HTMLImageElement | HTMLCanvasElement;
-export interface Baked { canvas: HTMLCanvasElement; cellW: number; cellH: number; cols: number; frames: number; /** The feet, as a fraction of a cell. */ ox: number; oy: number }
+export interface Baked { canvas: HTMLCanvasElement; cellW: number; cellH: number; cols: number; frames: number; /** The frames to play, in order. */ order: number[]; /** The feet, as a fraction of a cell. */ ox: number; oy: number }
 
 /**
  * Bake one clip of a look at `tall` stage px (head-top to feet). Every image from `avatarSources`
@@ -100,7 +121,47 @@ export function bakeSheet(get: Get, look: Look, hatId: string | null, clip: Clip
     skin: hexRgb(AVATAR.skin[look.skin]!), skinBase: AVATAR.skinBase, set: set && Object.keys(set.map).length ? set : null, spec: AVATAR.costume,
     protectAbove: (x, y) => { const f = Math.floor(y / bh) * C.cols + Math.floor(x / bw); return y % bh < (necks[f] ?? 0); },
   });
+  // The bald head under the hair has a teal rim light that peeked out beside the ears: inside each
+  // frame's head box, teal pixels blend into the dark outline colour.
+  for (let f = 0; f < C.frames; f++) {
+    const [top, cx, w] = C.head![f] as [number, number, number];
+    const x0 = (f % C.cols) * bw, y0 = Math.floor(f / C.cols) * bh;
+    const xa = Math.max(0, Math.floor((cx - 0.62 * w) * k)), xb = Math.min(bw, Math.ceil((cx + 0.62 * w) * k));
+    const ya = Math.max(0, Math.floor((top - 0.1 * w) * k)), yb = Math.min(bh, Math.ceil((top + 0.98 * w) * k));
+    for (let y = ya; y < yb; y++)
+      for (let x = xa; x < xb; x++) {
+        const i = ((y0 + y) * body.width + x0 + x) * 4, d = im.data;
+        if (!d[i + 3]) continue;
+        const t = Math.min(1, Math.max(0, (Math.min(d[i + 1]!, d[i + 2]!) - d[i]! - 12) / 50)); // how teal it is
+        if (t > 0) (d[i] = d[i]! + (29 - d[i]!) * t), (d[i + 1] = d[i + 1]! + (21 - d[i + 1]!) * t), (d[i + 2] = d[i + 2]! + (48 - d[i + 2]!) * t);
+      }
+  }
   bg.putImageData(im, 0, 0);
+
+  // Steadying (see STEADY): where each frame's planted foot is, from the lowest solid row.
+  const steady = STEADY[clip];
+  const ground = C.foot[1] * k;
+  const lowest = (f: number) => {
+    const x0 = (f % C.cols) * bw, y0 = Math.floor(f / C.cols) * bh;
+    for (let y = bh - 1; y >= 0; y--) for (let x = 0; x < bw; x += 2) if (im.data[((y0 + y) * body.width + x0 + x) * 4 + 3]! > 160) return y;
+    return ground;
+  };
+  // The line each frame is held to: the head's centre, or the body's (mid-height rows of the art).
+  const middle = (f: number) => {
+    if (!steady?.body) return C.head![f]![1]! * k;
+    const x0 = (f % C.cols) * bw, y0 = Math.floor(f / C.cols) * bh;
+    let sum = 0, n = 0;
+    for (let y = Math.floor(bh * 0.45); y < bh * 0.7; y += 2) for (let x = 0; x < bw; x++) if (im.data[((y0 + y) * body.width + x0 + x) * 4 + 3]! > 160) (sum += x), n++;
+    return n ? sum / n : C.head![f]![1]! * k;
+  };
+  const mids = steady ? Array.from({ length: C.frames }, (_, f) => middle(f)) : [];
+  const midCx = [...mids].sort((a, b) => a - b)[Math.floor(mids.length / 2)] ?? 0;
+  const shift = (f: number): [number, number] => {
+    if (!steady) return [0, 0];
+    const i = steady.order.indexOf(f);
+    const bob = i < 0 ? 0 : -steady.bob * BODY_H * k * (0.5 - 0.5 * Math.cos((12 * Math.PI * i) / steady.order.length)); // six steps per loop
+    return [midCx - mids[f]!, ground - lowest(f) + bob];
+  };
 
   // 2. Each frame: hair behind, body, face, hair in front, hat — placed from the head track.
   const layers = layersFor(look, hat, view).map(({ kind, l }) => ({ kind, l, img: colour(get, kind, l, look) }));
@@ -120,13 +181,15 @@ export function bakeSheet(get: Get, look: Look, hatId: string | null, clip: Clip
     g.beginPath();
     g.rect((f % C.cols) * cellW, Math.floor(f / C.cols) * cellH, cellW, cellH);
     g.clip(); // nothing spills into the next cell
-    for (const x of layers) if (x.kind === 'hair-back') put(x.img, x.l.off, x.l.w, x.l.h);
+    const [sx, sy] = shift(f);
+    g.translate(sx, sy);
+    for (const x of layers) if (x.kind === 'hair-back') put(x.img, x.l.off, x.l.w, x.l.h, 2);
     g.drawImage(body, (f % C.cols) * bw, Math.floor(f / C.cols) * bh, bw, bh, ox, oy, bw, bh);
     for (const x of layers) if (x.kind !== 'hair-back') put(x.img, x.l.off, x.l.w, x.l.h);
     if (hatView && hatImg) put(hatImg, hatView.off, hatView.w, hatView.h, lift);
     g.restore();
   }
-  return { canvas: out, cellW, cellH, cols: C.cols, frames: C.frames, ox: ((C.foot[0] + PAD_X) * k) / cellW, oy: ((C.foot[1] + PAD_TOP) * k) / cellH };
+  return { canvas: out, cellW, cellH, cols: C.cols, frames: C.frames, order: clipOrder(clip), ox: ((C.foot[0] + PAD_X) * k) / cellW, oy: ((C.foot[1] + PAD_TOP) * k) / cellH };
 }
 
 /** Frame rate of each clip: the looping ones, and the one-shot ones. */

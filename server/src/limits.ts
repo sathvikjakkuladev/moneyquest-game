@@ -12,6 +12,10 @@ export const LIMITS = {
   /** 240 progress uploads per student per hour (the game sends one per battle, a few seconds apart at most). */
   /** 60 new open-world guests per IP per hour (a school shares one IP, so it allows a few classes). */
   guest: { max: 60, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
+  /** Save codes: 30 new codes and 10 restore tries per IP per hour (codes can't be guessed); updates as you play. */
+  backup: { max: 30, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
+  restore: { max: 10, windowMs: 60 * 60_000, lockMs: 60 * 60_000 },
+  backupPut: { max: 600, windowMs: 60 * 60_000, lockMs: 15 * 60_000 },
   progress: { max: 240, windowMs: 60 * 60_000, lockMs: 10 * 60_000 },
 } satisfies Record<string, Limit>;
 

@@ -10,6 +10,7 @@ import { classInfo, uploadProgress } from './progress.ts';
 import { purge } from './retention.ts';
 import { redeemCode } from './world.ts';
 import { createGuest } from './guests.ts';
+import { createBackup, restoreBackup, updateBackup } from './backup.ts';
 import { validScreen } from '../../src/net/protocol.ts';
 import { MAX_SHARDS } from '../../src/net/world.ts';
 
@@ -38,6 +39,9 @@ const ROUTES: [string, RegExp, Handler][] = [
   ['POST', /^\/api\/admin\/members\/([0-9a-f-]{36})\/world$/, worldBlock],
   ['POST', /^\/api\/admin\/guests\/([0-9a-f-]{36})\/world$/, guestBlock],
   ['POST', /^\/api\/guest$/, createGuest],
+  ['POST', /^\/api\/backup$/, createBackup],
+  ['PUT', /^\/api\/backup$/, updateBackup],
+  ['POST', /^\/api\/backup\/restore$/, restoreBackup],
   ['POST', /^\/api\/redeem$/, redeemCode],
   ['POST', /^\/api\/progress$/, uploadProgress],
   ['GET', /^\/api\/class$/, classInfo],

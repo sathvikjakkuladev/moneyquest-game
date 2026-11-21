@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useSave } from '../state/save.ts';
 import { useSession } from '../state/session.ts';
 
-/** Title: three save slots (shared iPads). */
+// Loading a save code needs the server, so it's only built when VITE_MP_URL is set.
+const RestoreSave = import.meta.env.VITE_MP_URL ? lazy(() => import('./RestoreSave.tsx')) : null;
+
+/** Title: Continue for whoever played last, then three save slots (shared iPads). */
 export function Title({ onNew }: { onNew: (slot: number) => void }) {
   const slots = useSave((s) => s.slots);
   const [confirm, setConfirm] = useState<number | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const last = slots.reduce<number | null>((b, s, i) => (s && (b === null || s.playedAt > slots[b]!.playedAt) ? i : b), null);
   const play = (i: number) => {
     useSave.getState().open(i);
     const s = useSession.getState();
@@ -20,6 +25,11 @@ export function Title({ onNew }: { onNew: (slot: number) => void }) {
         </h1>
         <p className="mt-1 text-xl font-semibold">A money magic adventure</p>
       </div>
+      {last !== null && (
+        <button className="btn px-10 text-2xl" autoFocus onClick={() => play(last)}>
+          ▶ Continue as {slots[last]!.nickname}
+        </button>
+      )}
       <ul className="flex flex-wrap justify-center gap-4" aria-label="Save slots">
         {slots.map((s, i) => (
           <li key={i} className="panel flex w-56 flex-col items-center gap-2 p-3 text-center">
@@ -47,6 +57,16 @@ export function Title({ onNew }: { onNew: (slot: number) => void }) {
           </li>
         ))}
       </ul>
+      {RestoreSave && (
+        <>
+          <button className="btn btn-quiet" onClick={() => setRestoring(true)}>Have a save code?</button>
+          {restoring && (
+            <Suspense fallback={null}>
+              <RestoreSave onClose={() => setRestoring(false)} onDone={(i) => (setRestoring(false), play(i))} />
+            </Suspense>
+          )}
+        </>
+      )}
     </div>
   );
 }

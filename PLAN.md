@@ -963,6 +963,28 @@ The repo, code names, teacher dashboard and the privacy and teacher-notice pages
 rename those when NHSQA is ready. Browser tests pass one at a time; the pet-follow step in
 `cosmetics.spec.ts` sometimes fails on a slow machine, also on the code from before this change.
 
+### Continue and save codes, no accounts (done 2026-11-21)
+
+Sathvik asked about accounts. Most players are under 13, so instead of email-and-password accounts
+(which bring COPPA consent, password resets and personal data) the game got:
+
+- **Continue** on the title screen for the save played last (`playedAt`, set when a slot opens). The
+  three slots stay, for shared devices.
+- **Save codes.** Settings → Save code → "Get a save code" backs up the open slot on the server
+  (`POST /api/backup`) and shows a code like `SUNNY-OTTER-482173` (about 860 million codes; 10
+  restore tries per IP per hour). The slot then backs up as it changes (`PUT /api/backup`, 20 s after a
+  change and when the tab is hidden; paused by Play offline). Title → "Have a save code?" loads it into
+  a free slot under a nickname typed on that device (`POST /api/backup/restore`). The nickname and class
+  membership are stripped before sending (and again by the server); only a keyed hash of the code is
+  stored; unused for 400 days → deleted. Migration `0004_save_codes.sql`; save format v5 (`playedAt`,
+  `backup`), with a migration test. Privacy policy (draft) updated.
+- **Play offline for everyone.** The switch was only shown to class members; players without a class
+  (in the open world) now have it too.
+- **Tests:** 4 new server tests; new e2e `savecode.spec.ts` (code on one device, loaded on another);
+  smoke test expects Continue. All pass (three slow-machine timeouts passed on rerun).
+
+**Needs Sathvik:** apply migration 0004 and deploy the server (staging, then production).
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

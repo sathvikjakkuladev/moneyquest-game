@@ -149,7 +149,8 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   expect(before?.inventory.owned).toContain('tame:mon_budget_breaker');
   expect(before?.questions.accuracy['Spending and Saving']?.answered).toBeGreaterThanOrEqual(6);
   await page.reload();
-  await expect(page.getByText('TestFox')).toBeVisible();
+  await expect(page.getByText('TestFox', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue as TestFox' })).toBeVisible(); // Continue picks the save played last
   const after = await mq(page, (h) => h.save().slots[0]);
   expect(after?.progress).toEqual(before?.progress);
   expect(after?.moneyCheck.pre?.total).toBeGreaterThanOrEqual(0);

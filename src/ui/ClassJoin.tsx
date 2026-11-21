@@ -102,6 +102,14 @@ export default function ClassJoin() {
           {removed && <p className="text-lg" role="status">You’re not in this class on this device any more. Your teacher may have removed you, moved you to another device, or deleted the class. Ask your teacher for a code to join again.</p>}
           <p className="text-lg">Got a class code from your teacher? Join to see your classmates in the game.</p>
           <button className="btn btn-quiet self-start" onClick={() => setStep({ kind: 'code' })}>Join a class</button>
+          {/* Without a class you're in the open world (everyone sees everyone): this switch turns that off. */}
+          <label className="flex min-h-12 items-center gap-3 text-xl">
+            <input type="checkbox" className="h-7 w-7" checked={offline} onChange={(e) => setOffline(e.target.checked)} />
+            Play offline (you won’t see other players, and nothing is sent)
+          </label>
+          <p className="text-lg" role="status">
+            {offline ? 'Playing offline.' : status === 'online' ? '🌍 Open world: you see other players on your screen, and they see you with a made-up name.' : status === 'connecting' ? 'Connecting…' : ''}
+          </p>
         </>
       ) : step.kind === 'code' ? (
         <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => (e.preventDefault(), lookUp())}>

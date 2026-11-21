@@ -45,12 +45,12 @@ export function json(data: unknown, status = 200, extra: Record<string, string> 
 
 export const MAX_BODY = 8 * 1024;
 
-/** Parse a JSON object body (at most MAX_BODY bytes). */
-export async function readJson(req: Request): Promise<Record<string, unknown>> {
+/** Parse a JSON object body (at most `max` bytes, MAX_BODY unless a route allows more). */
+export async function readJson(req: Request, max = MAX_BODY): Promise<Record<string, unknown>> {
   const len = Number(req.headers.get('Content-Length') ?? 0);
-  if (len > MAX_BODY) throw new HttpError(413, 'too-large', 'Request too large.');
+  if (len > max) throw new HttpError(413, 'too-large', 'Request too large.');
   const text = await req.text();
-  if (text.length > MAX_BODY) throw new HttpError(413, 'too-large', 'Request too large.');
+  if (text.length > max) throw new HttpError(413, 'too-large', 'Request too large.');
   let v: unknown;
   try {
     v = JSON.parse(text || '{}');

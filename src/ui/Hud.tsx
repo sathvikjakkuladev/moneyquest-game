@@ -40,6 +40,7 @@ export function Hud() {
 // Multiplayer UI is only built when VITE_MP_URL is set: Vite replaces the variable with a constant,
 // so without it this branch (and the ClassJoin chunk) is dropped from the build.
 const ClassJoin = import.meta.env.VITE_MP_URL ? lazy(() => import('./ClassJoin.tsx')) : null;
+const SaveCode = import.meta.env.VITE_MP_URL ? lazy(() => import('./SaveCode.tsx')) : null;
 
 function Settings({ onClose }: { onClose: () => void }) {
   const s = useSlot()!;
@@ -79,6 +80,11 @@ function Settings({ onClose }: { onClose: () => void }) {
         {ClassJoin && (
           <Suspense fallback={null}>
             <ClassJoin />
+          </Suspense>
+        )}
+        {SaveCode && (
+          <Suspense fallback={null}>
+            <SaveCode />
           </Suspense>
         )}
         {document.fullscreenEnabled && (

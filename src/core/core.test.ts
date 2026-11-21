@@ -224,6 +224,16 @@ describe('save migrations', () => {
     expect(v3.slots[0]!.online).toBeNull();
     expect(v3.slots[0]!.inventory.hat).toBe('hat-laurel');
   });
+  it('upgrades a v4 save to v5: last played starts as when it was made, no save code yet', () => {
+    const s4 = newSlot('Four', '6-8', 'A', new Date('2026-11-12T10:00:00Z')) as unknown as Record<string, unknown>;
+    delete s4.playedAt;
+    delete s4.backup;
+    const v5 = migrate({ version: 4, active: 0, slots: [s4, null, null] }, 4);
+    expect(v5.version).toBe(5);
+    expect(v5.slots[0]!.playedAt).toBe('2026-11-12T10:00:00.000Z');
+    expect(v5.slots[0]!.backup).toBeNull();
+    expect(v5.slots[0]!.nickname).toBe('Four');
+  });
   it('upgrades a v2 save to v3 without touching the rest', () => {
     const s2 = { ...newSlot('Two', '6-8', 'A'), progress: { ...newSlot('Two', '6-8', 'A').progress, coins: 7 } } as Record<string, unknown>;
     delete (s2.progress as Record<string, unknown>).coinsEarned;

@@ -12,6 +12,7 @@ import { useSession } from '../state/session.ts';
 import { bridge, publishPeople, useNet } from './bridge.ts';
 import { ClassConnection } from './client.ts';
 import { MP_URL } from './config.ts';
+import { startBackupSync } from './backup.ts';
 import { api } from './api.ts';
 import type { Membership } from '../core/save.ts';
 import { startSync } from './sync.ts';
@@ -143,4 +144,5 @@ export function startMultiplayer(): void {
   useSession.subscribe(check);
   check();
   startSync(notMember);
+  startBackupSync();
 }

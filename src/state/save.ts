@@ -17,7 +17,7 @@ export const useSave = create<SaveStore>()(
     (set) => ({
       ...emptySave(),
       create: (i, slot) => set((s) => ({ slots: s.slots.map((x, j) => (j === i ? slot : x)), active: i })),
-      open: (i) => set({ active: i }),
+      open: (i) => set((s) => (i === null || !s.slots[i] ? { active: i } : { active: i, slots: s.slots.map((x, j) => (j === i ? { ...x!, playedAt: new Date().toISOString() } : x)) })),
       remove: (i) => set((s) => ({ slots: s.slots.map((x, j) => (j === i ? null : x)), active: s.active === i ? null : s.active })),
       edit: (fn) => set((s) => (s.active === null || !s.slots[s.active] ? {} : { slots: s.slots.map((x, j) => (j === s.active ? fn(x!) : x)) })),
     }),

@@ -5,7 +5,7 @@ import { hashPassword, newSalt, sameString } from '../src/crypto.ts';
 import { originAllowed } from '../src/http.ts';
 import { limitFor, LIMITS } from '../src/limits.ts';
 import { handle } from '../src/index.ts';
-import { CLASS_IDLE_MS, GUEST_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
+import { BACKUP_IDLE_MS, CLASS_IDLE_MS, GUEST_IDLE_MS, purge, REPORT_MS } from '../src/retention.ts';
 import { ORIGIN, testEnv } from './d1.ts';
 import type { Env } from '../src/env.ts';
 import { makeCode, MAX_SERIAL } from '../../src/rewards/rewardCodes.ts';
@@ -557,5 +557,42 @@ describe('open world guests', () => {
     await call(env, 'POST', '/api/guest', {});
     expect((await purge(env.DB, T0 + GUEST_IDLE_MS - 1000)).guests).toBe(0);
     expect((await purge(env.DB, T0 + GUEST_IDLE_MS + 1000)).guests).toBe(1);
+  });
+});
+
+describe('save codes', () => {
+  const slot = { nickname: 'RealName', progress: { level: 3, coins: 40 }, online: { token: 'm_secret' }, look: {} };
+  it('backs up a save under a friendly code, without the nickname or class token, and brings it back', async () => {
+    const env = testEnv();
+    const made = await call(env, 'POST', '/api/backup', { version: 5, slot });
+    expect(made.status).toBe(200);
+    const code = made.body.code as string;
+    expect(code).toMatch(/^[A-Z]+-[A-Z]+-\d{6}$/);
+    const stored = await env.DB.prepare('SELECT code_hash, data FROM save_codes').first<{ code_hash: string; data: string }>();
+    expect(stored!.code_hash).not.toContain(code);
+    expect(stored!.data).not.toContain('RealName');
+    expect(stored!.data).not.toContain('m_secret');
+    // Updates as you play; restoring ignores case, spaces and dashes.
+    expect((await call(env, 'PUT', '/api/backup', { code, version: 5, slot: { ...slot, progress: { level: 4, coins: 90 } } })).status).toBe(200);
+    const back = await call(env, 'POST', '/api/backup/restore', { code: ` ${code.toLowerCase().replace(/-/g, ' ')} ` });
+    expect(back.status).toBe(200);
+    expect(back.body).toMatchObject({ version: 5, slot: { nickname: '', online: null, progress: { level: 4, coins: 90 } } });
+  });
+  it('a wrong code is not found, and guessing is limited per IP', async () => {
+    const env = testEnv();
+    for (let i = 0; i < LIMITS.restore.max; i++) expect((await call(env, 'POST', '/api/backup/restore', { code: `SUNNY-OTTER-${100000 + i}` })).status).toBe(404);
+    expect((await call(env, 'POST', '/api/backup/restore', { code: 'SUNNY-OTTER-999999' })).status).toBe(429);
+    expect((await call(env, 'PUT', '/api/backup', { code: 'SUNNY-OTTER-123456', version: 5, slot })).status).toBe(404);
+  });
+  it('refuses saves that are not saves or are too big', async () => {
+    const env = testEnv();
+    expect((await call(env, 'POST', '/api/backup', { version: 5, slot: 'nope' })).status).toBe(400);
+    expect((await call(env, 'POST', '/api/backup', { version: 5, slot: { ...slot, junk: 'x'.repeat(100_000) } })).status).toBe(413);
+  });
+  it('codes not used for 400 days are deleted', async () => {
+    const env = testEnv();
+    await call(env, 'POST', '/api/backup', { version: 5, slot });
+    expect((await purge(env.DB, T0 + BACKUP_IDLE_MS - 1000)).backups).toBe(0);
+    expect((await purge(env.DB, T0 + BACKUP_IDLE_MS + 1000)).backups).toBe(1);
   });
 });

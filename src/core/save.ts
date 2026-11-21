@@ -8,7 +8,7 @@ import { newQuestionState } from './questions.ts';
 import type { SpellId } from './spells.ts';
 import type { Band, Topic } from './types.ts';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SLOTS = 3;
 
 /** One Money Check result: score per topic (0–2) and total (0–12). */
@@ -19,6 +19,9 @@ export interface CheckResult { date: string; band: Band; form: FormId; perTopic:
  * never sent to a different server. The nickname is never sent anywhere; others see `publicName`.
  */
 export interface Membership { url: string; classCode: string; className: string; token: string; publicName: string }
+
+/** This slot's save code (backed up on `url`'s server; see src/net/backup.ts). The code is the only key to it. */
+export interface Backup { url: string; code: string }
 
 export interface Slot {
   nickname: string;
@@ -33,6 +36,9 @@ export interface Slot {
   redeemed: string[];
   settings: { readAloud: boolean; reducedMotion: boolean | null; playOffline: boolean }; // reducedMotion null = follow the device
   online: Membership | null;
+  /** When this slot was last opened (for Continue on the title screen). */
+  playedAt: string;
+  backup: Backup | null;
 }
 
 export interface SaveFile { version: number; slots: (Slot | null)[]; active: number | null }
@@ -50,6 +56,8 @@ export function newSlot(nickname: string, band: Band, firstForm: FormId, now = n
     redeemed: [],
     settings: { readAloud: false, reducedMotion: null, playOffline: false },
     online: null,
+    playedAt: now.toISOString(),
+    backup: null,
   };
 }
 
@@ -80,6 +88,8 @@ const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, 
   }),
   // v3 → v4 (the Vaultspire art, PLAN.md §12): the old zones, monsters, hats and pets map onto the new ones.
   3: (s) => ({ ...s, version: 4, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? toVaultspire(x) : null)) }),
+  // v4 → v5 (save codes): when each slot was last played (for Continue), and no save code yet.
+  4: (s) => ({ ...s, version: 5, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, playedAt: x.createdAt, backup: null } : null)) }),
 };
 
 // ---- v3 → v4: from the pixel-art world to Vaultspire ----

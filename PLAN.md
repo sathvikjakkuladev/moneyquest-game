@@ -955,6 +955,14 @@ No new art: all of it is in how the avatar is baked (`src/game/avatarBake.ts`).
 - **Tests:** typecheck clean; unit tests pass; all browser tests pass run one at a time (two timed out
   once with parallel workers on a slow machine, and passed when rerun).
 
+### The game is called Make Bank (2026-11-21)
+
+Sathvik renamed the game: the title screen shows the Make Bank logo (`public/brand/make-bank-logo.webp`,
+cut out of the image he sent), and the browser tab, page description and in-game text say Make Bank.
+The repo, code names, teacher dashboard and the privacy and teacher-notice pages still say MoneyQuest;
+rename those when NHSQA is ready. Browser tests pass one at a time; the pet-follow step in
+`cosmetics.spec.ts` sometimes fails on a slow machine, also on the code from before this change.
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

@@ -15,7 +15,9 @@ export function Title({ onNew }: { onNew: (slot: number) => void }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 p-4">
       <div className="panel px-8 py-4 text-center">
-        <h1 className="title-text text-5xl font-bold">MoneyQuest</h1>
+        <h1 className="m-0">
+          <img src={`${import.meta.env.BASE_URL}brand/make-bank-logo.webp`} alt="Make Bank" width={800} height={349} className="mx-auto h-auto w-[min(26rem,80vw)]" />
+        </h1>
         <p className="mt-1 text-xl font-semibold">A money magic adventure</p>
       </div>
       <ul className="flex flex-wrap justify-center gap-4" aria-label="Save slots">

@@ -223,7 +223,7 @@ function Redeem({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal title="Redeem a card" onClose={() => (useSession.getState().setRedeemCode(null), onClose())}>
-      <p className="text-lg">Won a MoneyQuest card? Type the code under the QR code, or scan it with the camera.</p>
+      <p className="text-lg">Won a Make Bank card? Type the code under the QR code, or scan it with the camera.</p>
       <form className="flex flex-wrap gap-2" onSubmit={(e) => (e.preventDefault(), void submit(code))}>
         <input autoFocus aria-label="Card code" placeholder="MB-W1234-ABCDE" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="min-h-12 flex-1 field px-3 font-mono text-2xl tracking-wider" />
         <button type="submit" className="btn" disabled={!code.trim() || checking}>{checking ? 'Checking…' : 'Redeem'}</button>

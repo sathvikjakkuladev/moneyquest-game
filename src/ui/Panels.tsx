@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { buyGear, buyPotion, equipGear, GEAR, type GearBuy, type GearItem, POTION } from '../core/gear.ts';
 import { Market } from './Market.tsx';
 import { Wheel } from './Wheel.tsx';
 import { MONSTERS } from '../core/monsters.ts';
@@ -103,8 +104,15 @@ function Shop({ onClose }: { onClose: () => void }) {
     setMsg(`You bought the ${it.name} and put it on!`);
   };
   const picked = tryOn ? item(tryOn) : undefined;
+  const [tab, setTab] = useState<'hats' | 'gear'>('hats');
   return (
-    <Modal title="Shopkeeper Bix’s Hats" onClose={onClose} wide>
+    <Modal title="Shopkeeper Bix’s Hats & Gear" onClose={onClose} wide>
+      <div className="flex gap-2" role="tablist" aria-label="Shop sections">
+        {([['hats', '🎩 Hats'], ['gear', '⚔️ Armor, wands & potions']] as const).map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={`btn ${tab === k ? '' : 'btn-quiet'}`} onClick={() => (setTab(k), setMsg(''))}>{label}</button>
+        ))}
+      </div>
+      {tab === 'gear' ? <GearShop /> : <>
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex shrink-0 flex-col items-center gap-1 self-center rounded-md bg-paper-dark px-4 py-2 sm:sticky sm:top-0 sm:self-start">
           <AvatarView look={s.look} hat={tryOn} tall={110} label={picked ? `You, trying on the ${picked.name}` : 'You, with no hat'} />
@@ -133,6 +141,7 @@ function Shop({ onClose }: { onClose: () => void }) {
       </div>
       <p className="text-lg">The Laurel Wreath and the Bull Calf can’t be bought: they come only from winner cards. Pets aren’t sold either: every monster you beat becomes one.</p>
       {msg && <p className="text-lg font-semibold" role="status">{msg}</p>}
+      </>}
     </Modal>
   );
 }
@@ -330,5 +339,65 @@ function Celebrate({ items }: { items: string[] }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Bix's gear: armor and wands (one of each worn, upgrades replace), and healing potions. */
+function GearShop() {
+  const s = useSlot()!;
+  const [msg, setMsg] = useState('');
+  const act = (r: GearBuy, ok: string) => {
+    if (!r.ok) return setMsg(r.reason);
+    sfx('coins');
+    useSave.getState().edit(() => r.slot);
+    setMsg(ok);
+  };
+  const tier = ['#c08457', '#adb5bd', '#66d9e8', '#b16cff'];
+  const card = (g: GearItem, i: number) => {
+    const owned = s.gear.owned.includes(g.id), on = s.gear[g.slot] === g.id;
+    return (
+      <li key={g.id} className={`flex flex-col items-center gap-1 rounded-sm border-2 card p-2 text-center ${on ? 'border-[#7DF3FF]' : 'border-frame'}`}>
+        {g.slot === 'armor' ? <ArmorIcon colour={tier[i % 4]!} /> : <span className="text-5xl leading-none" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px ${tier[i % 4]})` }}>🪄</span>}
+        <p className="text-lg font-semibold leading-tight" style={{ color: tier[i % 4] }}>{g.name}</p>
+        <p className="text-base leading-tight">{g.blurb}</p>
+        {owned ? (
+          <button className="btn btn-quiet w-full" disabled={on} onClick={() => (useSave.getState().edit((x) => equipGear(x, g.id)), setMsg(`You’re using the ${g.name}.`))}>{on ? '✓ Using' : 'Use'}</button>
+        ) : (
+          <button className="btn w-full" disabled={s.progress.coins < g.price} onClick={() => act(buyGear(s, g.id), `You bought the ${g.name}!`)}>🪙 {g.price}</button>
+        )}
+      </li>
+    );
+  };
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xl"><strong>🪙 {s.progress.coins}</strong> coins</p>
+      <h3 className="text-2xl font-bold">Armor</h3>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">{GEAR.filter((g) => g.slot === 'armor').map(card)}</ul>
+      <h3 className="text-2xl font-bold">Wands</h3>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">{GEAR.filter((g) => g.slot === 'wand').map(card)}</ul>
+      <h3 className="text-2xl font-bold">Potions</h3>
+      <div className="flex flex-wrap items-center gap-3 rounded-sm border-2 border-frame card p-2">
+        <span className="text-5xl leading-none" aria-hidden="true">🧪</span>
+        <div className="flex-1">
+          <p className="text-lg font-semibold">{POTION.name} · you have {s.gear.potions} of {POTION.max}</p>
+          <p className="text-base">{POTION.blurb}</p>
+        </div>
+        <button className="btn" disabled={s.gear.potions >= POTION.max || s.progress.coins < POTION.price} onClick={() => act(buyPotion(s), 'You bought a Healing Potion!')}>🪙 {POTION.price}</button>
+      </div>
+      <p className="text-lg">Gear is a want, not a need: you can beat every monster without it. Save up for what helps you most!</p>
+      {msg && <p className="text-lg font-semibold" role="status">{msg}</p>}
+    </div>
+  );
+}
+
+/** A chestplate drawn in the game's outlined cartoon style, in the armor's colour. */
+function ArmorIcon({ colour }: { colour: string }) {
+  return (
+    <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px ${colour})` }}>
+      <path d="M14 6 L22 4 Q27 10 32 4 L40 6 L50 14 L44 24 L42 22 L42 46 Q27 52 12 46 L12 22 L10 24 L4 14 Z" fill={colour} stroke="#1d1530" strokeWidth="3.5" strokeLinejoin="round" />
+      <path d="M27 12 L27 46" stroke="#1d1530" strokeWidth="2.5" opacity="0.5" />
+      <path d="M17 24 Q27 29 37 24 M17 34 Q27 39 37 34" fill="none" stroke="#1d1530" strokeWidth="2.5" opacity="0.5" strokeLinecap="round" />
+      <path d="M16 12 Q20 10 22 14" fill="none" stroke="#fff" strokeWidth="2.5" opacity="0.7" strokeLinecap="round" />
+    </svg>
   );
 }

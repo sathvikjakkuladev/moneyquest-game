@@ -55,7 +55,7 @@ function PlayerBar({ b }: { b: Battle }) {
     <div className="panel flex-1 px-2.5 py-1.5">
       <div className="flex justify-between text-lg font-bold">
         <span>{nick}</span>
-        <span>❤ {s.playerHp}/{s.playerMaxHp}{s.shield > 0 && <span className="ml-2 t-info">🛡 {s.shield}</span>}</span>
+        <span>❤ {s.playerHp}/{s.playerMaxHp}{s.shield > 0 && <span className="ml-2 t-info">🛡 {s.shield}</span>}{s.armor > 0 && <span className="ml-2" title="Armor blocks this much from every hit">Armor −{s.armor}</span>}{s.wand > 0 && <span className="ml-2" title="Your wand adds this much to every spell">🪄 +{s.wand}</span>}{s.potions > 0 && <span className="ml-2" title="Healing potions">🧪 {s.potionUsed ? s.potions - 1 : s.potions}</span>}</span>
       </div>
       <Bar value={s.playerHp} max={s.playerMaxHp} color="#2f9e44" label="Your health" />
     </div>

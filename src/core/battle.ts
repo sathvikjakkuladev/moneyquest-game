@@ -2,6 +2,7 @@
 // Phaser animates the events and React shows the question card. Every rule is unit-tested.
 
 import type { EffectRule } from '../data/effectRules.ts';
+import { POTION } from './gear.ts';
 import type { Attack, MonsterDef } from './monsters.ts';
 import type { Rng } from './rng.ts';
 import { between } from './rng.ts';
@@ -19,7 +20,7 @@ export const BARRIER_BLOCKS_OVER = 12;
 const scale = (level: number) => 1 + 0.1 * (level - 1);
 export const maxHpFor = (level: number) => 100 + 10 * (level - 1);
 
-export interface BattleSetup { monster: MonsterDef; band: Band; level: number; wallet: number; petBonus?: number; rematch?: boolean; insured?: boolean }
+export interface BattleSetup { monster: MonsterDef; band: Band; level: number; wallet: number; petBonus?: number; rematch?: boolean; insured?: boolean; /** Gear (src/core/gear.ts): damage blocked per hit, spell bonus, potions carried. */ gear?: { armor: number; wand: number; potions: number } }
 
 /** Tricks that apply to one question (set by an attack for the next turn). */
 export interface TurnFx { lock?: boolean; fog?: boolean; fakeHint?: boolean; shuffle?: boolean; riddle?: boolean; nap?: boolean; removeOption?: boolean; timer?: number; slowed?: boolean; glare?: boolean; scramble?: boolean }
@@ -62,6 +63,11 @@ export interface BattleState {
   petBonus: number;
   petOut: boolean;
   rematch: boolean;
+  /** Gear: damage blocked per hit, damage added to spells, potions carried, and whether one was drunk. */
+  armor: number;
+  wand: number;
+  potions: number;
+  potionUsed: boolean;
   outcome: 'fighting' | 'won' | 'lost';
 }
 
@@ -85,6 +91,7 @@ export type BattleEvent =
   | { type: 'burned'; amount: number; hp: number }
   | { type: 'headDown'; left: number }
   | { type: 'healed'; amount: number; hp: number }
+  | { type: 'potion'; amount: number; hp: number }
   | { type: 'warning'; text: string }
   | { type: 'won'; coins: number; xp: number }
   | { type: 'lost' };
@@ -105,6 +112,7 @@ export function startBattle(s: BattleSetup): BattleState {
     shield: 0, barrier: false, insured: !!s.insured, scrollUsed: false, streak: 0, charge: 0,
     weaken: null, slowTurns: 0, bonusHit: 0, burnLeft: 0, burnDamage: 0,
     ramp: 0, split: false, blaze: 0, bubble: 0, petBonus: s.petBonus ?? 0, petOut: false, rematch: !!s.rematch, outcome: 'fighting',
+    armor: s.gear?.armor ?? 0, wand: s.gear?.wand ?? 0, potions: s.gear?.potions ?? 0, potionUsed: false,
   };
 }
 
@@ -181,7 +189,7 @@ export function slowStrike(state: BattleState, m: MonsterDef): Step {
 export function spellDamage(s: BattleState, spell: SpellId, m?: MonsterDef): number {
   if (s.weaken === 0) return 0; // blocked
   const pet = s.petOut ? 0 : s.petBonus;
-  const base = SPELLS[spell].damage + (spell === 'compound_burst' ? 3 * s.streak : 0) + pet;
+  const base = SPELLS[spell].damage + (spell === 'compound_burst' ? 3 * s.streak : 0) + pet + s.wand;
   let d = base * scale(s.level);
   if (s.weaken !== null) d *= s.weaken / 100;
   if (s.now.slowed) d *= 0.75;
@@ -326,9 +334,21 @@ function strike(state: BattleState, a: Attack, hit: number, of: number, events: 
     raw -= blocked;
     s = { ...s, shield: 0 }; // a shield soaks one hit, then it's gone
   }
+  // Armor blocks part of every hit that gets through (a hit always does at least 1).
+  if (raw > 0 && s.armor > 0) {
+    const soak = Math.min(s.armor, raw - 1);
+    raw -= soak;
+    blocked += soak;
+  }
   const playerHp = Math.max(0, s.playerHp - raw);
   events.push({ type: 'playerHurt', amount: raw, blocked, hp: playerHp });
   s = { ...s, playerHp };
+  // A healing potion is drunk by itself, once a battle, when health falls below a third.
+  if (playerHp > 0 && s.potions > 0 && !s.potionUsed && playerHp < s.playerMaxHp * POTION.below) {
+    const hp = Math.min(s.playerMaxHp, playerHp + Math.round(s.playerMaxHp * POTION.heal));
+    events.push({ type: 'potion', amount: hp - playerHp, hp });
+    s = { ...s, playerHp: hp, potionUsed: true };
+  }
   if (playerHp > 0) return s;
   events.push({ type: 'lost' });
   return { ...s, outcome: 'lost' };

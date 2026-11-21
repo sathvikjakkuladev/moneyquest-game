@@ -312,6 +312,13 @@ export class BattleScene extends Phaser.Scene {
         s.float(FOE_X, this.foeTop - 10, `+${e.amount} HP`, 'info');
         void vfx(this, 'heal-swirl', FOE_X, foeMid, 160, { fast: f });
         return;
+      case 'potion':
+        // A healing potion drunk by itself: green light swirls round the wizard.
+        s.float(PLAYER_X, playerTop - 20, `🧪 Healing Potion! +${e.amount} HP`, 'info');
+        void vfx(this, 'heal-swirl', PLAYER_X, playerMid, 160, { fast: f, tint: 0x8ce99a });
+        burst(this, PLAYER_X, playerMid, 0x8ce99a, 10, 40, f);
+        await wait(this, f ? 150 : 600);
+        return;
       case 'woke':
         s.float(PLAYER_X, playerTop - 20, 'Zzz… awake!', 'info');
         await wait(this, f ? 100 : 400);

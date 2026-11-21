@@ -29,7 +29,7 @@ export const headmasterTalk = (topicBosses: number, postDone = false, allDone = 
   return ['You beat all six topic bosses!'];
 };
 
-export const MERCHANT_TALK = ['Hats for every head! Save the coins you win in battles and spend them here.', 'Remember: a hat is a want, not a need. Buy it when your savings can spare it.'];
+export const MERCHANT_TALK = ['Hats for every head, and armor, wands and potions for every adventurer! Spend the coins you’ve saved here.', 'Remember: most of this is a want, not a need. Buy it when your savings can spare it.'];
 /** DRAFT for review: saving tips from the banker. */
 export const BANKER_TALK = [
   'Tip: a bank keeps your money safe and can pay you interest, which is a little extra money for saving with it.',

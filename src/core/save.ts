@@ -3,13 +3,14 @@
 import type { FormId } from '../data/moneyCheckForms.ts';
 import type { Look } from './look.ts';
 import type { Market } from './market.ts';
+import type { Gear } from './gear.ts';
 import { cleanLook, DEFAULT_LOOK } from './look.ts';
 import type { QuestionState } from './questions.ts';
 import { newQuestionState } from './questions.ts';
 import type { SpellId } from './spells.ts';
 import type { Band, Topic } from './types.ts';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 export const SLOTS = 3;
 
 /** One Money Check result: score per topic (0–2) and total (0–12). */
@@ -44,6 +45,8 @@ export interface Slot {
   market: Market;
   /** The Daily Wheel: the day this save last spun it (src/core/wheel.ts). */
   daily: { spun: string | null };
+  /** Armor, wand and potions from Shopkeeper Bix (src/core/gear.ts). */
+  gear: Gear;
 }
 
 export interface SaveFile { version: number; slots: (Slot | null)[]; active: number | null }
@@ -65,6 +68,7 @@ export function newSlot(nickname: string, band: Band, firstForm: FormId, now = n
     backup: null,
     market: { holdings: {}, lastTrade: 0 },
     daily: { spun: null },
+    gear: { owned: [], armor: null, wand: null, potions: 0 },
   };
 }
 
@@ -101,6 +105,8 @@ const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, 
   5: (s) => ({ ...s, version: 6, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, market: { holdings: {}, lastTrade: 0 } } : null)) }),
   // v6 → v7 (the Daily Wheel): not spun yet.
   6: (s) => ({ ...s, version: 7, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, daily: { spun: null } } : null)) }),
+  // v7 → v8 (gear): no armor, wand or potions yet.
+  7: (s) => ({ ...s, version: 8, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, gear: { owned: [], armor: null, wand: null, potions: 0 } } : null)) }),
 };
 
 // ---- v3 → v4: from the pixel-art world to Vaultspire ----

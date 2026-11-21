@@ -20,6 +20,7 @@ import questionFile from '../data/questions.json';
 import { zoneById } from '../data/zones.ts';
 import { item, tameId } from '../data/items.ts';
 import { SCROLL } from '../core/shop.ts';
+import { battleGear } from '../core/gear.ts';
 import { sfx } from '../audio.ts';
 import { slot, useSave } from './save.ts';
 
@@ -189,7 +190,7 @@ export const useSession = create<Session>()((set, get) => {
       const pet = s.inventory.pet ? item(s.inventory.pet) : undefined;
       const state = engine.startBattle({
         monster: m, band: s.band, level: s.progress.level, wallet: s.progress.coins, rematch: s.progress.defeated.includes(m.id),
-        petBonus: pet ? (pet.legendary ? 4 : 2) : 0, insured: s.inventory.owned.includes(SCROLL),
+        petBonus: pet ? (pet.legendary ? 4 : 2) : 0, insured: s.inventory.owned.includes(SCROLL), gear: battleGear(s),
       });
       const spell = s.progress.spells.includes(s.progress.spell) ? s.progress.spell : 'budget_beam';
       sfx('battle-start');
@@ -263,6 +264,7 @@ export const useSession = create<Session>()((set, get) => {
           if (tames && !owned.includes(tameId(b.monster.id))) owned = [...owned, tameId(b.monster.id)];
           return {
             ...x,
+            gear: st.potionUsed ? { ...x.gear, potions: Math.max(0, x.gear.potions - 1) } : x.gear,
             inventory: { ...x.inventory, owned },
             progress: {
               ...p, xp, level, coins: st.wallet + won.coins, coinsEarned: p.coinsEarned + won.coins,
@@ -277,7 +279,7 @@ export const useSession = create<Session>()((set, get) => {
         set({ battle: { ...b, phase: 'won', result } });
       } else if (st.outcome === 'lost') {
         // Fainting is gentle: nothing is lost (coins a monster took during the fight stay taken).
-        useSave.getState().edit((x) => ({ ...x, progress: { ...x.progress, coins: st.wallet }, inventory: st.scrollUsed ? { ...x.inventory, owned: dropOne(x.inventory.owned, SCROLL) } : x.inventory }));
+        useSave.getState().edit((x) => ({ ...x, progress: { ...x.progress, coins: st.wallet }, gear: st.potionUsed ? { ...x.gear, potions: Math.max(0, x.gear.potions - 1) } : x.gear, inventory: st.scrollUsed ? { ...x.inventory, owned: dropOne(x.inventory.owned, SCROLL) } : x.inventory }));
         set({ battle: { ...b, phase: 'lost' } });
       } else if (b.last === 'opening') set({ battle: begin(b) });
       else if (b.last === 'slow') set({ battle: { ...b, phase: 'ask', timer: null } });

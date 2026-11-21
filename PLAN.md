@@ -1014,6 +1014,21 @@ clock set back before the last spin gives nothing. Wheel coins don't count towar
 Reduced motion skips the spin animation. Save format v7 (`daily.spun`) with a migration test; unit
 tests and an e2e test; the smoke test now answers "Maybe later".
 
+### Gear: armor, wands and potions (done 2026-11-21)
+
+Sathvik wanted more to spend coins on. Shopkeeper Bix's shop now has a second tab next to Hats:
+- **Armor** (Leather Vest, Iron Plate, Crystal Armor, Dragonscale Armor: 50/120/250/450 coins) blocks
+  1–4 damage from every monster hit (a hit always does at least 1); the battle shows it as blocked.
+- **Wands** (Oak, Silver, Crystal, Star: same prices) add 1–4 to every spell's damage (before level
+  scaling, like a pet's bonus).
+- **Healing Potions** (30 coins, carry up to 5): drunk by themselves once a battle when health falls
+  below a third, healing 40%; one is used up only if it was drunk (win or faint).
+One armor and one wand are in use at a time; bought gear is put on at once, and owned gear can be
+switched. Names, prices and strengths are DRAFTS (`src/core/gear.ts`); armor icons are drawn in SVG,
+wands and potions use emoji (no art generated). Bix's lines mention gear. The battle shows
+"Armor −N", "🪄 +N" and potions left. Save format v8 (`gear`) with a migration test; unit tests (buying,
+equipping, potion limit, armor and wand in battle, one potion per battle) and an e2e test.
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

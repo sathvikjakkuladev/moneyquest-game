@@ -224,12 +224,20 @@ describe('save migrations', () => {
     expect(v3.slots[0]!.online).toBeNull();
     expect(v3.slots[0]!.inventory.hat).toBe('hat-laurel');
   });
+  it('upgrades a v5 save to v6: an empty Stock Board portfolio, everything else kept', () => {
+    const s5 = { ...newSlot('Five', 'K-5', 'B') } as unknown as Record<string, unknown>;
+    delete s5.market;
+    const v6 = migrate({ version: 5, active: 0, slots: [s5, null, null] }, 5);
+    expect(v6.slots[0]!.market).toEqual({ holdings: {}, lastTrade: 0 });
+    expect(v6.slots[0]!.nickname).toBe('Five');
+  });
   it('upgrades a v4 save to v5: last played starts as when it was made, no save code yet', () => {
     const s4 = newSlot('Four', '6-8', 'A', new Date('2026-11-12T10:00:00Z')) as unknown as Record<string, unknown>;
     delete s4.playedAt;
     delete s4.backup;
+    delete s4.market;
     const v5 = migrate({ version: 4, active: 0, slots: [s4, null, null] }, 4);
-    expect(v5.version).toBe(5);
+    expect(v5.version).toBe(SAVE_VERSION);
     expect(v5.slots[0]!.playedAt).toBe('2026-11-12T10:00:00.000Z');
     expect(v5.slots[0]!.backup).toBeNull();
     expect(v5.slots[0]!.nickname).toBe('Four');

@@ -78,7 +78,7 @@ interface Session {
   float: (x: number, y: number, text: string, tone: Float['tone']) => void;
   scene: SceneReq | null;
   dialogue: Dialogue | null;
-  panel: 'shop' | 'bag' | 'redeem' | 'progress' | 'check' | 'style' | 'pets' | null;
+  panel: 'shop' | 'bag' | 'redeem' | 'progress' | 'check' | 'style' | 'pets' | 'market' | null;
   setPanel: (p: Session['panel']) => void;
   celebrate: string[] | null; // prizes just unlocked by a reward card
   setCelebrate: (items: string[] | null) => void;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Market } from './Market.tsx';
 import { MONSTERS } from '../core/monsters.ts';
 import { buy, equip, grantReward, petLooks, restyle, SCROLL, setPetLook } from '../core/shop.ts';
 import type { Item } from '../data/items.ts';
@@ -69,6 +70,11 @@ export function Panels() {
       {panel === 'redeem' && <Redeem onClose={close} />}
       {panel === 'progress' && <Progress onClose={close} />}
       {panel === 'check' && <MoneyCheck which="post" onDone={close} />}
+      {panel === 'market' && (
+        <Modal title="Stock Board" onClose={close} wide>
+          <Market />
+        </Modal>
+      )}
       {celebrate && <Celebrate items={celebrate} />}
     </>
   );

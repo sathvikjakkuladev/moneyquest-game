@@ -2,13 +2,14 @@
 
 import type { FormId } from '../data/moneyCheckForms.ts';
 import type { Look } from './look.ts';
+import type { Market } from './market.ts';
 import { cleanLook, DEFAULT_LOOK } from './look.ts';
 import type { QuestionState } from './questions.ts';
 import { newQuestionState } from './questions.ts';
 import type { SpellId } from './spells.ts';
 import type { Band, Topic } from './types.ts';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const SLOTS = 3;
 
 /** One Money Check result: score per topic (0–2) and total (0–12). */
@@ -39,6 +40,8 @@ export interface Slot {
   /** When this slot was last opened (for Continue on the title screen). */
   playedAt: string;
   backup: Backup | null;
+  /** Pretend stocks from the Stock Board (src/core/market.ts). */
+  market: Market;
 }
 
 export interface SaveFile { version: number; slots: (Slot | null)[]; active: number | null }
@@ -58,6 +61,7 @@ export function newSlot(nickname: string, band: Band, firstForm: FormId, now = n
     online: null,
     playedAt: now.toISOString(),
     backup: null,
+    market: { holdings: {}, lastTrade: 0 },
   };
 }
 
@@ -90,6 +94,8 @@ const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, 
   3: (s) => ({ ...s, version: 4, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? toVaultspire(x) : null)) }),
   // v4 → v5 (save codes): when each slot was last played (for Continue), and no save code yet.
   4: (s) => ({ ...s, version: 5, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, playedAt: x.createdAt, backup: null } : null)) }),
+  // v5 → v6 (the Stock Board): no stocks yet.
+  5: (s) => ({ ...s, version: 6, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, market: { holdings: {}, lastTrade: 0 } } : null)) }),
 };
 
 // ---- v3 → v4: from the pixel-art world to Vaultspire ----

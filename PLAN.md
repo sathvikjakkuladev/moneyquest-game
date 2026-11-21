@@ -985,6 +985,24 @@ Sathvik asked about accounts. Most players are under 13, so instead of email-and
 
 **Needs Sathvik:** apply migration 0004 and deploy the server (staging, then production).
 
+### The Stock Board (done 2026-11-21)
+
+Sathvik asked for a pretend stock market at the notice board in Ledgerhold's plaza. Walk up to it and
+press Space ("Open the Stock Board"; the board's `ui:quest-board` hotspot from the art set).
+
+- **Stocks** (`src/core/market.ts`): six made-up companies from steady (Bookworm Books) to wild (Rocket
+  Rides), plus the Vault 6 Fund (the average of all six, to show diversifying). Names, blurbs and the
+  tips are DRAFTS. Prices change once a minute from a fixed formula of the clock (layered smooth
+  noise), so everyone sees the same prices, a chart of the last hour is free, and prices move while the
+  game is closed. They wander within a range (never 0, never runaway); risky stocks swing more.
+- **Trading** with game coins, whole shares (1, 5 or 10 at a time), at the minute's price. Trades use
+  the later of the device clock and the last trade, so setting the clock back gains nothing (setting it
+  forward can still peek ahead; it's pretend money). Selling doesn't count toward `coinsEarned` (the
+  class leaderboard counts coins won in battle).
+- **Save format v6** (`market: { holdings, lastTrade }`) with a migration test. Save codes back it up.
+- **Tests:** market unit tests (prices repeatable and bounded, risk ordering, buy/sell, refusals,
+  clock-back) and an e2e test (walk to the board, Space, buy and sell).
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

@@ -32,7 +32,7 @@ import { queue, queueSheet, RENDER, STAGE_H, STAGE_W, stageCamera, whenLoaded } 
 const SPEED = 120; // px per second on the 640×360 stage
 const OVER_DEPTH = 5000; // the overhang layer draws above everything
 
-interface Thing { kind: 'npc' | 'monster' | 'waystone'; id: string; name: string; x: number; y: number; range: number; sprite?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image; npc?: string; beaten?: boolean }
+interface Thing { kind: 'npc' | 'monster' | 'waystone' | 'board'; id: string; name: string; x: number; y: number; range: number; sprite?: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image; npc?: string; beaten?: boolean }
 
 const greeted = new Set<string>(); // each guide says hello once per session
 const tips: Record<string, number> = {};
@@ -102,6 +102,8 @@ export class RoomScene extends Phaser.Scene {
     for (const n of this.screen.npcs) this.addNpc(n.id, n.sprite, n.x, n.y);
     this.addMonsters();
     if (this.screen.waystone) this.things.push({ kind: 'waystone', id: 'waystone', name: 'the waystone', x: this.screen.waystone[0], y: this.screen.waystone[1], range: 46 });
+    // The notice board in Ledgerhold's plaza is the Stock Board (its hotspot comes from the art set).
+    for (const d of this.art.doors) if (d.kind === 'interact' && d.target === 'ui:quest-board') this.things.push({ kind: 'board', id: 'market', name: 'the Stock Board', x: d.rect[0] + d.rect[2] / 2, y: d.rect[1] + d.rect[3], range: 50 });
 
     if (!this.req.attract) {
       const s = slot();
@@ -250,6 +252,7 @@ export class RoomScene extends Phaser.Scene {
     this.target = null;
     this.pending = null;
     if (t.kind === 'waystone') return this.travel({ kind: 'world' });
+    if (t.kind === 'board') return (sfx('talk'), s.setPanel('market'));
     if (t.kind === 'npc') {
       sfx('talk');
       return this.talk(t.id);
@@ -405,7 +408,7 @@ export class RoomScene extends Phaser.Scene {
     let best: Thing | null = null;
     for (const t of this.things) if (this.dist(p, t) < t.range && (!best || this.dist(p, t) < this.dist(p, best))) best = t;
     this.near = best;
-    useSession.getState().setPrompt(best ? (best.kind === 'waystone' ? 'Open the world map' : `${best.kind === 'npc' ? 'Talk to' : best.beaten ? 'Rematch' : 'Battle'} ${best.name}`) : null);
+    useSession.getState().setPrompt(best ? (best.kind === 'waystone' ? 'Open the world map' : best.kind === 'board' ? 'Open the Stock Board' : `${best.kind === 'npc' ? 'Talk to' : best.beaten ? 'Rematch' : 'Battle'} ${best.name}`) : null);
     if (pressed && fresh && best) this.interact(best);
   }
 }

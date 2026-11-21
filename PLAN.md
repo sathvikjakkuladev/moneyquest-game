@@ -1003,6 +1003,17 @@ press Space ("Open the Stock Board"; the board's `ui:quest-board` hotspot from t
 - **Tests:** market unit tests (prices repeatable and bounded, risk ordering, buy/sell, refusals,
   clock-back) and an e2e test (walk to the board, Space, buy and sell).
 
+### The Daily Wheel (done 2026-11-21)
+
+Sathvik asked for a once-a-day coin wheel from the NPC by the fountain (Headmaster Goldwhisker).
+After his usual advice he offers "Spin the wheel!" / "Maybe later"; once spun, he says to come back
+tomorrow. The wheel (`src/core/wheel.ts`, `src/ui/Wheel.tsx`) has eight slices (5, 10, 15, 25, 50
+and a rare 100 coins; weighted so small prizes are common). The prize is picked and saved the moment
+the spin starts, so closing mid-spin can't re-roll it; one spin per calendar day on the device, and a
+clock set back before the last spin gives nothing. Wheel coins don't count toward `coinsEarned`.
+Reduced motion skips the spin animation. Save format v7 (`daily.spun`) with a migration test; unit
+tests and an e2e test; the smoke test now answers "Maybe later".
+
 ## 12. The assets_v2 rebuild (started 2026-11-16)
 
 The pixel art is being replaced by the `assets_v2` set (bold vector cartoon, "Style A"). The prompt

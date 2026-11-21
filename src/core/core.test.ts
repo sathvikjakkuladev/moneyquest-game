@@ -224,9 +224,18 @@ describe('save migrations', () => {
     expect(v3.slots[0]!.online).toBeNull();
     expect(v3.slots[0]!.inventory.hat).toBe('hat-laurel');
   });
+  it('upgrades a v6 save to v7: the Daily Wheel not spun yet', () => {
+    const s6 = { ...newSlot('Six', 'K-5', 'A') } as unknown as Record<string, unknown>;
+    delete s6.daily;
+    const v7 = migrate({ version: 6, active: 0, slots: [s6, null, null] }, 6);
+    expect(v7.version).toBe(SAVE_VERSION);
+    expect(v7.slots[0]!.daily).toEqual({ spun: null });
+    expect(v7.slots[0]!.market).toEqual({ holdings: {}, lastTrade: 0 });
+  });
   it('upgrades a v5 save to v6: an empty Stock Board portfolio, everything else kept', () => {
     const s5 = { ...newSlot('Five', 'K-5', 'B') } as unknown as Record<string, unknown>;
     delete s5.market;
+    delete s5.daily;
     const v6 = migrate({ version: 5, active: 0, slots: [s5, null, null] }, 5);
     expect(v6.slots[0]!.market).toEqual({ holdings: {}, lastTrade: 0 });
     expect(v6.slots[0]!.nickname).toBe('Five');
@@ -236,6 +245,7 @@ describe('save migrations', () => {
     delete s4.playedAt;
     delete s4.backup;
     delete s4.market;
+    delete s4.daily;
     const v5 = migrate({ version: 4, active: 0, slots: [s4, null, null] }, 4);
     expect(v5.version).toBe(SAVE_VERSION);
     expect(v5.slots[0]!.playedAt).toBe('2026-11-12T10:00:00.000Z');

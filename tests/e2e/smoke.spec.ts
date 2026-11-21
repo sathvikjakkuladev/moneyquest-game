@@ -16,7 +16,7 @@ const shot = async (page: Page, name: string) => void (shots && (await page.scre
 
 async function closeDialogue(page: Page) {
   const d = page.getByRole('dialog', { name: /says/ });
-  while (await d.isVisible()) await d.getByRole('button', { name: /Next|OK/ }).click();
+  while (await d.isVisible()) await d.getByRole('button', { name: /Next|OK|Maybe later/ }).click();
 }
 /** Wait for the screen to load, then put the player at (x, y). */
 async function teleport(page: Page, x: number, y: number) {
@@ -67,7 +67,7 @@ test('new game to a won battle, then save and reload', async ({ page }) => {
   expect(await mq(page, (h) => h.save().slots[0]?.look.hair)).toBe(2);
   await shot(page, '03-ledgerhold');
 
-  // You arrive at Ledgerhold's waystone. Walk north to the plaza and talk to the Headmaster.
+  // You arrive at Ledgerhold's waystone. Walk north to the plaza and talk to the Headmaster (who offers the Daily Wheel: maybe later).
   await expect.poll(() => screen(page)).toBe('2-1');
   await walk(page, 320, 30, 'ArrowUp');
   await expect.poll(() => screen(page)).toBe('1-1');

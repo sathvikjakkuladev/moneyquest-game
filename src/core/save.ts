@@ -9,7 +9,7 @@ import { newQuestionState } from './questions.ts';
 import type { SpellId } from './spells.ts';
 import type { Band, Topic } from './types.ts';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const SLOTS = 3;
 
 /** One Money Check result: score per topic (0–2) and total (0–12). */
@@ -42,6 +42,8 @@ export interface Slot {
   backup: Backup | null;
   /** Pretend stocks from the Stock Board (src/core/market.ts). */
   market: Market;
+  /** The Daily Wheel: the day this save last spun it (src/core/wheel.ts). */
+  daily: { spun: string | null };
 }
 
 export interface SaveFile { version: number; slots: (Slot | null)[]; active: number | null }
@@ -62,6 +64,7 @@ export function newSlot(nickname: string, band: Band, firstForm: FormId, now = n
     playedAt: now.toISOString(),
     backup: null,
     market: { holdings: {}, lastTrade: 0 },
+    daily: { spun: null },
   };
 }
 
@@ -96,6 +99,8 @@ const MIGRATIONS: Record<number, (s: Record<string, unknown>) => Record<string, 
   4: (s) => ({ ...s, version: 5, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, playedAt: x.createdAt, backup: null } : null)) }),
   // v5 → v6 (the Stock Board): no stocks yet.
   5: (s) => ({ ...s, version: 6, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, market: { holdings: {}, lastTrade: 0 } } : null)) }),
+  // v6 → v7 (the Daily Wheel): not spun yet.
+  6: (s) => ({ ...s, version: 7, slots: (s.slots as (Record<string, unknown> | null)[]).map((x) => (x ? { ...x, daily: { spun: null } } : null)) }),
 };
 
 // ---- v3 → v4: from the pixel-art world to Vaultspire ----

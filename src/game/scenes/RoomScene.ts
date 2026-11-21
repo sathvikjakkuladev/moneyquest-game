@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { canSpin, today } from '../../core/wheel.ts';
 import { sfx } from '../../audio.ts';
 import type { Pt } from '../../core/geometry.ts';
 import { step } from '../../core/geometry.ts';
@@ -228,7 +229,13 @@ export class RoomScene extends Phaser.Scene {
           { label: 'Take Money Check 2', run: () => s.setPanel('check') },
           { label: 'Later', run: () => {} },
         ]);
-      return s.say(HEADMASTER, headmasterTalk(TOPIC_ZONE_ORDER.filter((z) => cleared.includes(z)).length, sl.moneyCheck.post !== null, ALL_DISTRICTS.every((z) => cleared.includes(z))));
+      // After his advice, the Headmaster offers the Daily Wheel (one spin a day).
+      const lines = headmasterTalk(TOPIC_ZONE_ORDER.filter((z) => cleared.includes(z)).length, sl.moneyCheck.post !== null, ALL_DISTRICTS.every((z) => cleared.includes(z)));
+      if (!canSpin(sl, today())) return s.say(HEADMASTER, [...lines, 'You’ve had your spin on the Daily Wheel today. Come back tomorrow for another!']);
+      return s.say(HEADMASTER, [...lines, 'Would you like your free spin on the Daily Wheel today?'], undefined, [
+        { label: 'Spin the wheel!', run: () => s.setPanel('wheel') },
+        { label: 'Maybe later', run: () => {} },
+      ]);
     }
     if (id === 'shopkeeper') return s.say(MERCHANT, MERCHANT_TALK, () => s.setPanel('shop'));
     if (id === 'stylist') return s.say(STYLIST, STYLIST_TALK, () => s.setPanel('style'));

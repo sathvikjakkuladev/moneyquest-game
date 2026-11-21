@@ -21,6 +21,7 @@ updated at the end of every build phase.
 | Avatar walk steadying and hair-seam fixes in the avatar baker (`src/game/avatarBake.ts`) | **Claude Code**, at the student's request (2026-11-21) | Judged the walk from before/after recordings and chose the step speed |
 | Continue button and save codes (`server/src/backup.ts`, `src/net/backup.ts`, `src/ui/SaveCode.tsx`, `src/ui/RestoreSave.tsx`) and their privacy-policy wording | **Claude Code**, at the student's request (2026-11-21); policy text drafted for NHSQA to review | Chose save codes over accounts, deploys the server |
 | The Stock Board: price model, made-up companies, blurbs and investing tips (`src/core/market.ts`, `src/ui/Market.tsx`) | **Claude Code**, at the student's request (2026-11-21); company text and tips are drafts | Asked for it, reviews the tips and the balance |
+| The Daily Wheel (prizes and odds, `src/core/wheel.ts`, `src/ui/Wheel.tsx`) | **Claude Code**, at the student's request (2026-11-21); prize amounts and odds are a draft | Asked for it, reviews the prizes |
 | Public-name word lists (`src/net/names.ts`) | **Claude Code**, drafted for student review | Reviews the words |
 | Emotes and preset phrases (`src/net/says.ts`) | **Claude Code**, drafted for student review | Reviews the wording |
 | Privacy policy and teacher notice (`public/privacy/`, `public/teacher-notice/`) | **Claude Code**, drafted for NHSQA to review; not legal advice | NHSQA reviews them (contact: nhsqa01@gmail.com) |
